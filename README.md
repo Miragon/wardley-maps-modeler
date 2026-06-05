@@ -176,5 +176,5 @@ already ships both fonts via `@fontsource-variable`.
 
 ## License
 
-MIT (library packages). Third-party licenses: diagram-js & dependencies are MIT/ISC/Apache-2.0 — see
+[MIT](LICENSE). Third-party licenses: diagram-js & dependencies are MIT/ISC/Apache-2.0 — see
 [`docs/KONZEPT.md`](docs/KONZEPT.md) §3.
