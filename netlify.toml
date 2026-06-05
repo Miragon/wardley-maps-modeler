@@ -3,6 +3,9 @@
 # dann die Vite-Webapp. pnpm wird via package.json "packageManager" (corepack) genutzt.
 
 [build]
+  # base auf Repo-Root erzwingen (ueberschreibt eine evtl. in der Netlify-UI gesetzte Base wie
+  # "packages/renderer", sonst loest publish falsch auf). publish ist relativ zur base.
+  base = "/"
   # Die Webapp bündelt die @wardley/*-Pakete via Vite-Alias aus dem Source (siehe vite.config.ts),
   # ist also selbst-enthaltend -> kein vorheriger Lib-Build nötig. Filter-Befehl ist cwd-unabhängig.
   command = "pnpm --filter @wardley/webapp build"
