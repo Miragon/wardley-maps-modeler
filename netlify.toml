@@ -1,0 +1,18 @@
+# Netlify-Deployment der Demo-Webapp (apps/webapp).
+# Monorepo: erst die Lib-Pakete bauen (Webapp loest @wardley/* ueber deren dist auf),
+# dann die Vite-Webapp. pnpm wird via package.json "packageManager" (corepack) genutzt.
+
+[build]
+  command = "pnpm run build:webapp"
+  publish = "apps/webapp/dist"
+
+[build.environment]
+  # Vite 8 benoetigt Node 20.19+ / 22.12+.
+  NODE_VERSION = "22"
+
+# Single-Page-App: Map steckt im URL-Hash (#m=...), Routing ist hash-basiert.
+# Der Catch-all liefert fuer beliebige Pfade index.html aus (robust gegen Deep-Links).
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

@@ -1,135 +1,144 @@
 # Wardley Mapping
 
-TypeScript-Bibliothek zum Anzeigen und Editieren von [Wardley Maps](https://learnwardleymapping.com/),
-gebaut auf [diagram-js](https://github.com/bpmn-io/diagram-js) (MIT). Die Bibliothek ist die geteilte
-Kerntechnologie für zwei Auslieferungsziele: eine **Webapp** und (nachgelagert) eine **VS Code Extension**.
+A TypeScript library for viewing and editing [Wardley Maps](https://learnwardleymapping.com/),
+built on [diagram-js](https://github.com/bpmn-io/diagram-js) (MIT). The library is the shared core
+for two delivery targets: a **web app** (included) and (later) a **VS Code extension**.
 
-> Architektur orientiert am Schichtenmodell von bpmn-js, jedoch **eigener Code** — `bpmn-js` wird
-> wegen seiner Lizenz (Watermark-Pflicht) nie als Dependency aufgenommen. Details: [`docs/KONZEPT.md`](docs/KONZEPT.md).
+> The architecture follows the layered design of bpmn-js, but is **original code** — `bpmn-js` is
+> never taken as a dependency because of its license (watermark requirement). Details:
+> [`docs/KONZEPT.md`](docs/KONZEPT.md).
 
-![Tea Shop, gerendert von @wardley/renderer](docs/screenshots/wardley-bpmn-style.png)
+![The Wardley Mapping editor — Tea Shop map with the floating tool palette](docs/screenshots/editor.png)
+
+_The editor: a rendered map with the Excalidraw-style floating chrome — tool palette centred at the
+top, **Menu** on the left, **Share** on the right. Components are drawn as clean BPMN-style event
+circles, users/anchors as icons, and the evolution grid carries the standard stage and axis labels._
+
+## Highlights
+
+- **Full editor on diagram-js (MIT), not bpmn-js.** Palette, context pad, move, connect, resize,
+  inline label editing, undo/redo.
+- **Model the next component straight from an existing one** — the context pad’s **append** action
+  drags out a new (blank) component, **auto-creates the dependency arrow**, shows a live preview of
+  both the shape and the arrow, and opens the label editor right away so you can name it.
+- **Evolve by drag** along the evolution axis (live preview, single undo step), removable again.
+- **Excalidraw-style web app:** empty canvas on start, floating chrome over a full-bleed canvas,
+  URL sharing, drag & drop import, and PNG/SVG export with the scene embedded for re-import.
+- **Lossless OWM-DSL round-trip**, deterministic JSON model, and a strict DOM-free core.
+- **Self-hosted fonts** (no Google Fonts CDN) — offline-capable and GDPR-friendly.
 
 ## Monorepo
 
-pnpm-Workspace mit fix gepinnten Versionen (zentral via `catalog:` in `pnpm-workspace.yaml`).
+pnpm workspace with exact, centrally pinned versions (via `catalog:` in `pnpm-workspace.yaml`).
 
-| Paket                                            | Zweck                                                                                                     | DOM-abhängig? |
-| ------------------------------------------------ | --------------------------------------------------------------------------------------------------------- | ------------- |
-| [`@wardley/schema-model`](packages/schema-model) | Metamodell (Typen), Zod-Validierung, Stage-Ableitung, Migrationen, deterministische JSON-Serialisierung   | **nein**      |
-| [`@wardley/dsl`](packages/dsl)                   | Online-Wardley-Maps-Text-DSL ↔ Modell (keyword-differenzierte Koordinaten, `rawPassthrough`), JSON-Bridge | **nein**      |
-| [`@wardley/transforms`](packages/transforms)     | reine `WardleyMap → WardleyMap`-Transformationen (evolve, method, inertia, pipeline) — kein Undo-Stack    | **nein**      |
-| [`@wardley/renderer`](packages/renderer)         | diagram-js-Bootstrap, `EvolutionGrid`, `WardleyRenderer`, `Viewer`/`NavigatedViewer`, Import/Export, CSS  | **ja**        |
-| [`apps/webapp`](apps/webapp)                     | Vite-Demo-App (rendert die Tea-Shop-Map)                                                                  | **ja**        |
+| Package                                          | Purpose                                                                                                  | DOM-dependent? |
+| ------------------------------------------------ | -------------------------------------------------------------------------------------------------------- | -------------- |
+| [`@wardley/schema-model`](packages/schema-model) | Metamodel (types), Zod validation, stage derivation, migrations, deterministic JSON serialization        | **no**         |
+| [`@wardley/dsl`](packages/dsl)                   | Online-Wardley-Maps text DSL ↔ model (keyword-differentiated coordinates, `rawPassthrough`), JSON bridge | **no**         |
+| [`@wardley/transforms`](packages/transforms)     | pure `WardleyMap → WardleyMap` transforms (evolve, method, inertia, pipeline) — no undo stack            | **no**         |
+| [`@wardley/renderer`](packages/renderer)         | diagram-js bootstrap, `EvolutionGrid`, `WardleyRenderer`, `Viewer`/`NavigatedViewer`, import/export, CSS | **yes**        |
+| [`apps/webapp`](apps/webapp)                     | Vite demo app (the editor shown above)                                                                   | **yes**        |
 
-Die DOM-Freiheit der Kernpakete wird doppelt erzwungen: ESLint (`no-restricted-imports` / `no-restricted-globals`)
-und `dependency-cruiser` (Modulgraph).
+The DOM-freedom of the core packages is enforced twice: ESLint (`no-restricted-imports` /
+`no-restricted-globals`) and `dependency-cruiser` (module graph).
 
-## Status
+## Features
 
-- **M0–M4 umgesetzt und verifiziert.** 32 Unit-Tests grün; Lint + Typecheck grün; DOM-Boundary
-  (dependency-cruiser) verletzungsfrei; voller Build (ESM+CJS+DTS bzw. Vite lib) erfolgreich.
-- **M2 Read-only Viewer:** `Viewer`/`NavigatedViewer`, `EvolutionGrid` (einzige Pixel↔normiert-
-  Mathematik), `WardleyRenderer`, Import/Export, `saveSVG`.
-- **M3 Modeler:** Palette in 3 Gruppen (Bausteine: Komponente/Market/Ecosystem/Anchor/Pipeline/Submap ·
-  Strategie & Klima: Pioneers/Settlers/TownPlanners/Accelerator/Deaccelerator · Anmerkungen:
-  Notiz/Annotation), **Palette-Icons = WYSIWYG-Vorschau der Canvas-Darstellung**; Drag-to-create.
-  Decorators (Market/Ecosystem, Build/Buy/Outsource, **Inertia**) sind keine Elemente, sondern am
-  Component über das ⚙-Popup einstellbar.
-  Move + `EvolutionConstraintBehavior` (undo-sicher) +
-  Stage-Snapping, Connect mit Rules, ContextPad (connect / evolve /
-  **⚙ Einstellungen → Popup-Untermenü: Typ (normal·market·ecosystem), Beschaffung
-  (build·buy·outsource), Inertia** / edit-label / delete),
-  Inline-Label-Editing, **Undo/Redo** (commandStack + Tastatur). Eigener undo-fähiger
-  Property-Command-Handler (kein bpmn-js). **Evolve** wird per **Drag** entlang der Evolution-Achse
-  gesetzt (Live-Vorschau, ein Undo-Schritt) und ist über das ContextPad wieder **entfernbar**.
-  Rahmen (Pipeline/Attitude) sind `isFrame` → nur der Rand ist klickbar, Knoten/User darin bleiben
-  direkt anwählbar.
-- **M4 Rendering-Fülle:** Flow-Links (gerichtet, bidirektional, mit Wert-Label `+'x'>`), Inertia,
-  Annotationen, Attitude-Regionen (Pioneers/Settlers/TownPlanners), Accelerator/Deaccelerator,
-  distinkte Submap-Darstellung; DSL-Parser & -Serializer für all diese Typen inkl. Round-Trip.
-- **Visuelles Design ("Strategic Blueprint"):** warmes Papier, Tinte, Teal-Akzent; getönte
-  Evolution-Bänder, gesperrte Stage-Labels, Label-Halo für Lesbarkeit. Komponenten im
-  **BPMN-Event-Stil** (sauberer Kreis; „evolving" = Doppelring wie ein Intermediate-Event),
-  **Anchor/User als Icon** (Google Material Icons, Apache-2.0). Verbindungen mit BPMN-Pfeilspitzen,
-  an die Knoten-Boundary gecroppt; **Z-Order** Rahmen → Pfeile → Knoten (Knoten im Vordergrund).
-  **Material Icons** durchgängig in Toolbar-Buttons und ContextPad (`iconMarkup` aus dem Renderer
-  exportiert). Veredelte Webapp-Chrome mit **self-hosteten** Schriften (Fraunces/Spline Sans via
-  `@fontsource-variable` — kein Google-Fonts-CDN, DSGVO-konform & offline-fähig).
-- **Größenänderung:** Pipelines per Resize-Handles editierbar (Range synchronisiert undo-sicher);
-  die gesamte Map ist in der Größe veränderbar (`setMapSize` / Webapp-Auswahl, Knoten reprojizieren
-  aus den normierten Koordinaten).
-- **Webapp-UI (Excalidraw-Stil):** **leerer Start** mit Empty-State-Karte + „Beispiel anzeigen"
-  (lädt die Tea-Shop-Map erst auf Klick); alle Aktionen in einem **Hamburger-Menü** links, nur der
-  **Teilen-Button** prominent rechts.
-- **Webapp-Sharing & I/O:** Die Map steckt **Base64-kodiert im URL-Hash** (`#m=…`) — der
-  **Teilen-Button** kopiert einen vollständigen Link in die Zwischenablage; ein geteilter Link lädt
-  die Map sowohl beim Öffnen (echter Seitenload) als auch beim Einfügen in einen offenen Tab
-  (`hashchange`) automatisch. **Öffnen per Datei-Dialog oder Drag&Drop** (`.wmap`/`.owm`/`.txt`/
-  `.json`/`.svg`/`.png`, auch über dem Empty-State), **Neu / leeren** setzt die Leinwand zurück.
-  **PNG- und SVG-Export mit eingebetteter Scene** (Idee aus Excalidraw): die DSL wird ins
-  SVG-Wurzelattribut bzw. in einen PNG-`tEXt`-Chunk geschrieben, sodass exportierte Bilder wieder
-  per Drag&Drop geöffnet und weiterbearbeitet werden können.
-- **Element-Abdeckung:** siehe Tabelle weiter unten.
-- Alles im echten Browser (Playwright) verifiziert (DSL → Modell → diagram-js → SVG, Editieren,
-  Undo/Redo, Re-Import, Pipeline-/Map-Resize) — siehe `docs/screenshots/`.
-- **Noch offen** (Roadmap §14): VS Code Extension (M5), Annotations-Legendenbox-Rendering,
-  Pipeline-Block-DSL & `url`-Keyword (aktuell verlustfrei via `rawPassthrough`), Attitude-Resize,
-  Submap-Drilldown, Auto-Layout, Copy/Paste, `@wardley/react`-Binding.
+- **Read-only viewer:** `Viewer`/`NavigatedViewer`, `EvolutionGrid` (the single source of pixel↔
+  normalized math), `WardleyRenderer`, import/export, `saveSVG`.
+- **Modeler:** palette in three groups — building blocks (component / market / ecosystem / anchor /
+  pipeline / submap), strategy & climate (pioneers / settlers / town planners / accelerator /
+  deaccelerator), notes (note / annotation). **Palette icons are a WYSIWYG preview** of what the
+  canvas renders. Drag to create. Decorators (market/ecosystem, build/buy/outsource, **inertia**) are
+  not elements but set on a component via the **⚙ settings popup** (type / sourcing / properties).
+  Move + `EvolutionConstraintBehavior` (undo-safe) + stage snapping, connect with rules, context pad
+  (append / connect / evolve / ⚙ settings / edit label / delete — **including delete on connections**),
+  inline label editing, **undo/redo** (command stack + keyboard) via a custom undo-capable property
+  command handler. Frames (pipeline/attitude) are `isFrame` → only the border is clickable, so nodes
+  inside stay selectable.
+- **Rendering coverage:** flow links (directed, bidirectional, value-labelled `+'x'>`), inertia,
+  annotations, attitude regions (pioneers/settlers/town planners), accelerator/deaccelerator, a
+  distinct submap style; the DSL parser & serializer cover all of these, round-trip included.
+- **Visual design ("Strategic Blueprint"):** warm paper, ink, teal accent; tinted evolution bands,
+  locked stage labels, label halos for legibility. Components in **BPMN event style** (clean circle;
+  "evolving" = double ring like an intermediate event), **anchors/users as icons** (Google Material
+  Icons, Apache-2.0). Connections use BPMN arrowheads cropped to the node boundary; **z-order** is
+  frames → arrows → nodes (nodes on top).
+- **Resizing:** pipelines are editable via resize handles (range kept in sync, undo-safe); the whole
+  map can be resized (`setMapSize` / web-app selector, nodes reproject from normalized coordinates).
+- **Web-app UI (Excalidraw-style):** no header bar — the chrome floats over a full-bleed canvas. The
+  **tool palette** sits centred at the top, **Menu** (open / show example / new / undo / redo /
+  export JSON·DSL·SVG·PNG / map size) on the left, **Share** on the right. Start is an **empty
+  canvas** with a starter card; the Tea Shop example loads only on **Show example**. After a reload
+  the default viewport is fitted so nothing sits behind the floating chrome.
+- **Sharing & I/O:** the map is **base64-encoded in the URL hash** (`#m=…`) — **Share** copies a full
+  link to the clipboard; a shared link loads the map both on open (real page load) and when pasted
+  into an already-open tab (`hashchange`). **Open via file dialog or drag & drop**
+  (`.wmap`/`.owm`/`.txt`/`.json`/`.svg`/`.png`, also over the empty state); **New / clear** resets the
+  canvas. **PNG and SVG export with the scene embedded** (idea borrowed from Excalidraw): the DSL is
+  written into the SVG root attribute resp. a PNG `tEXt` chunk, so exported images can be dropped back
+  in and edited further.
+- **Quality gates:** 38 unit tests, ESLint + type-check, DOM-boundary (dependency-cruiser), and the
+  full build all green; behaviour verified in a real browser (Playwright).
+- **Open** (roadmap §14): VS Code extension, annotations legend box rendering, pipeline-block DSL &
+  the `url` keyword (currently preserved losslessly via `rawPassthrough`), attitude resize, submap
+  drill-down, auto-layout, copy/paste, a `@wardley/react` binding.
 
-### Screenshots
+## Screenshots
 
-| Editor & Design (aktuell)                    | Modeler (ContextPad)                      | Rendering-Fülle (M4)                 |
-| -------------------------------------------- | ----------------------------------------- | ------------------------------------ |
-| ![](docs/screenshots/wardley-bpmn-style.png) | ![](docs/screenshots/wardley-modeler.png) | ![](docs/screenshots/wardley-m4.png) |
+| Editor (Tea Shop)                     | Empty canvas (start)                          |
+| ------------------------------------- | --------------------------------------------- |
+| ![](docs/screenshots/editor.png)      | ![](docs/screenshots/empty-state.png)         |
+| Rendered map with the floating chrome | Starter card + drag-and-drop / “Show example” |
 
-### Wardley-Element-Abdeckung
+## Wardley element coverage
 
-Geprüft gegen [docs.onlinewardleymaps.com](https://docs.onlinewardleymaps.com/docs/category/map-elements)
-(alle 13 Element-Seiten, code-verifiziert).
+Checked against [docs.onlinewardleymaps.com](https://docs.onlinewardleymaps.com/docs/category/map-elements)
+(all 13 element pages, code-verified).
 
-| Element / Syntax                                                   | Modell |   Render    | DSL ↔ |
-| ------------------------------------------------------------------ | :----: | :---------: | :---: |
-| Component `[visibility, maturity]` (+ Name mit Leerzeichen)        |   ✅   |     ✅      |  ✅   |
-| Anchor / User                                                      |   ✅   |     ✅      |  ✅   |
-| Dependency `->` (+ `; annotation`)                                 |   ✅   |     ✅      |  ✅   |
-| Flow `+>` / `+<>` / `+<` (reverse) / `+'wert'>` (+ `; annotation`) |   ✅   |     ✅      |  ✅   |
-| Evolution `evolve` (+ Rename `A->B`, + Methode)                    |   ✅   |    ✅\*     |  ✅   |
-| Inertia                                                            |   ✅   |     ✅      |  ✅   |
-| Pipeline `[matStart, matEnd]` (resizable)                          |   ✅   |     ✅      |  ✅   |
-| Build / Buy / Outsource (Decorator)                                |   ✅   |     ✅      |  ✅   |
-| Market / Ecosystem (Decorator + Kombis)                            |   ✅   |     ✅      |  ✅   |
-| Accelerator / Deaccelerator                                        |   ✅   |     ✅      |  ✅   |
-| PST `pioneers/settlers/townplanners [v,m] width height`            |   ✅   |     ✅      |  ✅   |
-| Note                                                               |   ✅   |     ✅      |  ✅   |
-| Annotation `n [v,m] text` + `annotations [v,m]`-Position           |   ✅   | ✅ (Marker) |  ✅   |
-| Submap `[v,m]`                                                     |   ✅   |     ✅      |  ✅   |
-| `title` / `style` / `size` / `evolution` / `y-axis`                |   ✅   |     ✅      |  ✅   |
+| Element / syntax                                                    | Model |   Render    | DSL ↔ |
+| ------------------------------------------------------------------- | :---: | :---------: | :---: |
+| Component `[visibility, maturity]` (+ names with spaces)            |  ✅   |     ✅      |  ✅   |
+| Anchor / user                                                       |  ✅   |     ✅      |  ✅   |
+| Dependency `->` (+ `; annotation`)                                  |  ✅   |     ✅      |  ✅   |
+| Flow `+>` / `+<>` / `+<` (reverse) / `+'value'>` (+ `; annotation`) |  ✅   |     ✅      |  ✅   |
+| Evolution `evolve` (+ rename `A->B`, + method)                      |  ✅   |    ✅\*     |  ✅   |
+| Inertia                                                             |  ✅   |     ✅      |  ✅   |
+| Pipeline `[matStart, matEnd]` (resizable)                           |  ✅   |     ✅      |  ✅   |
+| Build / buy / outsource (decorator)                                 |  ✅   |     ✅      |  ✅   |
+| Market / ecosystem (decorator + combos)                             |  ✅   |     ✅      |  ✅   |
+| Accelerator / deaccelerator                                         |  ✅   |     ✅      |  ✅   |
+| PST `pioneers/settlers/townplanners [v,m] width height`             |  ✅   |     ✅      |  ✅   |
+| Note                                                                |  ✅   |     ✅      |  ✅   |
+| Annotation `n [v,m] text` + `annotations [v,m]` position            |  ✅   | ✅ (marker) |  ✅   |
+| Submap `[v,m]`                                                      |  ✅   |     ✅      |  ✅   |
+| `title` / `style` / `size` / `evolution` / `y-axis`                 |  ✅   |     ✅      |  ✅   |
 
-**Bekannte Lücken** (verlustfrei via `rawPassthrough` erhalten, aber nicht interpretiert/gerendert):
+**Known gaps** (preserved losslessly via `rawPassthrough`, but not interpreted/rendered):
 
-- **Pipeline-Block** `pipeline P { component Sub [maturity] }` (verschachtelte Kinder, die die
-  Sichtbarkeit der Pipeline erben) — nur die Annotations-Form `pipeline X [a,b]` wird geparst.
-- **Single-Value-Koordinaten** `component X 0.9 (market)` (nur Maturity, Visibility implizit).
-- **`url`-Definitionen** `url name [https://…]` + Inline-Referenz `submap X [v,m] url(name)`.
-- **`label [dx, dy]`-Offset** wird geparst/serialisiert, aber im Render noch **nicht** angewandt.
-- **`evolve` mit kombiniertem Decorator** (`evolve X 0.9 (market, buy)` — `market` wird verworfen);
-  Rename/Methode werden am Ziel-Kreis noch nicht beschriftet (`*`).
-- **Mehrpunkt-Annotation** `annotation n [[v,m],[v,m]] text` (nur der erste Punkt).
-- **Annotations-Legendenbox** (nummerierte Liste an `annotations`-Position) wird noch nicht gezeichnet.
+- **Pipeline block** `pipeline P { component Sub [maturity] }` (nested children inheriting the
+  pipeline’s visibility) — only the annotation form `pipeline X [a,b]` is parsed.
+- **Single-value coordinates** `component X 0.9 (market)` (maturity only, visibility implicit).
+- **`url` definitions** `url name [https://…]` + inline reference `submap X [v,m] url(name)`.
+- **`label [dx, dy]` offset** is parsed/serialized but **not yet applied** on render.
+- **`evolve` with a combined decorator** (`evolve X 0.9 (market, buy)` — `market` is dropped);
+  rename/method are not yet labelled on the target circle (`*`).
+- **Multi-point annotation** `annotation n [[v,m],[v,m]] text` (only the first point).
+- **Annotations legend box** (numbered list at the `annotations` position) is not yet drawn.
 
-## Befehle
+## Commands
 
 ```bash
-pnpm install         # Abhängigkeiten (fixe Versionen via catalog:)
-pnpm build           # alle Lib-Pakete bauen (tsup / Vite lib mode)
-pnpm test            # alle Unit-Tests (vitest)
-pnpm run lint        # ESLint + tsc (Typecheck) — wie im husky pre-commit
-pnpm run typecheck   # nur Typecheck (Repo-weit, aus den Quellen)
-pnpm run depcruise   # DOM-Boundary prüfen
-pnpm run dev:webapp  # Demo-Webapp auf http://localhost:5180
+pnpm install         # dependencies (exact versions via catalog:)
+pnpm build           # build all lib packages (tsup / Vite lib mode)
+pnpm test            # all unit tests (vitest)
+pnpm run lint        # ESLint + tsc (type-check) — same as the husky pre-commit
+pnpm run typecheck   # type-check only (repo-wide, from sources)
+pnpm run depcruise   # check the DOM boundary
+pnpm run dev:webapp  # demo web app at http://localhost:5180
 ```
 
-## Beispiel
+## Library usage
 
 ```ts
 import { NavigatedViewer } from '@wardley/renderer';
@@ -143,29 +152,29 @@ component Kettle [0.43, 0.35]
 evolve Kettle 0.62
 Business -> Kettle`);
 
-const map = viewer.exportMap(); // kanonisches JSON-Modell
-const dsl = viewer.exportDSL(); // zurück in OWM-Text
+const map = viewer.exportMap(); // canonical JSON model
+const dsl = viewer.exportDSL(); // back to OWM text
 const { svg } = await viewer.saveSVG();
 ```
 
-### Schriften (self-hosted, kein CDN)
+### Fonts (self-hosted, no CDN)
 
-Die Library liefert die Schriften **bewusst nicht mit** und lädt **nichts von externen CDNs**
-(`wardley.css` enthält nur `font-family`-Deklarationen, keine `@font-face`-Definitionen). Damit
-Labels in der vorgesehenen Typografie erscheinen, stellt der **Konsument** die Schrift selbst bereit —
-empfohlen self-hosted via [`@fontsource`](https://fontsource.org/) (DSGVO-konform & offline-fähig):
+The library **deliberately does not ship fonts** and loads **nothing from external CDNs**
+(`wardley.css` only contains `font-family` declarations, no `@font-face` definitions). For labels to
+appear in the intended typography, the **consumer** provides the font — recommended self-hosted via
+[`@fontsource`](https://fontsource.org/) (GDPR-friendly & offline-capable):
 
 ```ts
-import '@fontsource-variable/spline-sans'; // Canvas-/Label-Schrift ('Spline Sans Variable')
-// optional für die Webapp-Chrome zusätzlich:
-import '@fontsource-variable/fraunces/standard.css'; // Display-Schrift ('Fraunces Variable')
+import '@fontsource-variable/spline-sans'; // canvas/label font ('Spline Sans Variable')
+// optional, for the web-app chrome:
+import '@fontsource-variable/fraunces/standard.css'; // display font ('Fraunces Variable')
 ```
 
-Ohne bereitgestellte Schrift greift die Fallback-Kette sauber auf System-Sans (`ui-sans-serif`,
-`system-ui`, …) zurück — die Darstellung bleibt funktional, nur weniger charaktervoll. Die mitgelieferte
-Demo-Webapp (`apps/webapp`) bündelt beide Schriften bereits über `@fontsource-variable`.
+Without a provided font the fallback chain degrades cleanly to system sans (`ui-sans-serif`,
+`system-ui`, …) — still functional, just less characterful. The bundled demo web app (`apps/webapp`)
+already ships both fonts via `@fontsource-variable`.
 
-## Lizenz
+## License
 
-MIT (Lib-Pakete). Drittlizenzen: diagram-js & Abhängigkeiten sind MIT/ISC/Apache-2.0 — siehe
-`docs/KONZEPT.md` §3.
+MIT (library packages). Third-party licenses: diagram-js & dependencies are MIT/ISC/Apache-2.0 — see
+[`docs/KONZEPT.md`](docs/KONZEPT.md) §3.

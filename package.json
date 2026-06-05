@@ -9,6 +9,7 @@
   },
   "scripts": {
     "build": "pnpm -r --filter \"./packages/*\" build",
+    "build:webapp": "pnpm run build && pnpm --filter @wardley/webapp build",
     "typecheck": "tsc -p tsconfig.json",
     "lint": "eslint . && pnpm run typecheck",
     "format": "prettier --write .",

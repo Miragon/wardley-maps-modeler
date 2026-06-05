@@ -8,7 +8,7 @@ import type {
   default as ContextPadProvider,
 } from 'diagram-js/lib/features/context-pad/ContextPadProvider';
 import type { Element } from 'diagram-js/lib/model/Types';
-import { isWardleyShape, type WardleyShape } from '../model/di-types.js';
+import { isWardleyShape, isWardleyConnection, type WardleyShape } from '../model/di-types.js';
 import type WardleyModeling from '../modeling/WardleyModeling.js';
 import type WardleyLabelEditing from '../label-editing/WardleyLabelEditing.js';
 import type WardleyEvolveDragging from '../evolve/WardleyEvolveDragging.js';
@@ -65,6 +65,18 @@ export default class WardleyContextPadProvider implements ContextPadProvider {
   }
 
   getContextPadEntries(element: Element): ContextPadEntries {
+    // Verbindungen (Dependency/Flow): eigenes Pad nur mit Löschen — sonst gäbe es keinen Weg,
+    // eine Linie wieder zu entfernen (Shapes erhalten ihr volles Pad weiter unten).
+    if (isWardleyConnection(element)) {
+      return {
+        delete: {
+          group: 'edit',
+          title: 'Delete connection',
+          html: cpHtml(ICON_DELETE, 'Delete connection'),
+          action: { click: () => this.modeling.removeElements([element]) },
+        },
+      };
+    }
     if (!isWardleyShape(element)) return {};
     const shape = element as WardleyShape;
     const entries: ContextPadEntries = {};
