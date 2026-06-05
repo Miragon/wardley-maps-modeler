@@ -3,7 +3,9 @@
 # dann die Vite-Webapp. pnpm wird via package.json "packageManager" (corepack) genutzt.
 
 [build]
-  command = "pnpm run build:webapp"
+  # Filter-basiert (cwd-unabhaengig im Workspace-Root) -> umgeht die pnpm-Root-Script-Aufloesung,
+  # die auf Netlify "Missing script: build:webapp" warf. Erst Libs (topologisch), dann die Webapp.
+  command = "pnpm -r --filter \"./packages/*\" build && pnpm --filter @wardley/webapp build"
   publish = "apps/webapp/dist"
 
 [build.environment]
