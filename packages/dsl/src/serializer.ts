@@ -10,10 +10,39 @@ function r(n: number): string {
   return String(Math.round(n * 1000) / 1000);
 }
 
-function labelById(map: WardleyMap): Map<string, string> {
-  const m = new Map<string, string>();
-  for (const el of map.elements) m.set(el.id, el.label);
-  return m;
+/** Typen, die in der OWM-DSL UEBER IHREN NAMEN referenziert werden (Kanten-Endpunkte + Namespace). */
+const NAMED_TYPES: ReadonlySet<string> = new Set(['anchor', 'component', 'accelerator', 'submap']);
+
+function defaultName(type: string): string {
+  return type === 'anchor'
+    ? 'User'
+    : type === 'accelerator'
+      ? 'Accelerator'
+      : type === 'submap'
+        ? 'Submap'
+        : 'Component';
+}
+
+/**
+ * Liefert pro Element-ID einen im DSL EINDEUTIGEN Namen für die referenzierbaren Typen
+ * (component/anchor/…). Weil Kanten per Namen serialisiert werden (`A -> B`), wuerden doppelte oder
+ * leere Labels beim Re-Import auf denselben Knoten kollabieren und Pfeile verschwinden lassen. Hier
+ * wird darum bei Kollision ein Suffix (`Name 2`) und bei leerem Label ein Default vergeben — fuer
+ * BEIDE Seiten (Knotenzeile UND Kantenreferenz) konsistent. Eindeutige Namen bleiben unveraendert.
+ */
+function uniqueNames(map: WardleyMap): Map<string, string> {
+  const used = new Set<string>();
+  const byId = new Map<string, string>();
+  for (const el of map.elements) {
+    if (!NAMED_TYPES.has(el.elementType)) continue;
+    const base = el.label.trim().replace(/->/g, '→') || defaultName(el.elementType);
+    let name = base;
+    let i = 2;
+    while (used.has(name)) name = `${base} ${i++}`;
+    used.add(name);
+    byId.set(el.id, name);
+  }
+  return byId;
 }
 
 function offsetSuffix(lo: LabelOffset | undefined): string {
@@ -40,7 +69,8 @@ function decoratorSuffix(dec: ComponentDecorators | undefined): string {
  */
 export function serializeDSL(map: WardleyMap): string {
   const lines: string[] = [];
-  const labels = labelById(map);
+  const names = uniqueNames(map);
+  const nameOf = (el: MapElement): string => names.get(el.id) ?? el.label;
 
   lines.push(`title ${map.config.title}`);
   if (map.config.style) lines.push(`style ${map.config.style}`);
@@ -56,17 +86,17 @@ export function serializeDSL(map: WardleyMap): string {
   const evolveLines: string[] = [];
 
   for (const el of map.elements) {
-    lines.push(elementLine(el));
+    lines.push(elementLine(el, nameOf(el)));
     if (el.elementType === 'component' && el.movement) {
-      evolveLines.push(evolveLine(el));
+      evolveLines.push(evolveLine(el, nameOf(el)));
     }
   }
 
   for (const line of evolveLines) lines.push(line);
 
   for (const edge of map.edges) {
-    const from = labels.get(edge.from) ?? edge.from;
-    const to = labels.get(edge.to) ?? edge.to;
+    const from = names.get(edge.from) ?? edge.from;
+    const to = names.get(edge.to) ?? edge.to;
     const annotation = edge.label ? `; ${edge.label}` : '';
     if (edge.edgeType === 'dependency') {
       lines.push(`${from} -> ${to}${annotation}`);
@@ -80,36 +110,47 @@ export function serializeDSL(map: WardleyMap): string {
     }
   }
 
-  if (map.rawPassthrough) for (const raw of map.rawPassthrough) lines.push(raw);
+  // Config-Keywords sind oben bereits aus der Map emittiert. Ein gleichnamiger rawPassthrough-
+  // Eintrag (z.B. eine unparsbare `evolution`-Zeile aus extern-authored DSL) wuerde sonst eine
+  // widerspruechliche Doppelzeile erzeugen — verwerfen (Config ist die Wahrheit).
+  if (map.rawPassthrough) {
+    const emitted = new Set<string>();
+    if (map.config.evolutionLabels) emitted.add('evolution');
+    if (map.config.yAxisLabel) emitted.add('y-axis');
+    for (const raw of map.rawPassthrough) {
+      if (emitted.has(raw.trim().split(/\s+/)[0]!)) continue;
+      lines.push(raw);
+    }
+  }
 
   return lines.join('\n') + '\n';
 }
 
-function elementLine(el: MapElement): string {
+function elementLine(el: MapElement, name: string): string {
   const p = el.position;
   switch (el.elementType) {
     case 'anchor':
-      return `anchor ${el.label} [${r(p.visibility)}, ${r(p.evolution)}]${offsetSuffix(el.labelOffset)}`;
+      return `anchor ${name} [${r(p.visibility)}, ${r(p.evolution)}]${offsetSuffix(el.labelOffset)}`;
     case 'component':
-      return `component ${el.label} [${r(p.visibility)}, ${r(p.evolution)}]${decoratorSuffix(el.decorators)}${offsetSuffix(el.labelOffset)}`;
+      return `component ${name} [${r(p.visibility)}, ${r(p.evolution)}]${decoratorSuffix(el.decorators)}${offsetSuffix(el.labelOffset)}`;
     case 'note':
-      return `note ${el.label} [${r(p.visibility)}, ${r(p.evolution)}]`;
+      return `note ${name} [${r(p.visibility)}, ${r(p.evolution)}]`;
     case 'pipeline':
-      return `pipeline ${el.label} [${r(el.evolutionStart)}, ${r(el.evolutionEnd)}]`;
+      return `pipeline ${name} [${r(el.evolutionStart)}, ${r(el.evolutionEnd)}]`;
     case 'submap':
-      return `submap ${el.label} [${r(p.visibility)}, ${r(p.evolution)}]`;
+      return `submap ${name} [${r(p.visibility)}, ${r(p.evolution)}]`;
     case 'annotation':
       return `annotation ${el.number} [${r(p.visibility)}, ${r(p.evolution)}] ${el.text}`;
     case 'accelerator':
-      return `${el.direction === 'deaccelerate' ? 'deaccelerator' : 'accelerator'} ${el.label} [${r(p.visibility)}, ${r(p.evolution)}]`;
+      return `${el.direction === 'deaccelerate' ? 'deaccelerator' : 'accelerator'} ${name} [${r(p.visibility)}, ${r(p.evolution)}]`;
     case 'attitude':
       return `${el.kind} [${r(p.visibility)}, ${r(p.evolution)}] ${r(el.width)} ${r(el.height)}`;
   }
 }
 
-function evolveLine(el: ComponentElement): string {
+function evolveLine(el: ComponentElement, name: string): string {
   const mv = el.movement!;
-  const name = mv.newLabel ? `${el.label}->${mv.newLabel}` : el.label;
+  const label = mv.newLabel ? `${name}->${mv.newLabel}` : name;
   const method = mv.method ? ` (${mv.method})` : '';
-  return `evolve ${name} ${r(mv.targetEvolution)}${method}`;
+  return `evolve ${label} ${r(mv.targetEvolution)}${method}`;
 }

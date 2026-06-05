@@ -63,6 +63,10 @@
               <option value="1760x720">Wide</option>
             </select>
           </label>
+          <div class="menu-sep" role="separator"></div>
+          <button id="m-axis" type="button" class="menu-item" role="menuitem">
+            X-axis labels…
+          </button>
         </div>
       </div>
 
@@ -83,6 +87,50 @@
           </div>
         </header>
         <textarea id="output-text" readonly spellcheck="false"></textarea>
+      </div>
+    </div>
+
+    <!-- X-Achsen-Beschriftung: Preset wählen ODER einzelne Stages frei beschriften -->
+    <div id="axis-overlay" class="output-overlay" hidden>
+      <div class="axis-panel">
+        <header class="output-head">
+          <span>X-axis labels</span>
+          <div class="output-actions">
+            <button id="axis-close" type="button" class="ghost">Close</button>
+          </div>
+        </header>
+        <div class="axis-body">
+          <label class="axis-row">
+            <span>Preset</span>
+            <select id="axis-preset"></select>
+          </label>
+          <p class="axis-hint">
+            Label sets from
+            <a
+              href="https://learnwardleymapping.com/landscape/"
+              target="_blank"
+              rel="noreferrer noopener"
+              >Learn Wardley Mapping</a
+            >. Pick a set, or edit each stage individually.
+          </p>
+          <div class="axis-stages">
+            <label class="axis-stage">
+              <span>Stage 1</span><input id="axis-s0" type="text" autocomplete="off" />
+            </label>
+            <label class="axis-stage">
+              <span>Stage 2</span><input id="axis-s1" type="text" autocomplete="off" />
+            </label>
+            <label class="axis-stage">
+              <span>Stage 3</span><input id="axis-s2" type="text" autocomplete="off" />
+            </label>
+            <label class="axis-stage">
+              <span>Stage 4</span><input id="axis-s3" type="text" autocomplete="off" />
+            </label>
+          </div>
+          <div class="axis-foot">
+            <button id="axis-reset" type="button" class="ghost">Reset to default</button>
+          </div>
+        </div>
       </div>
     </div>
 

@@ -44,10 +44,14 @@ export default class WardleyElementFactory {
    * Liefert ein eindeutiges Label: `base`, sonst `base 2`, `base 3`, … Eindeutige Labels sind
    * Pflicht, weil die OWM-DSL Elemente UEBER IHREN NAMEN referenziert — doppelte Namen wuerden beim
    * Serialisieren/Re-Import zu ID-Kollisionen fuehren und Kanten (Linien) verlieren.
+   *
+   * @param excludeId optional die ID des gerade umbenannten Elements (zaehlt seinen eigenen
+   *        aktuellen Namen NICHT als Kollision — sonst wuerde jedes Umbenennen suffixen).
    */
-  private uniqueLabel(base: string): string {
+  uniqueLabel(base: string, excludeId?: string): string {
     const taken = new Set<string>();
     for (const el of this.elementRegistry.getAll()) {
+      if (excludeId && el.id === excludeId) continue;
       const lbl = (el as { wardleyLabel?: unknown }).wardleyLabel;
       if (typeof lbl === 'string') taken.add(lbl);
     }

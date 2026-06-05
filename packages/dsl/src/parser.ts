@@ -31,6 +31,18 @@ import {
 const DEP_RE = /^(.+?)\s*->\s*(.+)$/;
 // Flow: A +> B, A +<> B, A +< B (reverse), A +'120ms'> B, A +'120ms'<> B
 const FLOW_RE = /^(.+?)\s*\+(?:'([^']*)')?(<>|>|<)\s*(.+)$/;
+// Config-/Sonder-Keywords, die NICHT als Kante (vor)erkannt werden dürfen — `evolution`/`evolve`/
+// `y-axis`/`title` können selbst `->` enthalten und haben eigene Behandlung im Switch.
+const NON_LINK_KEYWORDS: ReadonlySet<string> = new Set([
+  'title',
+  'style',
+  'size',
+  'evolution',
+  'y-axis',
+  'annotations',
+  'annotation',
+  'evolve',
+]);
 const KNOWN_STYLES: ReadonlySet<string> = new Set(['wardley', 'handwritten', 'colour', 'dark']);
 
 interface PendingLink {
@@ -98,11 +110,54 @@ export function parseDSL(text: string): WardleyMap {
     if (!nameToId.has(name)) nameToId.set(name, id);
   };
 
+  /** Versucht, eine Zeile als Dependency/Flow zu erfassen. Liefert true, wenn konsumiert. */
+  const pushLink = (line: string, raw: string): boolean => {
+    const semi = line.indexOf(';');
+    const core = semi >= 0 ? line.slice(0, semi).trim() : line;
+    const linkLabel = semi >= 0 ? line.slice(semi + 1).trim() : '';
+    const dep = DEP_RE.exec(core);
+    const flow = dep ? null : FLOW_RE.exec(core);
+    if (dep) {
+      pendingLinks.push({
+        left: dep[1]!.trim(),
+        right: dep[2]!.trim(),
+        kind: 'dependency',
+        ...(linkLabel ? { label: linkLabel } : {}),
+        raw,
+      });
+      return true;
+    }
+    if (flow) {
+      const op = flow[3]!;
+      pendingLinks.push({
+        left: flow[1]!.trim(),
+        right: flow[4]!.trim(),
+        kind: 'flow',
+        bidirectional: op === '<>',
+        reverse: op === '<',
+        ...(flow[2] ? { flowValue: flow[2] } : {}),
+        ...(linkLabel ? { label: linkLabel } : {}),
+        raw,
+      });
+      return true;
+    }
+    return false;
+  };
+
   for (const raw of text.split(/\r?\n/)) {
     const line = raw.trim();
     if (!line) continue;
     const kw = keywordOf(line);
     const after = line.slice(kw.length).trim();
+
+    // Kanten/Flows ZUERST: Element-NAMEN dürfen mit einem Keyword-Wort beginnen (die Default-
+    // Komponente heißt "Component" -> Kante `Component -> X`). Deklarationen tragen IMMER
+    // Koordinaten `[...]`, Kanten nie. Ohne diese Vorab-Erkennung würde `Component -> X` als
+    // (kaputte) `component`-Deklaration fehlgedeutet und beim Re-Import verschwinden. Config-/
+    // Sonder-Keywords (title/evolution/y-axis/evolve …) sind ausgenommen — sie nutzen `->` selbst.
+    if (!NON_LINK_KEYWORDS.has(kw) && !parseCoords(line) && pushLink(line, raw)) {
+      continue;
+    }
 
     switch (kw) {
       case 'title':
@@ -205,10 +260,10 @@ export function parseDSL(text: string): WardleyMap {
       }
 
       case 'evolution': {
-        const parts = after
-          .split('->')
-          .map((s) => s.trim())
-          .filter(Boolean);
+        // Genau vier Positionen (der Serializer schreibt immer vier). Leere Segmente NICHT
+        // herausfiltern, sonst geht ein leeres Stage-Label verlustbehaftet verloren (die ganze
+        // Zeile fiele aus dem 4er-Raster und landete im rawPassthrough -> Achse springt auf Default).
+        const parts = after.split('->').map((s) => s.trim());
         if (parts.length === 4) {
           config = { ...config, evolutionLabels: [parts[0]!, parts[1]!, parts[2]!, parts[3]!] };
         } else rawPassthrough.push(raw);
@@ -323,33 +378,8 @@ export function parseDSL(text: string): WardleyMap {
       }
 
       default: {
-        // Optionale Link-Annotation nach ';' abtrennen (z.B. `A -> B; limited by`).
-        const semi = line.indexOf(';');
-        const core = semi >= 0 ? line.slice(0, semi).trim() : line;
-        const linkLabel = semi >= 0 ? line.slice(semi + 1).trim() : '';
-        const dep = DEP_RE.exec(core);
-        const flow = dep ? null : FLOW_RE.exec(core);
-        if (dep) {
-          pendingLinks.push({
-            left: dep[1]!.trim(),
-            right: dep[2]!.trim(),
-            kind: 'dependency',
-            ...(linkLabel ? { label: linkLabel } : {}),
-            raw,
-          });
-        } else if (flow) {
-          const op = flow[3]!;
-          pendingLinks.push({
-            left: flow[1]!.trim(),
-            right: flow[4]!.trim(),
-            kind: 'flow',
-            bidirectional: op === '<>',
-            reverse: op === '<',
-            ...(flow[2] ? { flowValue: flow[2] } : {}),
-            ...(linkLabel ? { label: linkLabel } : {}),
-            raw,
-          });
-        } else rawPassthrough.push(raw);
+        // Unbekanntes Keyword: als Link versuchen (z.B. `A -> B; limited by`), sonst roh erhalten.
+        if (!pushLink(line, raw)) rawPassthrough.push(raw);
       }
     }
   }

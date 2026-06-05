@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import {
   evolutionStage,
   DEFAULT_STAGE_BOUNDARIES,
+  DEFAULT_EVOLUTION_LABELS,
+  EVOLUTION_PRESETS,
   loadMap,
   serializeMap,
   parseMapJSON,
@@ -9,6 +11,27 @@ import {
   createEmptyMap,
   type WardleyMap,
 } from '../src/index.js';
+
+describe('EVOLUTION_PRESETS (Landscape-Cheat-Sheet)', () => {
+  it('das erste Preset (Activities) entspricht dem Default', () => {
+    expect(EVOLUTION_PRESETS[0]?.id).toBe('activities');
+    expect(EVOLUTION_PRESETS[0]?.labels).toEqual(DEFAULT_EVOLUTION_LABELS);
+  });
+
+  it('jedes Preset hat genau vier Stage-Labels und eine eindeutige id', () => {
+    for (const p of EVOLUTION_PRESETS) {
+      expect(p.labels).toHaveLength(4);
+      expect(p.labels.every((l) => l.length > 0)).toBe(true);
+    }
+    const ids = EVOLUTION_PRESETS.map((p) => p.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it('enthält die klassischen Landscape-Varianten', () => {
+    const ids = EVOLUTION_PRESETS.map((p) => p.id);
+    expect(ids).toEqual(expect.arrayContaining(['activities', 'practices', 'data', 'knowledge']));
+  });
+});
 
 describe('evolutionStage', () => {
   it('ordnet die vier Stages korrekt zu', () => {

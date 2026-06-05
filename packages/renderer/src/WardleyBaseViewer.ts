@@ -2,12 +2,14 @@ import Diagram from 'diagram-js/lib/Diagram';
 import type { ModuleDeclaration } from 'didi';
 import type Canvas from 'diagram-js/lib/core/Canvas';
 import type EventBus from 'diagram-js/lib/core/EventBus';
-import type { WardleyMap } from '@wardley/schema-model';
+import type { Root } from 'diagram-js/lib/model/Types';
+import type { MapConfig, WardleyMap } from '@wardley/schema-model';
 import { parseDSL, serializeDSL } from '@wardley/dsl';
 import { saveSVG } from './io/saveSvg.js';
 import type WardleyImporter from './io/WardleyImporter.js';
 import type WardleyExporter from './io/WardleyExporter.js';
-import type { ImportWarning } from './io/types.js';
+import type EvolutionGrid from './evolution-grid/EvolutionGrid.js';
+import { ROOT_ID, type ImportWarning, type RootBusinessObject } from './io/types.js';
 
 export interface WardleyViewerOptions {
   /** Host-Element. Fehlt es, wird ein detached <div> erzeugt (spaeter via attachTo einhaengbar). */
@@ -103,6 +105,33 @@ export abstract class WardleyBaseViewer {
   async setMapSize(width: number, height: number): Promise<{ warnings: ImportWarning[] }> {
     const map = this.exportMap();
     return this.importMap({ ...map, config: { ...map.config, size: { width, height } } });
+  }
+
+  /**
+   * Setzt die vier X-Achsen-Stage-Labels (`undefined` = Default Genesis/Custom/Product/Commodity).
+   * Aendert nur die Beschriftung, nicht die Geometrie: aktualisiert die Map-Config in-place und
+   * re-rendert ausschliesslich den Achsen-Hintergrund (kein Re-Import -> kein View-Sprung, keine
+   * Auswahl-Aufloesung). Feuert `wardley.config.changed` fuer URL-/Persistenz-Sync der Konsumenten.
+   */
+  setEvolutionLabels(labels: readonly [string, string, string, string] | undefined): void {
+    const canvas = this.get<Canvas>('canvas');
+    let root: (Root & { businessObject?: RootBusinessObject }) | undefined;
+    try {
+      root = canvas.getRootElement() as Root & { businessObject?: RootBusinessObject };
+    } catch {
+      return; // noch nichts importiert -> nichts zu konfigurieren
+    }
+    if (!root || root.id !== ROOT_ID) return;
+
+    const current = root.businessObject?.config ?? { title: 'Untitled Map' };
+    const { evolutionLabels: _drop, ...rest } = current;
+    const config: MapConfig = labels ? { ...rest, evolutionLabels: labels } : rest;
+    root.businessObject = { ...root.businessObject, config };
+
+    const grid = this.get<EvolutionGrid>('evolutionGrid');
+    grid.configure(config);
+    grid.render();
+    this.get<EventBus>('eventBus').fire('wardley.config.changed', { config });
   }
 
   /** Als OWM-DSL serialisieren. */

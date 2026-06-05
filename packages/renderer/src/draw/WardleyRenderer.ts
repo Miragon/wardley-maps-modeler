@@ -141,12 +141,15 @@ export default class WardleyRenderer extends BaseRenderer {
         line(cx, cy, cx + dx, cy, { stroke: COLORS.movement, 'stroke-width': 1.5 }),
       );
       svgAppend(visuals, connectionArrow({ x: cx, y: cy }, { x: cx + dx, y: cy }, COLORS.movement));
+      // Ziel-Kreis = direkter Drag-Griff: per Klasse markiert, damit das Evolve-Modul ein
+      // mousedown darauf abfängt und das Ziel per Drag verschieben lässt (siehe WardleyEvolveDragging).
       svgAppend(
         visuals,
         circle(cx + dx, cy, COMPONENT_RADIUS, {
           fill: COLORS.paper,
           stroke: COLORS.movement,
           'stroke-width': 2,
+          class: 'wardley-evolve-handle',
         }),
       );
     }

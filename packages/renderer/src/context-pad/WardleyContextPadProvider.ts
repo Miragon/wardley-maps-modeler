@@ -16,7 +16,7 @@ import type WardleyElementFactory from '../model/WardleyElementFactory.js';
 import { POPUP_PROVIDER_ID } from '../popup/index.js';
 import {
   iconMarkup,
-  ICON_ADD,
+  ICON_CIRCLE,
   ICON_ARROW_FORWARD,
   ICON_CLOSE,
   ICON_DELETE,
@@ -24,9 +24,6 @@ import {
   ICON_EDIT,
   ICON_SETTINGS,
 } from '../draw/icons.js';
-
-/** Schnelle Default-Evolve-Distanz beim Klick (statt Drag). */
-const EVOLVE_CLICK_STEP = 0.2;
 
 /**
  * ContextPad-Eintrag als HTML mit Material-Icon. `draggable=true` ist Pflicht fuer Eintraege mit
@@ -94,7 +91,7 @@ export default class WardleyContextPadProvider implements ContextPadProvider {
       entries['append'] = {
         group: 'edit',
         title: 'Append component (auto-connect)',
-        html: cpHtml(ICON_ADD, 'Append component', true),
+        html: cpHtml(ICON_CIRCLE, 'Append component', true),
         action: { click: startAppend, dragstart: startAppend },
       };
 
@@ -111,6 +108,8 @@ export default class WardleyContextPadProvider implements ContextPadProvider {
 
     if (shape.wardleyType === 'component') {
       if (shape.movement) {
+        // Ziel ist gesetzt -> direkt am roten Ziel-Kreis ziehen, um es zu VERSCHIEBEN
+        // (siehe WardleyEvolveDragging). Hier nur noch das Entfernen anbieten.
         entries['evolve-clear'] = {
           group: 'wardley',
           title: 'Remove evolve',
@@ -118,19 +117,14 @@ export default class WardleyContextPadProvider implements ContextPadProvider {
           action: { click: () => this.wardleyModeling.clearMovement(shape) },
         };
       } else {
-        // Ziel per Drag setzen (oder Klick = +0.2 als Schnellaktion).
+        // Ziel per Drag entlang der Achse aufziehen (Live-Vorschau). Klick modelliert NICHT sofort
+        // (kein automatisches +0.2 mehr) — er startet nur die Platzierung.
+        const startEvolve = (event: Event) => this.evolveDragging.start(event, shape);
         entries['evolve'] = {
           group: 'wardley',
-          title: 'Evolve: drag to set the target maturity (click = +0.2)',
+          title: 'Evolve: drag to set the target maturity',
           html: cpHtml(ICON_DOUBLE_ARROW, 'Evolve: drag to set the target maturity', true),
-          action: {
-            dragstart: (event: Event) => this.evolveDragging.start(event, shape),
-            click: () =>
-              this.wardleyModeling.evolveComponent(
-                shape,
-                Math.min(shape.evolution + EVOLVE_CLICK_STEP, 1),
-              ),
-          },
+          action: { click: startEvolve, dragstart: startEvolve },
         };
       }
 

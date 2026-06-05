@@ -29,8 +29,13 @@ export type {
 } from './types.js';
 
 // Stage-Ableitung
-export { evolutionStage, DEFAULT_STAGE_BOUNDARIES, DEFAULT_EVOLUTION_LABELS } from './stage.js';
-export type { EvolutionStage } from './stage.js';
+export {
+  evolutionStage,
+  DEFAULT_STAGE_BOUNDARIES,
+  DEFAULT_EVOLUTION_LABELS,
+  EVOLUTION_PRESETS,
+} from './stage.js';
+export type { EvolutionStage, EvolutionPreset } from './stage.js';
 
 // Validierung & Serialisierung
 export { validateMap, loadMap, parseMapJSON, serializeMap, createEmptyMap } from './serialize.js';

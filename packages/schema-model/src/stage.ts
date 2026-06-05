@@ -13,6 +13,28 @@ export const DEFAULT_EVOLUTION_LABELS: readonly [string, string, string, string]
   'Commodity / Utility',
 ];
 
+/** Eine benannte X-Achsen-Beschriftungsvariante (vier Stage-Labels). */
+export interface EvolutionPreset {
+  /** Stabile Kennung (Persistenz/UI-Auswahl). */
+  readonly id: string;
+  /** Menschlich lesbarer Name. */
+  readonly name: string;
+  /** Die vier Stage-Labels (links -> rechts). */
+  readonly labels: readonly [string, string, string, string];
+}
+
+/**
+ * Vordefinierte X-Achsen-Beschriftungen nach Simon Wardleys "Landscape"-Cheat-Sheet
+ * (learnwardleymapping.com/landscape). Je nach Art des Kartierten (Aktivität, Praxis, Daten,
+ * Wissen) evolviert die X-Achse unter anderen Begriffen. `activities` entspricht dem Default.
+ */
+export const EVOLUTION_PRESETS: readonly EvolutionPreset[] = [
+  { id: 'activities', name: 'Activities', labels: DEFAULT_EVOLUTION_LABELS },
+  { id: 'practices', name: 'Practices', labels: ['Novel', 'Emerging', 'Good', 'Best Practice'] },
+  { id: 'data', name: 'Data', labels: ['Unmodelled', 'Divergent', 'Convergent', 'Modelled'] },
+  { id: 'knowledge', name: 'Knowledge', labels: ['Concept', 'Hypothesis', 'Theory', 'Accepted'] },
+];
+
 /**
  * Leitet die diskrete Evolution-Stage (0..3) aus dem kontinuierlichen Evolution-Wert ab.
  *
