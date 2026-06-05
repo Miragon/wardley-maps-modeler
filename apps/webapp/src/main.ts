@@ -19,8 +19,9 @@ import {
   ICON_IMAGE,
   ICON_SHARE,
   ICON_ASPECT_RATIO,
+  ICON_EDIT,
 } from '@wardley/renderer';
-import { createEmptyMap } from '@wardley/schema-model';
+import { createEmptyMap, EVOLUTION_PRESETS, DEFAULT_EVOLUTION_LABELS } from '@wardley/schema-model';
 import { readHashMap, writeHashMap, shareUrl } from './share.js';
 import { openFile, embedSvg, svgToEmbeddedPng, downloadBlob, downloadText } from './io.js';
 
@@ -100,6 +101,7 @@ setLabel('m-json', ICON_DATA_OBJECT, 'Export · JSON');
 setLabel('m-dsl', ICON_CODE, 'Export · OWM-DSL');
 setLabel('m-svg', ICON_DOWNLOAD, 'Export · SVG');
 setLabel('m-png', ICON_IMAGE, 'Export · PNG');
+setLabel('m-axis', ICON_EDIT, 'X-axis labels…');
 const sizeField = document.querySelector('.menu-field span');
 if (sizeField) sizeField.innerHTML = `${iconMarkup(ICON_ASPECT_RATIO, 16)}<span>Map size</span>`;
 
@@ -135,19 +137,42 @@ function isEmptyMap(): boolean {
   const map = viewer.exportMap();
   return map.elements.length === 0 && map.edges.length === 0;
 }
+/** Wie `isEmptyMap`, aber zählt auch eine angepasste Achsen-Config als „zu erhalten“ (Persistenz). */
+function isBlankMap(): boolean {
+  const map = viewer.exportMap();
+  return isEmptyMap() && !map.config.evolutionLabels && !map.config.yAxisLabel;
+}
 let urlTimer: ReturnType<typeof setTimeout> | undefined;
-function onModelChanged(): void {
+/** Schreibt den aktuellen Stand SOFORT in den Hash (bzw. räumt ihn bei leerer Map auf). */
+function syncUrlNow(): void {
+  clearTimeout(urlTimer);
+  urlTimer = undefined;
+  // Leere Map ohne Custom-Config -> Hash entfernen (saubere URL, leerer Start bleibt teilbar).
+  if (isBlankMap()) history.replaceState(null, '', location.pathname + location.search);
+  else writeHashMap(viewer.exportDSL());
+}
+/**
+ * Empty-State umschalten + URL synchronisieren. Diskrete Editieraktionen (Zeichnen, Verbinden,
+ * Verschieben, Löschen) werden SOFORT persistiert — sonst geht eine gerade gemachte Änderung
+ * (z.B. ein frisch gezeichneter Pfeil) bei sehr schnellem Neuladen verloren. Nur das Achsen-
+ * Live-Tippen (`wardley.config.changed`, ein Event pro Tastendruck) wird entprellt.
+ */
+function onModelChanged(debounce = false): void {
   const empty = isEmptyMap();
   if (emptyState) emptyState.hidden = !empty;
   clearTimeout(urlTimer);
-  urlTimer = setTimeout(() => {
-    // Leere Map -> Hash entfernen (saubere URL, leerer Start bleibt teilbar/refreshbar als „leer“).
-    if (isEmptyMap()) history.replaceState(null, '', location.pathname + location.search);
-    else writeHashMap(viewer.exportDSL());
-  }, 350);
+  if (debounce) urlTimer = setTimeout(syncUrlNow, 350);
+  else syncUrlNow();
 }
-viewer.on('commandStack.changed', onModelChanged);
-viewer.on('import.done', onModelChanged);
+viewer.on('commandStack.changed', () => onModelChanged());
+viewer.on('import.done', () => onModelChanged());
+viewer.on('wardley.config.changed', () => onModelChanged(true));
+// Belt-and-suspenders: ausstehenden (entprellten) Achsen-Sync vor dem Verlassen noch schreiben.
+const flushUrl = (): void => {
+  if (urlTimer !== undefined) syncUrlNow();
+};
+window.addEventListener('beforeunload', flushUrl);
+window.addEventListener('pagehide', flushUrl);
 
 // --- Aktionen ---
 function showExample(): void {
@@ -218,6 +243,88 @@ document.getElementById('map-size')?.addEventListener('change', (e) => {
   const [w, h] = (e.target as HTMLSelectElement).value.split('x').map(Number);
   if (w && h) void viewer.setMapSize(w, h);
   setMenuOpen(false);
+});
+
+// --- X-Achsen-Beschriftung (Preset wählen ODER einzelne Stages frei beschriften) ---
+const CUSTOM_PRESET = 'custom';
+const axisOverlay = document.getElementById('axis-overlay');
+const axisPreset = document.getElementById('axis-preset') as HTMLSelectElement | null;
+const axisInputs = [0, 1, 2, 3].map(
+  (i) => document.getElementById(`axis-s${i}`) as HTMLInputElement | null,
+);
+
+// Preset-Optionen aus der Single-Source-of-Truth (@wardley/schema-model) + freie „Custom“-Wahl.
+if (axisPreset) {
+  for (const p of EVOLUTION_PRESETS) {
+    const opt = document.createElement('option');
+    opt.value = p.id;
+    opt.textContent = `${p.name} — ${p.labels.join(' · ')}`;
+    axisPreset.append(opt);
+  }
+  const custom = document.createElement('option');
+  custom.value = CUSTOM_PRESET;
+  custom.textContent = 'Custom…';
+  axisPreset.append(custom);
+}
+
+function currentAxisLabels(): readonly string[] {
+  return viewer.exportMap().config.evolutionLabels ?? DEFAULT_EVOLUTION_LABELS;
+}
+/** id des Presets, dessen Labels exakt `labels` entsprechen, sonst „custom“. */
+function presetIdFor(labels: readonly string[]): string {
+  return (
+    EVOLUTION_PRESETS.find((p) => p.labels.every((v, i) => v === labels[i]))?.id ?? CUSTOM_PRESET
+  );
+}
+function fillAxisInputs(labels: readonly string[]): void {
+  axisInputs.forEach((el, i) => {
+    if (el) el.value = labels[i] ?? '';
+  });
+}
+/**
+ * Inputs -> Map. Leere/Whitespace-Stages fallen auf den Default dieser Position zurück (ein leeres
+ * Achsen-Label ist weder sinnvoll noch im `->`-getrennten DSL darstellbar; deckt auch das
+ * mid-typing-Leeren ab). `->` würde den DSL-Trenner einschleusen -> durch einen echten Pfeil
+ * ersetzen. So bleibt der Round-Trip verlustfrei. Default-Set => Labels entfernen (saubere DSL/URL).
+ */
+function applyAxisLabels(): void {
+  const labels = axisInputs.map((el, i) => {
+    const v = (el?.value ?? '').replace(/->/g, '→').trim();
+    return v || DEFAULT_EVOLUTION_LABELS[i]!;
+  }) as [string, string, string, string];
+  const isDefault = DEFAULT_EVOLUTION_LABELS.every((v, i) => v === labels[i]);
+  viewer.setEvolutionLabels(isDefault ? undefined : labels);
+  if (axisPreset) axisPreset.value = presetIdFor(labels);
+}
+function closeAxisDialog(): void {
+  if (axisOverlay) axisOverlay.hidden = true;
+}
+
+onMenu('m-axis', () => {
+  if (!axisOverlay) return;
+  const labels = currentAxisLabels();
+  fillAxisInputs(labels);
+  if (axisPreset) axisPreset.value = presetIdFor(labels);
+  axisOverlay.hidden = false;
+  axisInputs[0]?.focus();
+});
+axisPreset?.addEventListener('change', () => {
+  const preset = EVOLUTION_PRESETS.find((p) => p.id === axisPreset.value);
+  if (!preset) return; // „Custom“ -> Eingaben unverändert lassen
+  fillAxisInputs(preset.labels);
+  applyAxisLabels();
+});
+for (const el of axisInputs) el?.addEventListener('input', applyAxisLabels);
+document.getElementById('axis-reset')?.addEventListener('click', () => {
+  fillAxisInputs(DEFAULT_EVOLUTION_LABELS);
+  applyAxisLabels();
+});
+document.getElementById('axis-close')?.addEventListener('click', closeAxisDialog);
+axisOverlay?.addEventListener('click', (e) => {
+  if (e.target === axisOverlay) closeAxisDialog();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && axisOverlay && !axisOverlay.hidden) closeAxisDialog();
 });
 
 // --- Empty-State-Button ---

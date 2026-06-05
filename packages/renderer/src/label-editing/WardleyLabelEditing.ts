@@ -2,9 +2,13 @@ import type Canvas from 'diagram-js/lib/core/Canvas';
 import type EventBus from 'diagram-js/lib/core/EventBus';
 import { isWardleyShape, type WardleyShape } from '../model/di-types.js';
 import type WardleyModeling from '../modeling/WardleyModeling.js';
+import type WardleyElementFactory from '../model/WardleyElementFactory.js';
 
 interface ActiveEdit {
   input: HTMLInputElement;
+  /** Speichert den aktuellen Wert und schliesst (für Enter, Blur, Klick nach außen). */
+  commit: () => void;
+  /** Verwirft und schliesst (nur für Escape). */
   cleanup: () => void;
 }
 
@@ -13,7 +17,7 @@ interface ActiveEdit {
  * Commit laeuft ueber `wardleyModeling.updateLabel` -> commandStack (Undo, P4).
  */
 export default class WardleyLabelEditing {
-  static $inject = ['eventBus', 'canvas', 'wardleyModeling'];
+  static $inject = ['eventBus', 'canvas', 'wardleyModeling', 'wardleyElementFactory'];
 
   private active: ActiveEdit | null = null;
 
@@ -21,15 +25,19 @@ export default class WardleyLabelEditing {
     eventBus: EventBus,
     private readonly canvas: Canvas,
     private readonly modeling: WardleyModeling,
+    private readonly factory: WardleyElementFactory,
   ) {
     eventBus.on('element.dblclick', (event: { element?: unknown }) => {
       if (isWardleyShape(event.element)) this.activate(event.element);
     });
-    eventBus.on(['element.mousedown', 'drag.init', 'canvas.viewbox.changing'], () => this.cancel());
+    // Klick/Drag/Pan außerhalb des Inputs = SPEICHERN (nicht verwerfen). Nur Escape verwirft.
+    eventBus.on(['element.mousedown', 'drag.init', 'canvas.viewbox.changing'], () =>
+      this.active?.commit(),
+    );
   }
 
   activate(element: WardleyShape): void {
-    this.cancel();
+    this.active?.commit();
 
     const container = this.canvas.getContainer();
     const scale = this.canvas.zoom();
@@ -58,10 +66,14 @@ export default class WardleyLabelEditing {
       this.active = null;
     };
     const commit = () => {
+      if (done) return;
       const value = input.value.trim();
       const changed = value && value !== element.wardleyLabel;
       cleanup();
-      if (changed) this.modeling.updateLabel(element, value);
+      if (!changed) return;
+      // Eindeutigkeit erzwingen (wie beim Erzeugen): doppelte Namen wuerden beim DSL-Round-Trip
+      // Knoten kollabieren lassen und so Verbindungen (Pfeile) beim Reload verschwinden lassen.
+      this.modeling.updateLabel(element, this.factory.uniqueLabel(value, element.id));
     };
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Enter') {
@@ -76,7 +88,7 @@ export default class WardleyLabelEditing {
     input.addEventListener('keydown', onKey);
     input.addEventListener('blur', onBlur);
 
-    this.active = { input, cleanup };
+    this.active = { input, commit, cleanup };
   }
 
   cancel(): void {

@@ -35,9 +35,18 @@
   -webkit-user-select: none;
 }
 
-/* Hover / Selektion: Akzentfarbe */
-.wardley-container .djs-element.hover .djs-visual > :first-child,
-.wardley-container .djs-element.selected .djs-visual > :first-child {
+/* Roter Evolve-Ziel-Kreis = direkter Drag-Griff (Verschieben des Ziels). Die Visual-Ebene ist
+   sonst pointer-events:none (diagram-js trifft über .djs-hit) — der Ghost liegt aber außerhalb der
+   Knoten-Hitbox, daher muss der Kreis selbst Events empfangen. */
+.wardley-container .wardley-evolve-handle {
+  cursor: ew-resize;
+  pointer-events: all;
+}
+
+/* Hover / Selektion: Akzentfarbe — aber NICHT auf reine Text-Visuals (z.B. Notiz), sonst bekommt
+   die Schrift beim Mouseover eine störende Kontur. */
+.wardley-container .djs-element.hover .djs-visual > :first-child:not(text),
+.wardley-container .djs-element.selected .djs-visual > :first-child:not(text) {
   stroke: var(--wardley-accent) !important;
 }
 

@@ -160,6 +160,80 @@ describe('parseDSL – Achsen-Konfig & labeled flow', () => {
     expect(map.config.yAxisLabel).toBe('Wertschöpfung');
   });
 
+  it('Custom evolution-Labels überleben den Serialize-Round-Trip', () => {
+    const src = 'title T\nevolution Unmodelled->Divergent->Convergent->Modelled';
+    const map = parseDSL(src);
+    expect(map.config.evolutionLabels).toEqual([
+      'Unmodelled',
+      'Divergent',
+      'Convergent',
+      'Modelled',
+    ]);
+    const once = serializeDSL(map);
+    expect(once).toContain('evolution Unmodelled->Divergent->Convergent->Modelled');
+    expect(serializeDSL(parseDSL(once))).toBe(once);
+  });
+
+  it('Custom evolution-Labels mit leerem Stage überleben den Round-Trip (kein filter(Boolean))', () => {
+    const map = parseDSL('title T\nevolution Genesis->->Product->Commodity');
+    expect(map.config.evolutionLabels).toEqual(['Genesis', '', 'Product', 'Commodity']);
+    const once = serializeDSL(map);
+    expect(once).toContain('evolution Genesis->->Product->Commodity');
+    expect(serializeDSL(parseDSL(once))).toBe(once);
+  });
+
+  it('eine unparsbare evolution-Zeile wird nicht doppelt emittiert, wenn config.evolutionLabels gesetzt ist', () => {
+    // 3-teilige `evolution`-Zeile -> landet im rawPassthrough, evolutionLabels bleibt undefined.
+    const map = parseDSL('title T\nevolution A->B->C');
+    expect(map.config.evolutionLabels).toBeUndefined();
+    expect(map.rawPassthrough).toContain('evolution A->B->C');
+    // Nun setzt der Editor gültige Labels: die Stale-Zeile darf NICHT als Duplikat erhalten bleiben.
+    const withLabels = {
+      ...map,
+      config: { ...map.config, evolutionLabels: ['W', 'X', 'Y', 'Z'] as const },
+    };
+    const out = serializeDSL(withLabels);
+    expect(out.match(/^evolution /gm)).toHaveLength(1);
+    expect(out).toContain('evolution W->X->Y->Z');
+  });
+
+  it('doppelte Komponenten-Labels verlieren keine Kante (Serializer disambiguiert Namen)', () => {
+    const base = parseDSL('title T\ncomponent A [0.8, 0.3]\ncomponent B [0.5, 0.6]\nA -> B');
+    // Beide Komponenten auf denselben Namen setzen (wie nach einer kollidierenden Umbenennung).
+    const dup = { ...base, elements: base.elements.map((e) => ({ ...e, label: 'X' })) };
+    const out = serializeDSL(dup);
+    const comps = out.split('\n').filter((l) => l.startsWith('component'));
+    expect(comps).toHaveLength(2);
+    expect(comps[0]).not.toBe(comps[1]); // Namen wurden disambiguiert (X / X 2)
+    // Re-Import: die Kante verbindet ZWEI VERSCHIEDENE Knoten (kein Selbstbezug -> Pfeil bleibt).
+    const round = parseDSL(out);
+    expect(round.elements.filter((e) => e.elementType === 'component')).toHaveLength(2);
+    expect(round.edges).toHaveLength(1);
+    expect(round.edges[0]!.from).not.toBe(round.edges[0]!.to);
+    expect(serializeDSL(round)).toBe(out); // stabil
+  });
+
+  it('Kante zwischen Komponenten mit Keyword-Präfix-Namen ("Component") bleibt erhalten', () => {
+    // Default-Name "Component" beginnt mit dem Keyword `component`; die Kantenzeile darf NICHT als
+    // Deklaration fehlgedeutet werden (sonst verschwindet der Pfeil beim Reload).
+    const src =
+      'title T\ncomponent Component [0.8, 0.3]\ncomponent Component 2 [0.5, 0.6]\nComponent -> Component 2';
+    const map = parseDSL(src);
+    expect(map.elements.filter((e) => e.elementType === 'component')).toHaveLength(2);
+    expect(map.edges).toHaveLength(1);
+    expect(map.edges[0]!.from).not.toBe(map.edges[0]!.to);
+    const out = serializeDSL(map);
+    expect(parseDSL(out).edges).toHaveLength(1); // Kante überlebt den Re-Parse
+    expect(serializeDSL(parseDSL(out))).toBe(out); // stabil
+  });
+
+  it('Flow zwischen Komponenten mit Keyword-Präfix-Namen bleibt erhalten', () => {
+    const map = parseDSL(
+      'title T\ncomponent Component [0.8, 0.3]\ncomponent Anchor X [0.5, 0.6]\nComponent +> Anchor X',
+    );
+    expect(map.edges.filter((e) => e.edgeType === 'flow')).toHaveLength(1);
+  });
+
   it("liest labeled flow (+'wert'>) inkl. Round-Trip", () => {
     const src = "title T\ncomponent A [0.8, 0.3]\ncomponent B [0.5, 0.6]\nA +'120ms'> B";
     const map = parseDSL(src);
