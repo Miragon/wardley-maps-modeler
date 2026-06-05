@@ -11,11 +11,13 @@
   "scripts": {
     "build": "pnpm -r --filter \"./packages/*\" build",
     "build:webapp": "pnpm --filter @wardley/webapp build",
-    "typecheck": "tsc -p tsconfig.json",
+    "build:vscode": "pnpm --filter @wardley/vscode build",
+    "typecheck": "tsc -p tsconfig.json && pnpm --filter @wardley/vscode typecheck",
     "lint": "eslint . && pnpm run typecheck",
     "format": "prettier --write .",
     "test": "vitest run",
     "dev:webapp": "pnpm --filter @wardley/webapp dev",
+    "dev:vscode": "pnpm --filter @wardley/vscode watch",
     "depcruise": "depcruise packages apps --config .dependency-cruiser.cjs",
     "prepare": "husky"
   },

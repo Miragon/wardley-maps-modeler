@@ -2,7 +2,7 @@
 
 A TypeScript library for viewing and editing [Wardley Maps](https://learnwardleymapping.com/),
 built on [diagram-js](https://github.com/bpmn-io/diagram-js) (MIT). The library is the shared core
-for two delivery targets: a **web app** (included) and (later) a **VS Code extension**.
+for two delivery targets, both included: a **web app** and a **VS Code extension**.
 
 > The architecture follows the layered design of bpmn-js, but is **original code** — `bpmn-js` is
 > never taken as a dependency because of its license (watermark requirement). Details:
@@ -38,6 +38,7 @@ pnpm workspace with exact, centrally pinned versions (via `catalog:` in `pnpm-wo
 | [`@wardley/transforms`](packages/transforms)     | pure `WardleyMap → WardleyMap` transforms (evolve, method, inertia, pipeline) — no undo stack            | **no**         |
 | [`@wardley/renderer`](packages/renderer)         | diagram-js bootstrap, `EvolutionGrid`, `WardleyRenderer`, `Viewer`/`NavigatedViewer`, import/export, CSS | **yes**        |
 | [`apps/webapp`](apps/webapp)                     | Vite demo app (the editor shown above)                                                                   | **yes**        |
+| [`apps/vscode`](apps/vscode)                     | VS Code extension — custom editor for `.wmap`/`.owm` (esbuild-bundled webview + host)                    | **yes**        |
 
 The DOM-freedom of the core packages is enforced twice: ESLint (`no-restricted-imports` /
 `no-restricted-globals`) and `dependency-cruiser` (module graph).
@@ -80,7 +81,14 @@ The DOM-freedom of the core packages is enforced twice: ESLint (`no-restricted-i
   in and edited further.
 - **Quality gates:** 38 unit tests, ESLint + type-check, DOM-boundary (dependency-cruiser), and the
   full build all green; behaviour verified in a real browser (Playwright).
-- **Open** (roadmap §14): VS Code extension, annotations legend box rendering, pipeline-block DSL &
+- **VS Code extension** (`apps/vscode`): a custom editor for `.wmap`/`.owm` files — the OWM-DSL text
+  file stays the source of truth (VS Code owns save / Git / diff), while a webview hosts the full
+  diagram-js `Modeler` and mirrors graphical edits back via `WorkspaceEdit` (echo-guarded two-way
+  sync). Collapsed menu (top-right): fit · map size · X-axis labels · export SVG/PNG (scene
+  embedded); undo/redo is left to VS Code (`Ctrl/Cmd+Z`).
+  Two esbuild bundles (host `extension.cjs` + webview), `@wardley/*` bundled from source. See
+  [`apps/vscode/README.md`](apps/vscode/README.md).
+- **Open** (roadmap §14): annotations legend box rendering, pipeline-block DSL &
   the `url` keyword (currently preserved losslessly via `rawPassthrough`), attitude resize, submap
   drill-down, auto-layout, copy/paste, a `@wardley/react` binding.
 

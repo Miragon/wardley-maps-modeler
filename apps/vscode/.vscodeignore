@@ -1,0 +1,8 @@
+# Quelle & Build-Tooling gehören nicht ins .vsix — nur dist/ + Manifest.
+src/**
+node_modules/**
+esbuild.config.mjs
+tsconfig.json
+**/*.map
+.gitignore
+**/tsconfig.tsbuildinfo

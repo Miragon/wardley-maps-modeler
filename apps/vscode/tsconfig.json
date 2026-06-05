@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["node", "vscode"],
+    "baseUrl": ".",
+    "paths": {
+      "@wardley/renderer": ["../../packages/renderer/src/index.ts"],
+      "@wardley/schema-model": ["../../packages/schema-model/src/index.ts"],
+      "@wardley/dsl": ["../../packages/dsl/src/index.ts"],
+      "@wardley/transforms": ["../../packages/transforms/src/index.ts"]
+    }
+  },
+  "include": ["src/**/*.ts"]
+}

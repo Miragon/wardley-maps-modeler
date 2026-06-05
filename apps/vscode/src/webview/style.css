@@ -1,0 +1,209 @@
+/* Chrome der Webview. Die Leinwand selbst trägt ihr eigenes „Strategic Blueprint"-Aussehen
+   (Renderer-CSS); die schwebende Toolbar/Dialoge übernehmen das VS-Code-Theme (--vscode-*),
+   damit sich der Editor nativ in die IDE einfügt. */
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+#app {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+}
+
+.wardley-canvas {
+  position: absolute;
+  inset: 0;
+}
+
+/* --- Eingeklapptes Menü (Hamburger oben rechts, Excalidraw-Stil) --- */
+.toolbar {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 10;
+}
+
+.menu-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 8px;
+  border: 1px solid var(--vscode-editorWidget-border, rgba(0, 0, 0, 0.12));
+  background: var(--vscode-editorWidget-background, #fff);
+  color: var(--vscode-editorWidget-foreground, var(--vscode-foreground, #1b1b1a));
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+}
+.menu-btn:hover {
+  background: var(--vscode-toolbar-hoverBackground, rgba(0, 0, 0, 0.06));
+}
+.menu-btn svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+.menu-btn:focus-visible,
+.menu-item:focus-visible,
+.menu-select:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder, #0e7c74);
+  outline-offset: 1px;
+}
+
+.menu-dropdown {
+  position: absolute;
+  top: 44px;
+  right: 0;
+  min-width: 210px;
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+  border-radius: 10px;
+  background: var(--vscode-editorWidget-background, #fff);
+  color: var(--vscode-editorWidget-foreground, var(--vscode-foreground, #1b1b1a));
+  border: 1px solid var(--vscode-editorWidget-border, rgba(0, 0, 0, 0.14));
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+}
+.menu-dropdown[hidden] {
+  display: none;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.menu-item:hover {
+  background: var(--vscode-list-hoverBackground, rgba(0, 0, 0, 0.08));
+}
+.menu-item svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
+.menu-sep {
+  height: 1px;
+  margin: 6px 4px;
+  background: var(--vscode-editorWidget-border, rgba(0, 0, 0, 0.14));
+}
+
+.menu-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 10px;
+  font: inherit;
+}
+
+.menu-select {
+  height: 28px;
+  padding: 0 6px;
+  border-radius: 6px;
+  border: 1px solid var(--vscode-dropdown-border, rgba(0, 0, 0, 0.18));
+  background: var(--vscode-dropdown-background, #fff);
+  color: var(--vscode-dropdown-foreground, inherit);
+  font: inherit;
+  cursor: pointer;
+}
+
+/* --- Modal-Dialog (X-Achsen-Beschriftung) --- */
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.35);
+}
+.overlay[hidden] {
+  display: none;
+}
+
+.panel {
+  width: min(440px, 92vw);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--vscode-editorWidget-background, #fff);
+  color: var(--vscode-editorWidget-foreground, var(--vscode-foreground, #1b1b1a));
+  border: 1px solid var(--vscode-editorWidget-border, rgba(0, 0, 0, 0.16));
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+}
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  font-weight: 600;
+  border-bottom: 1px solid var(--vscode-editorWidget-border, rgba(0, 0, 0, 0.12));
+}
+.panel-body {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.row,
+.stage {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+}
+.stages {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.foot {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.panel input,
+.panel select {
+  height: 30px;
+  padding: 0 8px;
+  border-radius: 6px;
+  border: 1px solid var(--vscode-input-border, var(--vscode-dropdown-border, rgba(0, 0, 0, 0.2)));
+  background: var(--vscode-input-background, #fff);
+  color: var(--vscode-input-foreground, inherit);
+  font: inherit;
+}
+.panel input:focus,
+.panel select:focus {
+  outline: 1px solid var(--vscode-focusBorder, #0e7c74);
+  outline-offset: 0;
+}
+
+.ghost {
+  border: none;
+  background: transparent;
+  color: var(--vscode-textLink-foreground, #0e7c74);
+  cursor: pointer;
+  font: inherit;
+  padding: 4px 6px;
+  border-radius: 6px;
+}
+.ghost:hover {
+  background: var(--vscode-toolbar-hoverBackground, rgba(0, 0, 0, 0.08));
+}

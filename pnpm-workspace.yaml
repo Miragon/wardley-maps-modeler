@@ -3,7 +3,11 @@ packages:
   - 'apps/*'
 
 allowBuilds:
+  # vsce-sign/keytar sind nur fürs Signieren/Publishen relevant — für Build & `vsce package`
+  # nicht nötig, daher keine nativen Build-Skripte zulassen.
+  '@vscode/vsce-sign': false
   esbuild: true
+  keytar: false
 
 # Zentrale, fix gepinnte Versionen (Guardrail: keine ^ ~ >= *).
 # Am Implementierungsdatum (2026-06) frisch gegen die npm-Registry aufgeloest.
@@ -32,6 +36,10 @@ catalog:
   vite-plugin-dts: 5.0.2
   tsup: 8.5.1
   esbuild: 0.28.0
+
+  # --- VS Code Extension ---
+  '@types/vscode': 1.96.0
+  '@vscode/vsce': 3.9.2
 
   # --- Test ---
   vitest: 4.1.8
