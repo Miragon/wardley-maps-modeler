@@ -1,0 +1,98 @@
+{
+  "name": "@wardley/vscode",
+  "private": true,
+  "version": "0.0.0",
+  "displayName": "Wardley Maps",
+  "description": "View and edit Wardley Maps (.wmap / .owm) directly in VS Code — a diagram-js editor for the OWM-DSL.",
+  "publisher": "wardley",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.96.0"
+  },
+  "categories": [
+    "Visualization",
+    "Other"
+  ],
+  "keywords": [
+    "wardley",
+    "wardley map",
+    "strategy",
+    "diagram",
+    "owm"
+  ],
+  "main": "./dist/extension.cjs",
+  "type": "module",
+  "activationEvents": [],
+  "contributes": {
+    "languages": [
+      {
+        "id": "wardley-owm",
+        "aliases": [
+          "Wardley Map (OWM-DSL)",
+          "wardley"
+        ],
+        "extensions": [
+          ".wmap",
+          ".owm"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "customEditors": [
+      {
+        "viewType": "wardley.mapEditor",
+        "displayName": "Wardley Map",
+        "selector": [
+          {
+            "filenamePattern": "*.wmap"
+          },
+          {
+            "filenamePattern": "*.owm"
+          }
+        ],
+        "priority": "default"
+      }
+    ],
+    "commands": [
+      {
+        "command": "wardley.newMap",
+        "title": "New Empty Map",
+        "category": "Wardley",
+        "shortTitle": "Wardley Map"
+      },
+      {
+        "command": "wardley.newMapFromExample",
+        "title": "New Map from Example",
+        "category": "Wardley"
+      }
+    ],
+    "menus": {
+      "file/newFile": [
+        {
+          "command": "wardley.newMap",
+          "group": "wardley"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "build": "node esbuild.config.mjs",
+    "watch": "node esbuild.config.mjs --watch",
+    "typecheck": "tsc -p tsconfig.json",
+    "vscode:prepublish": "node esbuild.config.mjs --production",
+    "package": "vsce package --no-dependencies -o wardley-vscode.vsix"
+  },
+  "dependencies": {
+    "@fontsource-variable/spline-sans": "catalog:",
+    "@wardley/dsl": "workspace:*",
+    "@wardley/renderer": "workspace:*",
+    "@wardley/schema-model": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "@types/vscode": "catalog:",
+    "@vscode/vsce": "catalog:",
+    "esbuild": "catalog:",
+    "typescript": "catalog:"
+  }
+}
