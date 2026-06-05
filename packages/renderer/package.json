@@ -1,0 +1,42 @@
+{
+  "name": "@wardley/renderer",
+  "version": "0.0.0",
+  "description": "diagram-js-basierter Wardley-Renderer: Viewer / NavigatedViewer / (Modeler). DOM-abhängig.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./assets/wardley.css": "./dist/wardley.css",
+    "./package.json": "./package.json"
+  },
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@wardley/dsl": "workspace:*",
+    "@wardley/schema-model": "workspace:*",
+    "clsx": "catalog:",
+    "diagram-js": "catalog:",
+    "didi": "catalog:",
+    "tiny-svg": "catalog:"
+  },
+  "devDependencies": {
+    "jsdom": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vite-plugin-dts": "catalog:",
+    "vitest": "catalog:"
+  }
+}

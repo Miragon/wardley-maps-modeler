@@ -1,0 +1,10 @@
+import type { ModuleDeclaration } from 'didi';
+import WardleyLabelEditing from './WardleyLabelEditing.js';
+
+/** Eigenes Inline-Label-Editing (HTML-Overlay). */
+export const labelEditingModule: ModuleDeclaration = {
+  __init__: ['wardleyLabelEditing'],
+  wardleyLabelEditing: ['type', WardleyLabelEditing],
+};
+
+export { default as WardleyLabelEditing } from './WardleyLabelEditing.js';

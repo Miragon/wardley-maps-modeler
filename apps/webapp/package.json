@@ -1,0 +1,22 @@
+{
+  "name": "@wardley/webapp",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@fontsource-variable/fraunces": "catalog:",
+    "@fontsource-variable/spline-sans": "catalog:",
+    "@wardley/dsl": "workspace:*",
+    "@wardley/renderer": "workspace:*",
+    "@wardley/schema-model": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "catalog:",
+    "vite": "catalog:"
+  }
+}

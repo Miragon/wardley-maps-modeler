@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["node"],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "paths": {
+      "@wardley/schema-model": ["./packages/schema-model/src/index.ts"],
+      "@wardley/dsl": ["./packages/dsl/src/index.ts"],
+      "@wardley/transforms": ["./packages/transforms/src/index.ts"],
+      "@wardley/renderer": ["./packages/renderer/src/index.ts"]
+    }
+  },
+  "include": ["packages/*/src/**/*.ts", "packages/*/test/**/*.ts", "apps/*/src/**/*.ts"],
+  "exclude": ["**/dist/**", "**/node_modules/**"]
+}

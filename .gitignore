@@ -1,0 +1,15 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.vite/
+coverage/
+*.log
+.DS_Store
+test-results/
+playwright-report/
+/e2e/.cache/
+.playwright-mcp/
+
+# Persönliche Claude-Skills (nicht projektspezifisch); Projekt-Guardrails (settings.json, rules/) bleiben getrackt
+.claude/skills/
+.claude/settings.local.json

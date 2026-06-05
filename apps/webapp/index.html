@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Wardley Mapping</title>
+    <!-- Fonts werden self-hosted via @fontsource (in src/main.ts importiert) geladen –
+         kein externer Google-Fonts-CDN (offline-fähig & DSGVO-konform). -->
+  </head>
+  <body>
+    <div id="app">
+      <!-- Canvas füllt die volle Fläche; die Chrome floatet darüber (Excalidraw-Stil, kein Header). -->
+      <div class="app-stage">
+        <div id="canvas" class="app-canvas"></div>
+        <div id="empty-state" class="empty-state" hidden>
+          <div class="empty-card">
+            <span class="empty-mark">◵</span>
+            <h2>Empty canvas</h2>
+            <p>Start from the example, drop a file here, or start modelling right away.</p>
+            <button id="btn-example" type="button" class="primary">Show example</button>
+            <span class="empty-hint"
+              >Drag&nbsp;&amp;&nbsp;drop: .wmap · .owm · .json · .svg · .png</span
+            >
+          </div>
+        </div>
+      </div>
+
+      <!-- Floating-Menü oben links -->
+      <div class="app-menu" id="app-menu">
+        <button
+          id="btn-menu"
+          type="button"
+          class="icon-btn"
+          aria-haspopup="true"
+          aria-expanded="false"
+          title="Menu"
+        >
+          Menu
+        </button>
+        <div id="menu-dropdown" class="menu-dropdown" role="menu" hidden>
+          <button id="m-open" type="button" class="menu-item" role="menuitem">Open…</button>
+          <button id="m-example" type="button" class="menu-item" role="menuitem">
+            Show example
+          </button>
+          <button id="m-new" type="button" class="menu-item" role="menuitem">New / clear</button>
+          <div class="menu-sep" role="separator"></div>
+          <button id="m-undo" type="button" class="menu-item" role="menuitem">Undo</button>
+          <button id="m-redo" type="button" class="menu-item" role="menuitem">Redo</button>
+          <div class="menu-sep" role="separator"></div>
+          <button id="m-json" type="button" class="menu-item" role="menuitem">Export · JSON</button>
+          <button id="m-dsl" type="button" class="menu-item" role="menuitem">
+            Export · OWM-DSL
+          </button>
+          <button id="m-svg" type="button" class="menu-item" role="menuitem">Export · SVG</button>
+          <button id="m-png" type="button" class="menu-item" role="menuitem">Export · PNG</button>
+          <div class="menu-sep" role="separator"></div>
+          <label class="menu-field">
+            <span>Map size</span>
+            <select id="map-size">
+              <option value="720x460">Compact</option>
+              <option value="1080x680" selected>Standard</option>
+              <option value="1440x900">Large</option>
+              <option value="1760x720">Wide</option>
+            </select>
+          </label>
+        </div>
+      </div>
+
+      <!-- Floating-Teilen-Button oben rechts -->
+      <div class="app-toolbar">
+        <button id="btn-share" type="button" class="primary">Share</button>
+      </div>
+      <input id="file-input" type="file" accept=".wmap,.owm,.txt,.json,.svg,.png" hidden />
+    </div>
+
+    <div id="output" class="output-overlay" hidden>
+      <div class="output-panel">
+        <header class="output-head">
+          <span id="output-title">Export</span>
+          <div class="output-actions">
+            <button id="output-copy" type="button" class="ghost">Copy</button>
+            <button id="output-close" type="button" class="ghost">Close</button>
+          </div>
+        </header>
+        <textarea id="output-text" readonly spellcheck="false"></textarea>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
