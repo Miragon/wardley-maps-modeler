@@ -13,6 +13,7 @@ import type WardleyModeling from '../modeling/WardleyModeling.js';
 import type WardleyLabelEditing from '../label-editing/WardleyLabelEditing.js';
 import type WardleyEvolveDragging from '../evolve/WardleyEvolveDragging.js';
 import type WardleyElementFactory from '../model/WardleyElementFactory.js';
+import type WardleyColorPicker from '../color-picker/WardleyColorPicker.js';
 import { POPUP_PROVIDER_ID } from '../popup/index.js';
 import {
   iconMarkup,
@@ -22,6 +23,7 @@ import {
   ICON_DELETE,
   ICON_DOUBLE_ARROW,
   ICON_EDIT,
+  ICON_PALETTE,
   ICON_SETTINGS,
 } from '../draw/icons.js';
 
@@ -45,6 +47,7 @@ export default class WardleyContextPadProvider implements ContextPadProvider {
     'wardleyLabelEditing',
     'wardleyEvolveDragging',
     'wardleyElementFactory',
+    'wardleyColorPicker',
   ];
 
   constructor(
@@ -57,6 +60,7 @@ export default class WardleyContextPadProvider implements ContextPadProvider {
     private readonly labelEditing: WardleyLabelEditing,
     private readonly evolveDragging: WardleyEvolveDragging,
     private readonly factory: WardleyElementFactory,
+    private readonly colorPicker: WardleyColorPicker,
   ) {
     contextPad.registerProvider(this);
   }
@@ -140,6 +144,21 @@ export default class WardleyContextPadProvider implements ContextPadProvider {
               x: e.clientX,
               y: e.clientY,
             });
+          },
+        },
+      };
+    }
+
+    // Notiz-Farbe: öffnet den 3x3-Swatch-Picker (bpmn.io-artig) an der Klickposition.
+    if (shape.wardleyType === 'note') {
+      entries['color'] = {
+        group: 'wardley',
+        title: 'Note color',
+        html: cpHtml(ICON_PALETTE, 'Note color'),
+        action: {
+          click: (event: Event) => {
+            const e = event as MouseEvent;
+            this.colorPicker.open(shape, e.clientX, e.clientY);
           },
         },
       };

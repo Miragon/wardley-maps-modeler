@@ -10,6 +10,5 @@ playwright-report/
 /e2e/.cache/
 .playwright-mcp/
 
-# Persönliche Claude-Skills (nicht projektspezifisch); Projekt-Guardrails (settings.json, rules/) bleiben getrackt
-.claude/skills/
+# Nur lokale Claude-Settings ignorieren; Skills + Projekt-Guardrails (settings.json, rules/) bleiben getrackt
 .claude/settings.local.json

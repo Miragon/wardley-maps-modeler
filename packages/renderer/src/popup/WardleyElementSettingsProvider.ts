@@ -35,7 +35,10 @@ export default class WardleyElementSettingsProvider implements PopupMenuProvider
   getPopupMenuEntries(target: PopupMenuTarget): PopupMenuEntries {
     const shape = (Array.isArray(target) ? target[0] : target) as WardleyShape | undefined;
     if (!isComponent(shape)) return {};
+    return this.componentEntries(shape);
+  }
 
+  private componentEntries(shape: WardleyShape): PopupMenuEntries {
     const dec = shape.decorators ?? {};
     const kind = dec.ecosystem ? 'ecosystem' : dec.market ? 'market' : 'normal';
     const method = dec.method;

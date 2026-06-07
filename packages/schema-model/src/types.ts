@@ -91,6 +91,8 @@ export type ClimaticPattern =
 export interface NoteElement extends MapElementBase {
   readonly elementType: 'note';
   readonly patternType?: ClimaticPattern;
+  /** Optionale Notiz-Farbe (CSS-Farbe, i.d.R. Hex aus der Renderer-`NOTE_COLORS`-Palette). */
+  readonly color?: string;
 }
 
 export interface AnnotationElement extends MapElementBase {

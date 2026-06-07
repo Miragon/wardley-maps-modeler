@@ -14,7 +14,7 @@ import type {
   SubmapElement,
 } from '@wardley/schema-model';
 import type EvolutionGrid from '../evolution-grid/EvolutionGrid.js';
-import { NODE_SIZE, PIPELINE_HEIGHT } from '../draw/styles.js';
+import { NODE_SIZE, PIPELINE_HEIGHT, noteMetrics } from '../draw/styles.js';
 import type { WardleyConnection, WardleyShape } from './di-types.js';
 
 /** Optionale Defaults beim Drag-to-create (Palette). */
@@ -81,7 +81,24 @@ export default class WardleyElementFactory {
   }
 
   createNote(el: NoteElement): WardleyShape {
-    return this.node('note', el.id, el.label, el.position.visibility, el.position.evolution, el);
+    // Notiz-Box waechst mit dem (ggf. mehrzeiligen) Text -> Move/Klick-Hitbox deckt den Text ab.
+    // Zentriert auf die Position (konsistent mit der Center-Rueckrechnung beim Move).
+    const { width, height } = noteMetrics(el.label);
+    const center = this.grid.toCanvas(el.position);
+    const shape = this.elementFactory.createShape({
+      id: el.id,
+      x: center.x - width / 2,
+      y: center.y - height / 2,
+      width,
+      height,
+      wardleyType: 'note',
+      wardleyLabel: el.label,
+      evolution: el.position.evolution,
+      visibility: el.position.visibility,
+      businessObject: el,
+      ...(el.color ? { color: el.color } : {}),
+    });
+    return shape as unknown as WardleyShape;
   }
 
   createPipeline(el: PipelineElement): WardleyShape {
@@ -190,6 +207,18 @@ export default class WardleyElementFactory {
         evolution: 0.5,
         visibility: 0.5,
         isFrame: true,
+      });
+      return shape as unknown as WardleyShape;
+    }
+    if (type === 'note') {
+      const { width, height } = noteMetrics(label);
+      const shape = this.elementFactory.createShape({
+        width,
+        height,
+        wardleyType: 'note',
+        wardleyLabel: label,
+        evolution: 0.5,
+        visibility: 0.5,
       });
       return shape as unknown as WardleyShape;
     }

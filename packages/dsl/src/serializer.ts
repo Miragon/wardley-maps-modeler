@@ -134,7 +134,8 @@ function elementLine(el: MapElement, name: string): string {
     case 'component':
       return `component ${name} [${r(p.visibility)}, ${r(p.evolution)}]${decoratorSuffix(el.decorators)}${offsetSuffix(el.labelOffset)}`;
     case 'note':
-      return `note ${name} [${r(p.visibility)}, ${r(p.evolution)}]`;
+      // Zeilenumbrueche als literales `\n` kodieren -> die zeilenbasierte DSL bleibt einzeilig.
+      return `note ${name.replace(/\n/g, '\\n')} [${r(p.visibility)}, ${r(p.evolution)}]${el.color ? ` (color ${el.color})` : ''}`;
     case 'pipeline':
       return `pipeline ${name} [${r(el.evolutionStart)}, ${r(el.evolutionEnd)}]`;
     case 'submap':

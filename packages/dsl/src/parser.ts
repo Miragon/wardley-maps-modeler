@@ -20,6 +20,7 @@ import {
 } from '@wardley/schema-model';
 import {
   keywordOf,
+  parseColor,
   parseCoords,
   parseDecorators,
   parseLabelOffset,
@@ -207,19 +208,22 @@ export function parseDSL(text: string): WardleyMap {
       }
 
       case 'note': {
-        const coords = parseCoords(after);
-        const textPart = stripCoords(after).trim();
+        const { color, rest } = parseColor(after);
+        const coords = parseCoords(rest);
+        // Literales `\n` zurueck in echte Zeilenumbrueche (mehrzeilige Notizen).
+        const textPart = stripCoords(rest).trim().replace(/\\n/g, '\n');
         if (!coords) {
           rawPassthrough.push(raw);
           break;
         }
         const id = ids.alloc('note', textPart || 'note');
-        const note: NoteElement = {
+        const note: NoteElement = compact({
           id,
           elementType: 'note',
           label: textPart,
           position: { visibility: coords.a, evolution: coords.b },
-        };
+          color,
+        }) as NoteElement;
         elements.push(note);
         break;
       }

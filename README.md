@@ -56,7 +56,9 @@ The DOM-freedom of the core packages is enforced twice: ESLint (`no-restricted-i
   (append / connect / evolve / ⚙ settings / edit label / delete — **including delete on connections**),
   inline label editing, **undo/redo** (command stack + keyboard) via a custom undo-capable property
   command handler. Frames (pipeline/attitude) are `isFrame` → only the border is clickable, so nodes
-  inside stay selectable.
+  inside stay selectable. **Coloured notes**: a note's context pad has a palette action that opens a
+  bpmn.io-style **3×3 swatch picker** (8 base colours + "no colour", no full colour picker); the
+  colour round-trips losslessly in the DSL as `note … [v,m] (color #hex)`.
 - **Rendering coverage:** flow links (directed, bidirectional, value-labelled `+'x'>`), inertia,
   annotations, attitude regions (pioneers/settlers/town planners), accelerator/deaccelerator, a
   distinct submap style; the DSL parser & serializer cover all of these, round-trip included.
