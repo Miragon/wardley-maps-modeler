@@ -31,6 +31,10 @@ export {
   POPUP_PROVIDER_ID,
 } from './popup/index.js';
 export { wardleyAppendModule, WardleyAppendBehavior } from './append/index.js';
+export { wardleyColorPickerModule, WardleyColorPicker } from './color-picker/index.js';
+
+// Notiz-Farbpalette (kanonische Quelle fuer Konsumenten / den Wardley-Mapping-Skill).
+export { NOTE_COLORS } from './draw/styles.js';
 
 // Laufzeit-Typen & Guards
 export { isWardleyShape, isWardleyConnection, isComponent, isPipeline } from './model/di-types.js';

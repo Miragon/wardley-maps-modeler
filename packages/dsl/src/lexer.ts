@@ -72,6 +72,18 @@ export function parseDecorators(line: string): { decorators: InlineDecorators; r
   return { decorators: dec, rest };
 }
 
+// Notiz-Farbe als (OWM-rückwärtskompatible) Erweiterung: `(color #rrggbb)` ODER `(color green)`.
+// Bewusst nach den Koordinaten platziert -> der OWM-Parser ignoriert den Rest, statt ihn in den
+// Notiztext zu ziehen. Akzeptiert Hex oder CSS-Farbnamen.
+const COLOR_RE = /\(\s*color\s+(#[0-9a-fA-F]{3,8}|[a-zA-Z][\w-]*)\s*\)/i;
+
+/** Liest ein optionales `(color …)` und gibt die Farbe + um sie bereinigte Zeile zurueck. */
+export function parseColor(line: string): { color?: string; rest: string } {
+  const m = COLOR_RE.exec(line);
+  if (!m || !m[1]) return { rest: line };
+  return { color: m[1], rest: line.replace(COLOR_RE, ' ') };
+}
+
 export interface LabelOffsetToken {
   readonly dx: number;
   readonly dy: number;

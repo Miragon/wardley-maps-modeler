@@ -10,6 +10,7 @@ import {
   COMPONENT_INNER_RADIUS,
   ANCHOR_ICON_SIZE,
   ATTITUDE_COLORS,
+  NOTE_LINE_HEIGHT,
 } from './styles.js';
 import { drawIcon, ICON_PERSON } from './icons.js';
 import {
@@ -245,12 +246,25 @@ export default class WardleyRenderer extends BaseRenderer {
   }
 
   private drawNote(visuals: SVGElement, shape: WardleyShape): SVGElement {
-    const el = label(shape.wardleyLabel, 0, shape.height / 2, {
-      fill: COLORS.noteText,
+    const color = shape.color;
+    const lines = (shape.wardleyLabel ?? '').split('\n');
+    const cx = shape.width / 2;
+    // Zeilenblock vertikal in der Box zentrieren (+4 ~ Baseline-Offset fuer 13px).
+    const y0 = shape.height / 2 - ((lines.length - 1) * NOTE_LINE_HEIGHT) / 2 + 4;
+    const attrs = {
+      'text-anchor': 'middle',
+      fill: color ?? COLORS.noteText,
       'font-style': 'italic',
+      // Eingefärbte Notizen leicht fetter -> Feedback (gut/schlecht) sticht hervor.
+      ...(color ? { 'font-weight': '600' } : {}),
+    };
+    let first: SVGElement | undefined;
+    lines.forEach((line, i) => {
+      const el = label(line, cx, y0 + i * NOTE_LINE_HEIGHT, attrs);
+      svgAppend(visuals, el);
+      if (!first) first = el;
     });
-    svgAppend(visuals, el);
-    return el;
+    return first ?? svgCreate('text');
   }
 
   private drawAttitude(visuals: SVGElement, shape: WardleyShape): SVGElement {

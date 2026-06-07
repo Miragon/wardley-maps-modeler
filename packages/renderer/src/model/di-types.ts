@@ -47,6 +47,8 @@ export interface WardleyShape extends Shape {
   attitudeKind?: AttitudeKind;
   /** nur Accelerator. */
   acceleratorDirection?: AcceleratorDirection;
+  /** nur Note: optionale Farbe (CSS-Farbe/Hex aus NOTE_COLORS). */
+  color?: string;
   businessObject?: MapElement;
 }
 

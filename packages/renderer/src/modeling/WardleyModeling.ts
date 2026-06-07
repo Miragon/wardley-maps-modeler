@@ -1,6 +1,7 @@
 import type CommandStack from 'diagram-js/lib/command/CommandStack';
 import type { Method } from '@wardley/schema-model';
 import type { WardleyShape } from '../model/di-types.js';
+import { noteMetrics } from '../draw/styles.js';
 import UpdatePropertiesHandler from './cmd/UpdatePropertiesHandler.js';
 
 const UPDATE_PROPERTIES = 'element.updateProperties';
@@ -32,6 +33,20 @@ export default class WardleyModeling {
   }
 
   updateLabel(element: WardleyShape, label: string): void {
+    // Notizen: Box (und damit die Move-/Klick-Hitbox) an den neuen Text anpassen, Center halten.
+    if (element.wardleyType === 'note') {
+      const { width, height } = noteMetrics(label);
+      const cx = element.x + element.width / 2;
+      const cy = element.y + element.height / 2;
+      this.updateProperties(element, {
+        wardleyLabel: label,
+        width,
+        height,
+        x: cx - width / 2,
+        y: cy - height / 2,
+      });
+      return;
+    }
     this.updateProperties(element, { wardleyLabel: label });
   }
 
@@ -70,6 +85,11 @@ export default class WardleyModeling {
     delete dec['ecosystem'];
     if (kind) dec[kind] = true;
     this.updateProperties(element, { decorators: Object.keys(dec).length ? dec : undefined });
+  }
+
+  /** Setzt die Notiz-Farbe (CSS-Farbe/Hex) oder entfernt sie (`undefined` = Standardfarbe). */
+  setColor(element: WardleyShape, color: string | undefined): void {
+    this.updateProperties(element, { color });
   }
 }
 

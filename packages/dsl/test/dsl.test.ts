@@ -266,3 +266,54 @@ describe('serializeDSL Round-Trip', () => {
     expect(once).toContain('pipeline Platform [0.05, 0.95]');
   });
 });
+
+describe('Notizen – Farbe & Mehrzeiligkeit', () => {
+  it('parst Farbe `(color …)` und literales `\\n` als echten Zeilenumbruch', () => {
+    const src =
+      'title T\nnote Looks good [0.8, 0.3] (color #15803d)\nnote Line1\\nLine2 [0.4, 0.6]';
+    const notes = parseDSL(src).elements.filter((e) => e.elementType === 'note') as Array<{
+      label: string;
+      color?: string;
+    }>;
+    expect(notes).toHaveLength(2);
+    expect(notes[0]!.color).toBe('#15803d');
+    expect(notes[0]!.label).toBe('Looks good');
+    expect(notes[1]!.color).toBeUndefined();
+    expect(notes[1]!.label).toBe('Line1\nLine2');
+  });
+
+  it('Round-Trip ist stabil (Farbe bleibt, Zeilenumbruch bleibt escaped)', () => {
+    const src = 'title T\nnote Risk here [0.8, 0.3] (color #b91c1c)\nnote A\\nB [0.4, 0.6]';
+    const once = serializeDSL(parseDSL(src));
+    expect(once).toContain('note Risk here [0.8, 0.3] (color #b91c1c)');
+    expect(once).toContain('note A\\nB [0.4, 0.6]');
+    expect(serializeDSL(parseDSL(once))).toBe(once);
+  });
+});
+
+describe('Notiz-Farbe (Projekt-Erweiterung: `(color …)`)', () => {
+  it('parst die Farbe und haelt den Text sauber', () => {
+    const map = parseDSL('title T\nnote Looks good [0.8, 0.6] (color #15803d)');
+    const note = map.elements.find((e) => e.elementType === 'note');
+    expect(note).toMatchObject({ label: 'Looks good', color: '#15803d' });
+  });
+
+  it('akzeptiert auch CSS-Farbnamen', () => {
+    const map = parseDSL('title T\nnote Risk here [0.3, 0.2] (color red)');
+    const note = map.elements.find((e) => e.elementType === 'note');
+    expect(note).toMatchObject({ label: 'Risk here', color: 'red' });
+  });
+
+  it('serialisiert die Farbe und ist round-trip-stabil', () => {
+    const src = 'title T\nnote Watch this [0.5, 0.5] (color #b45309)';
+    const once = serializeDSL(parseDSL(src));
+    expect(once).toContain('note Watch this [0.5, 0.5] (color #b45309)');
+    expect(serializeDSL(parseDSL(once))).toBe(once);
+  });
+
+  it('Notizen ohne Farbe bleiben unveraendert (keine leere Klammer)', () => {
+    const out = serializeDSL(parseDSL('title T\nnote Plain [0.5, 0.5]'));
+    expect(out).toContain('note Plain [0.5, 0.5]');
+    expect(out).not.toContain('(color');
+  });
+});

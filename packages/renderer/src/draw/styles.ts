@@ -23,6 +23,29 @@ export const COMPONENT_INNER_RADIUS = 12;
 export const ANCHOR_ICON_SIZE = 26;
 export const PIPELINE_HEIGHT = 30;
 
+/** Zeilenhoehe einer (mehrzeiligen) Notiz in px. */
+export const NOTE_LINE_HEIGHT = 17;
+const NOTE_PAD_X = 8;
+const NOTE_PAD_Y = 6;
+// Grobe, bewusst etwas grosszuegige Zeichenbreite (13px Spline Sans) — die Hitbox soll den Text
+// sicher abdecken (lieber etwas zu breit als zu schmal). Keine DOM-Messung -> deterministisch
+// (gilt auch fuer Import/Export/Headless).
+const NOTE_CHAR_W = 7.5;
+
+/**
+ * Box-Masse einer Notiz aus ihrem (ggf. mehrzeiligen) Text. Die Notiz-Shape wird damit so gross
+ * wie ihr Text -> die Move-/Klick-Hitbox waechst mit (statt fixer 34px). Mindestmass = NODE_SIZE.
+ */
+export function noteMetrics(label: string): { lines: string[]; width: number; height: number } {
+  const lines = (label && label.length ? label : 'note').split('\n');
+  const maxLen = Math.max(1, ...lines.map((l) => l.length));
+  return {
+    lines,
+    width: Math.max(NODE_SIZE, Math.round(maxLen * NOTE_CHAR_W) + NOTE_PAD_X * 2),
+    height: Math.max(NODE_SIZE, lines.length * NOTE_LINE_HEIGHT + NOTE_PAD_Y * 2),
+  };
+}
+
 export const COLORS = {
   paper: '#fbfaf7',
   ink: '#1b1b1a',
@@ -43,6 +66,23 @@ export const COLORS = {
   noteText: '#4a4640',
   pipeline: '#1b1b1a',
 } as const;
+
+/**
+ * Notiz-Farbpalette (bpmn.io-artiger Mini-Picker; bewusst KEIN Full-Color-Picker). Werte sind
+ * Hex und werden 1:1 als CSS-Farbe gerendert bzw. in der DSL als `(color …)` serialisiert.
+ * Konvention (auch im Wardley-Mapping-Skill genutzt): grün = gut, rot = Problem/Risiko,
+ * amber = beobachten, blau = Info, lila = Idee, slate = neutral.
+ */
+export const NOTE_COLORS = [
+  { id: 'green', name: 'Green · good', value: '#15803d' },
+  { id: 'amber', name: 'Amber · watch', value: '#b45309' },
+  { id: 'red', name: 'Red · problem', value: '#b91c1c' },
+  { id: 'blue', name: 'Blue · info', value: '#1d4ed8' },
+  { id: 'teal', name: 'Teal', value: '#0e7c74' },
+  { id: 'purple', name: 'Purple · idea', value: '#7e22ce' },
+  { id: 'pink', name: 'Pink', value: '#be185d' },
+  { id: 'slate', name: 'Slate · neutral', value: '#475569' },
+] as const;
 
 /** Farben der Attitude-Regionen je Art (geteilt von Renderer + Palette-Icons). */
 export const ATTITUDE_COLORS: Record<string, { fill: string; stroke: string }> = {

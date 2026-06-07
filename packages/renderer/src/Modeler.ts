@@ -24,6 +24,7 @@ import { wardleyKeyboardModule } from './keyboard/index.js';
 import { wardleyEvolveModule } from './evolve/index.js';
 import { wardleyPopupModule } from './popup/index.js';
 import { wardleyAppendModule } from './append/index.js';
+import { wardleyColorPickerModule } from './color-picker/index.js';
 
 /**
  * Voller Wardley-Editor: Palette/Create, Move mit EvolutionConstraint + Stage-Snapping,
@@ -56,6 +57,7 @@ export class Modeler extends NavigatedViewer {
       wardleyEvolveModule,
       wardleyPopupModule,
       wardleyAppendModule,
+      wardleyColorPickerModule,
     ];
   }
 

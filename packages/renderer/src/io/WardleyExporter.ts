@@ -99,6 +99,7 @@ export default class WardleyExporter {
           label: el.wardleyLabel,
           position,
           patternType: (bo as NoteElement | undefined)?.patternType,
+          color: el.color,
         }) as NoteElement;
       case 'pipeline':
         return {

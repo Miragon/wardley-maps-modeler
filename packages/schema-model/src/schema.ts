@@ -77,6 +77,7 @@ const noteSchema = z.object({
   ...baseFields,
   elementType: z.literal('note'),
   patternType: climaticPatternSchema.optional(),
+  color: z.string().optional(),
 });
 
 const annotationSchema = z.object({

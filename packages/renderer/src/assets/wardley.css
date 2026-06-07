@@ -168,6 +168,13 @@
   z-index: 100;
   min-width: 90px;
 }
+.wardley-container .wardley-label-textarea {
+  resize: none;
+  line-height: 17px;
+  white-space: pre;
+  min-width: 120px;
+  font-style: italic;
+}
 
 /* Drag&Drop-Datei-Highlight */
 .wardley-container.drag-over::after {
@@ -193,4 +200,46 @@
   --wardley-ink: #e8eaed;
   background-color: var(--wardley-paper);
   background-image: radial-gradient(rgba(255, 255, 255, 0.05) 0.6px, transparent 0.6px);
+}
+
+/* Notiz-Farb-Picker (bpmn.io-artig): kompaktes 3x3-Raster kleiner Farb-Quadrate, kein Text.
+   Wird absolut IM .wardley-container positioniert (relativer Bezug). */
+.wardley-container .wardley-color-picker {
+  position: absolute;
+  z-index: 300;
+  display: grid;
+  grid-template-columns: repeat(3, 22px);
+  gap: 6px;
+  padding: 8px;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 10px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.22);
+}
+.wardley-container .wardley-cp-swatch {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border-radius: 5px;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  transition: transform 0.08s ease;
+}
+.wardley-container .wardley-cp-swatch:hover {
+  transform: scale(1.1);
+}
+.wardley-container .wardley-cp-active {
+  outline: 2px solid var(--wardley-ink, #1b1b1a);
+  outline-offset: 1px;
+}
+/* „Keine Farbe": weiß mit rotem Diagonalstrich. */
+.wardley-container .wardley-cp-none {
+  background: #ffffff;
+  background-image: linear-gradient(
+    45deg,
+    transparent 44%,
+    #d11a2a 45%,
+    #d11a2a 55%,
+    transparent 56%
+  );
 }
