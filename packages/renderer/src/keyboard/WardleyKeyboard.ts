@@ -21,6 +21,12 @@ export default class WardleyKeyboard {
     if (!container.hasAttribute('tabindex')) container.setAttribute('tabindex', '0');
 
     container.addEventListener('keydown', (e: KeyboardEvent) => {
+      // Tippt der Nutzer gerade in einem Eingabefeld, NICHT abfangen: Das Inline-Label-Editing
+      // (WardleyLabelEditing) haengt sein <input>/<textarea> in DIESEN Container, sodass keydown
+      // hierher bubbelt. Ohne den Guard wuerde Backspace/Delete das selektierte Element loeschen
+      // (statt ein Zeichen) und Cmd+Z das Diagramm statt des Textes zuruecksetzen.
+      if (isEditableTarget(e.target)) return;
+
       const cmd = e.ctrlKey || e.metaKey;
       const key = e.key.toLowerCase();
 
@@ -39,4 +45,11 @@ export default class WardleyKeyboard {
       }
     });
   }
+}
+
+/** True, wenn der Fokus in einem editierbaren Feld liegt (Label-Overlay, Notiz-Textarea …). */
+function isEditableTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  const tag = target.tagName;
+  return tag === 'INPUT' || tag === 'TEXTAREA' || target.isContentEditable;
 }
