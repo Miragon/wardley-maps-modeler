@@ -81,8 +81,8 @@ The DOM-freedom of the core packages is enforced twice: ESLint (`no-restricted-i
   canvas. **PNG and SVG export with the scene embedded** (idea borrowed from Excalidraw): the DSL is
   written into the SVG root attribute resp. a PNG `tEXt` chunk, so exported images can be dropped back
   in and edited further.
-- **Quality gates:** 53 unit tests, ESLint + type-check, DOM-boundary (dependency-cruiser), and the
-  full build all green.
+- **Quality gates:** the test suite (Vitest, 53 unit tests), ESLint + type-checking, and a
+  `dependency-cruiser` check that enforces the DOM-free core boundary — all wired into the build.
 - **VS Code extension** (`apps/vscode`): a custom editor for `.wmap`/`.owm` files — the OWM-DSL text
   file stays the source of truth (VS Code owns save / Git / diff), while a webview hosts the full
   diagram-js `Modeler` and mirrors graphical edits back via `WorkspaceEdit` (echo-guarded two-way
