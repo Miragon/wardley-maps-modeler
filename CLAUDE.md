@@ -7,10 +7,12 @@ a web app and a VS Code extension.
 ## Monorepo (npm workspaces)
 
 Workspaces are declared in the root `package.json` (`workspaces` array, listed in topological
-build order). Third-party versions are pinned exactly inline in each package's `package.json`
-(`.npmrc` sets `save-exact=true`); internal packages reference each other with `"*"`, which npm
-links to the local workspace. This layout is ready for
-[`miragon/npm-pin-dependencies`](https://github.com/Miragon/npm-pin-dependencies).
+build order). **All** versions are pinned to exact values inline in each package's `package.json`
+(`.npmrc` sets `save-exact=true`) — including internal `@miragon/wardley-*` deps, which use the
+exact local version `0.0.0` (npm still links them to the local workspace). Exact pinning is
+enforced in CI by
+[`miragon/pin-npm-dependencies`](https://github.com/Miragon/pin-npm-dependencies) (the `pin-check`
+job).
 
 | Package                         | Purpose                                                         | DOM |
 | ------------------------------- | --------------------------------------------------------------- | --- |
@@ -46,8 +48,8 @@ Everything is managed via **Conventional Commits** — primarily `feat`, `fix`, 
 
 - Keep core packages (`schema-model`, `dsl`, `transforms`) strictly DOM-free (P1, above).
 - The OWM-DSL round-trip must stay lossless; JSON serialization must be deterministic.
-- Pin third-party dependencies to exact versions — no version ranges (`^`/`~`/`>=`); the only `*`
-  allowed is for internal `@miragon/wardley-*` workspace links. See
+- Pin **all** dependencies to exact versions — no version ranges (`^`/`~`/`>=`/`*`), internal
+  workspace deps included (use `0.0.0`). CI-enforced via `miragon/pin-npm-dependencies`. See
   [`.claude/rules/package-json-fixed-versions.md`](.claude/rules/package-json-fixed-versions.md).
 - For Wardley-map domain work, use the skill in
   [`.claude/skills/wardley-mapping/`](.claude/skills/wardley-mapping/).

@@ -23,7 +23,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@miragon/wardley-schema-model": "*"
+    "@miragon/wardley-schema-model": "0.0.0"
   },
   "devDependencies": {
     "tsup": "8.5.1",

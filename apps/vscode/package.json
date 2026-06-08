@@ -109,9 +109,9 @@
   },
   "dependencies": {
     "@fontsource-variable/spline-sans": "5.2.8",
-    "@miragon/wardley-dsl": "*",
-    "@miragon/wardley-renderer": "*",
-    "@miragon/wardley-schema-model": "*"
+    "@miragon/wardley-dsl": "0.0.0",
+    "@miragon/wardley-renderer": "0.0.0",
+    "@miragon/wardley-schema-model": "0.0.0"
   },
   "devDependencies": {
     "@types/node": "25.9.1",

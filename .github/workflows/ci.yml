@@ -27,7 +27,6 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/setup
-      # vitest resolves @miragon/wardley-* via their built dist/, so build before testing.
       - run: npm run build
       - run: npm test
 
@@ -52,7 +51,12 @@ jobs:
       - uses: ./.github/actions/setup
       - run: npm run format:check
 
-  # Blocks PRs that introduce dependencies with known vulnerabilities (PR-only).
+  pin-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: miragon/pin-npm-dependencies@v1
+
   dependency-review:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest

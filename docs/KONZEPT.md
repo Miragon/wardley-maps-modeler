@@ -854,7 +854,7 @@ Eigener, nicht-interaktiver diagram-js-Layer (`canvas.getLayer('wardley-axes', -
 
 **Boundary-Enforcement:** ESLint `no-restricted-imports` verbietet `diagram-js`, `tiny-svg`, `min-dom`, `window`, `document` in den DOM-freien Paketen; zusätzlich `dependency-cruiser` im CI.
 
-Interne Verlinkung: `"*"` (npm-Workspaces verlinken das lokale Paket). Externe Deps: exakt inline gepinnt (siehe §10).
+Interne Verlinkung: exakte lokale Version `0.0.0` (npm-Workspaces verlinken das lokale Paket). Externe Deps: exakt inline gepinnt (siehe §10).
 
 ### 9.2 Webapp-Wrapper
 
@@ -909,7 +909,7 @@ _Format-Konfliktwarnung (neu):_ Liegt ein `CustomEditorProvider` auf einer `*.js
 
 ### 10.1 Versionen (fix gepinnt, frisch aufgelöst, Stand 2026-06)
 
-Third-Party-Versionen werden **exakt inline** in jeder `package.json` gepinnt (kein zentraler Catalog mehr; `.npmrc` setzt `save-exact=true`). **Keine** `^ ~ >=` — das einzige erlaubte `*` ist die interne `@miragon/wardley-*`-Workspace-Verlinkung. Die folgende Liste ist die Referenz der gepinnten Versionen, gegen die npm-Registry **am Erstelldatum verifiziert** (Korrekturen ggü. Vorfassung sind markiert). **Verbindliche Regel:** Versionen werden am **tatsächlichen Implementierungsdatum** erneut frisch aufgelöst und anschließend per Dependabot gepflegt — eine veraltete „Stand"-Angabe darf nicht stehen bleiben (P5).
+Alle Versionen werden **exakt inline** in jeder `package.json` gepinnt (kein zentraler Catalog mehr; `.npmrc` setzt `save-exact=true`). **Keine** `^ ~ >= *` — auch interne `@miragon/wardley-*`-Deps nutzen die exakte lokale Version `0.0.0`; im CI per `miragon/pin-npm-dependencies` erzwungen. Die folgende Liste ist die Referenz der gepinnten Versionen, gegen die npm-Registry **am Erstelldatum verifiziert** (Korrekturen ggü. Vorfassung sind markiert). **Verbindliche Regel:** Versionen werden am **tatsächlichen Implementierungsdatum** erneut frisch aufgelöst und anschließend per Dependabot gepflegt — eine veraltete „Stand"-Angabe darf nicht stehen bleiben (P5).
 
 Die `workspaces` werden im Root-`package.json` deklariert (in topologischer Build-Reihenfolge, da npm `-w`-Ziele seriell in Listenreihenfolge baut):
 

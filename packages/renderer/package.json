@@ -25,8 +25,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@miragon/wardley-dsl": "*",
-    "@miragon/wardley-schema-model": "*",
+    "@miragon/wardley-dsl": "0.0.0",
+    "@miragon/wardley-schema-model": "0.0.0",
     "clsx": "2.1.1",
     "diagram-js": "15.16.0",
     "didi": "11.0.0",
