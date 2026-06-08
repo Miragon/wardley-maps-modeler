@@ -20,6 +20,7 @@ export { wardleyModelingModule, WardleyModeling } from './modeling/index.js';
 export type { EvolveOptions } from './modeling/index.js';
 export { wardleyRulesModule, WardleyRules } from './rules/index.js';
 export { stageSnappingModule } from './snapping/index.js';
+export { PanConstraintModule, PanConstraint } from './pan-constraint/index.js';
 export { wardleyPaletteModule } from './palette/index.js';
 export { wardleyContextPadModule } from './context-pad/index.js';
 export { labelEditingModule, WardleyLabelEditing } from './label-editing/index.js';
