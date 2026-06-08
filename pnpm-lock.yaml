@@ -19,8 +19,8 @@ catalogs:
       specifier: 25.9.1
       version: 25.9.1
     '@types/vscode':
-      specifier: 1.96.0
-      version: 1.96.0
+      specifier: 1.120.0
+      version: 1.120.0
     '@vscode/vsce':
       specifier: 3.9.2
       version: 3.9.2
@@ -146,7 +146,7 @@ importers:
         version: 25.9.1
       '@types/vscode':
         specifier: 'catalog:'
-        version: 1.96.0
+        version: 1.120.0
       '@vscode/vsce':
         specifier: 'catalog:'
         version: 3.9.2
@@ -1156,8 +1156,8 @@ packages:
   '@types/sarif@2.1.7':
     resolution: {integrity: sha512-kRz0VEkJqWLf1LLVN4pT1cg1Z9wAuvI6L97V3m2f5B76Tg8d413ddvLBPTEHAZJlnn4XSvu0FkZtViCQGVyrXQ==}
 
-  '@types/vscode@1.96.0':
-    resolution: {integrity: sha512-qvZbSZo+K4ZYmmDuaodMbAa67Pl6VDQzLKFka6rq+3WUTY4Kro7Bwoi0CuZLO/wema0ygcmpwow7zZfPJTs5jg==}
+  '@types/vscode@1.120.0':
+    resolution: {integrity: sha512-feaT4Rst+FkTch5zz/ZbNCxoIvo55YU80Be2kiL7OJcod4+CUYf2lUBPdIJzozNnSEMq1VRTGrWEcCGFB3fBmA==}
 
   '@typescript-eslint/eslint-plugin@8.60.1':
     resolution: {integrity: sha512-JQ4S5GB0tfjO8BuJ4fcX+HodkzJjYBV+7OJ+wLygaX7OGQ7FudyHL4NSCA6ob+w3Yn+5MkKIozOwQhXeM7opVg==}
@@ -3895,7 +3895,7 @@ snapshots:
 
   '@types/sarif@2.1.7': {}
 
-  '@types/vscode@1.96.0': {}
+  '@types/vscode@1.120.0': {}
 
   '@typescript-eslint/eslint-plugin@8.60.1(@typescript-eslint/parser@8.60.1(eslint@10.4.1)(typescript@6.0.3))(eslint@10.4.1)(typescript@6.0.3)':
     dependencies:
