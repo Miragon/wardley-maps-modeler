@@ -22,7 +22,8 @@
   ],
   "scripts": {
     "build": "vite build",
-    "test": "vitest run"
+    "test": "npm --prefix ../.. run test",
+    "test:browser": "npm --prefix ../.. run test:browser"
   },
   "dependencies": {
     "@miragon/wardley-dsl": "0.0.0",
