@@ -1,0 +1,21 @@
+name: Setup
+description: Install pnpm + Node and restore dependencies with a frozen lockfile.
+
+inputs:
+  node-version:
+    description: Node.js version (defaults to the engines floor so CI verifies the declared minimum).
+    required: false
+    default: 22.13.0
+
+runs:
+  using: composite
+  steps:
+    - uses: pnpm/action-setup@v6
+
+    - uses: actions/setup-node@v6
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: pnpm
+
+    - run: pnpm install --frozen-lockfile
+      shell: bash

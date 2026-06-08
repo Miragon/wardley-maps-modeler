@@ -1,6 +1,6 @@
 name: Feature Request
 description: Suggest a new feature or enhancement for wardley-maps-modeler
-title: "[Feat]: "
+title: '[Feat]: '
 labels:
   - enhancement
 body:
