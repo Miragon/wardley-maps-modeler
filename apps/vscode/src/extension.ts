@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { WardleyEditorProvider } from './WardleyEditorProvider.js';
+import { WardleyPngEditorProvider } from './WardleyPngEditorProvider.js';
 
 /** Leere Map (nur Titel) — die Leinwand zeigt das Evolutions-Raster ohne Komponenten. */
 const EMPTY_MAP = 'title New map\n';
@@ -30,8 +31,10 @@ Kettle -> Power
 export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(
     WardleyEditorProvider.register(context),
+    WardleyPngEditorProvider.register(context),
     vscode.commands.registerCommand('wardley.newMap', () => createMap(EMPTY_MAP)),
     vscode.commands.registerCommand('wardley.newMapFromExample', () => createMap(EXAMPLE_MAP)),
+    vscode.commands.registerCommand('wardley.newPngMap', () => createPngMap()),
   );
 }
 
@@ -63,4 +66,34 @@ async function createMap(initial: string): Promise<void> {
 function defaultMapUri(): vscode.Uri | undefined {
   const folder = vscode.workspace.workspaceFolders?.[0];
   return folder ? vscode.Uri.joinPath(folder.uri, 'wardley-map.wmap') : undefined;
+}
+
+/**
+ * Legt eine neue, eingebettete PNG-Map (`*.wmap.png`) an und öffnet sie im PNG-Editor. Die Datei
+ * startet als 0-Byte-Platzhalter (Render geht nur in der Webview) und ist sofort „dirty": ein Cmd+S
+ * materialisiert das gerenderte PNG mit eingebetteter Map.
+ */
+async function createPngMap(): Promise<void> {
+  const folder = vscode.workspace.workspaceFolders?.[0];
+  const options: vscode.SaveDialogOptions = {
+    title: 'New Wardley Map (embedded PNG)',
+    saveLabel: 'Create map',
+    filters: { 'Wardley Map (PNG)': ['png'] },
+  };
+  if (folder) options.defaultUri = vscode.Uri.joinPath(folder.uri, 'wardley-map.wmap.png');
+
+  const chosen = await vscode.window.showSaveDialog(options);
+  if (!chosen) return;
+
+  // Sicherstellen, dass der Editor die Datei auch beansprucht (er bindet nur *.wmap.png/*.owm.png).
+  const target = /\.(wmap|owm)\.png$/i.test(chosen.path)
+    ? chosen
+    : chosen.with({ path: `${chosen.path.replace(/\.png$/i, '')}.wmap.png` });
+
+  await vscode.workspace.fs.writeFile(target, new Uint8Array());
+  await vscode.commands.executeCommand(
+    'vscode.openWith',
+    target,
+    WardleyPngEditorProvider.viewType,
+  );
 }

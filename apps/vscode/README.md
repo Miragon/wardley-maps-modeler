@@ -22,14 +22,21 @@ the shared `@wardley/*` core — the same diagram-js engine that powers the web 
   export SVG/PNG.
 - **Export SVG & PNG with the scene embedded** (idea borrowed from Excalidraw) — exported images
   can be reopened as editable maps.
+- **Editable embedded-PNG maps (`*.wmap.png` / `*.owm.png`).** Open such a file and you edit the
+  Wardley map graphically just like a `.wmap`; the map is stored inside the PNG (a `tEXt` chunk),
+  so the file stays a normal image you can drop into a wiki, README, or chat. Saving re-renders the
+  picture and re-embeds the updated map. (Only PNGs that carry an embedded map are editable here.)
 - **Self-hosted font** (no Google Fonts CDN) — offline-capable and GDPR-friendly.
 
 ## Commands
 
 - **Wardley: New Empty Map** — pick a location, get a blank map.
 - **Wardley: New Map from Example** — same, pre-filled with the Tea Shop example.
+- **Wardley: New Empty Map (embedded PNG)** — pick a location for a `*.wmap.png`; press
+  `Ctrl/Cmd+S` once to render the first PNG, then edit it like any other map.
 
-To reopen a map as raw text, use **View: Reopen Editor With… → Text Editor**.
+To reopen a map as raw text, use **View: Reopen Editor With… → Text Editor**. To open a
+`*.wmap.png` as a plain image instead, use **View: Reopen Editor With… → Image Preview**.
 
 ## How it works
 
@@ -44,6 +51,12 @@ To reopen a map as raw text, use **View: Reopen Editor With… → Text Editor**
 - The extension host (`dist/extension.cjs`) registers a `CustomTextEditorProvider` and brokers the
   message protocol (`src/protocol.ts`): `init`/`update` (host → webview) and `edit`/`export`
   (webview → host). An echo guard prevents the editor's own writes from resetting the canvas.
+- For `*.wmap.png` / `*.owm.png` the host registers a second, **binary** `CustomEditorProvider`. The
+  PNG is opened as a `CustomDocument`; the embedded OWM-DSL (a `tEXt` chunk) is the in-memory source
+  of truth and drives the same webview. Because rasterising needs a browser canvas, saving is a
+  round-trip: the host asks the webview (`requestPng`) for the freshly rendered PNG with the map
+  re-embedded (`pngResponse`) and writes those bytes. `retainContextWhenHidden` keeps the modeler
+  alive so background saves can still render.
 
 ## Development
 

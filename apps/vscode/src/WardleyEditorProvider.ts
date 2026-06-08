@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
-import { getNonce } from './util.js';
+import { getWebviewHtml } from './webviewHtml.js';
+import { exportImageToFile } from './exportImage.js';
 import type { HostToWebview, WebviewToHost } from './protocol.js';
 
 /**
@@ -35,7 +36,7 @@ export class WardleyEditorProvider implements vscode.CustomTextEditorProvider {
       enableScripts: true,
       localResourceRoots: [vscode.Uri.joinPath(this.context.extensionUri, 'dist')],
     };
-    webview.html = this.getHtml(webview);
+    webview.html = getWebviewHtml(webview, this.context.extensionUri);
 
     const post = (msg: HostToWebview): Thenable<boolean> => webview.postMessage(msg);
 
@@ -64,7 +65,7 @@ export class WardleyEditorProvider implements vscode.CustomTextEditorProvider {
           await this.replaceWholeDocument(document, msg.text, suppressEcho);
           break;
         case 'export':
-          await this.exportToFile(document, msg.format, msg.data);
+          await exportImageToFile(document.uri, msg.format, msg.data);
           break;
         case 'info':
           void vscode.window.showInformationMessage(msg.message);
@@ -100,79 +101,5 @@ export class WardleyEditorProvider implements vscode.CustomTextEditorProvider {
     edit.replace(document.uri, fullRange, text);
     const ok = await vscode.workspace.applyEdit(edit);
     if (!ok) suppressEcho.delete(text); // Schreiben fehlgeschlagen (z.B. read-only) -> kein Echo
-  }
-
-  /** SVG/PNG über einen Save-Dialog auf die Platte schreiben (Szene ist in der Datei eingebettet). */
-  private async exportToFile(
-    document: vscode.TextDocument,
-    format: 'svg' | 'png',
-    data: string,
-  ): Promise<void> {
-    const options: vscode.SaveDialogOptions = {
-      filters: format === 'svg' ? { 'SVG image': ['svg'] } : { 'PNG image': ['png'] },
-    };
-    const defaultUri = this.exportDefaultUri(document, format);
-    if (defaultUri) options.defaultUri = defaultUri;
-    const target = await vscode.window.showSaveDialog(options);
-    if (!target) return;
-
-    const bytes =
-      format === 'svg'
-        ? new TextEncoder().encode(data)
-        : new Uint8Array(Buffer.from(data, 'base64'));
-    await vscode.workspace.fs.writeFile(target, bytes);
-
-    const action = await vscode.window.showInformationMessage(
-      `Wardley map exported as ${format.toUpperCase()}.`,
-      'Reveal',
-    );
-    if (action === 'Reveal') void vscode.commands.executeCommand('revealFileInOS', target);
-  }
-
-  /** `<mapname>.svg` neben der Map (bei Untitled: im Workspace-Ordner). */
-  private exportDefaultUri(
-    document: vscode.TextDocument,
-    format: 'svg' | 'png',
-  ): vscode.Uri | undefined {
-    if (document.uri.scheme === 'file') {
-      const path = document.uri.path.replace(/\.[^./]+$/, '');
-      return document.uri.with({ path: `${path}.${format}` });
-    }
-    const folder = vscode.workspace.workspaceFolders?.[0];
-    return folder ? vscode.Uri.joinPath(folder.uri, `wardley-map.${format}`) : undefined;
-  }
-
-  private getHtml(webview: vscode.Webview): string {
-    const nonce = getNonce();
-    const asset = (file: string): vscode.Uri =>
-      webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, 'dist', file));
-    const scriptUri = asset('webview.js');
-    const styleUri = asset('webview.css');
-
-    const csp = [
-      `default-src 'none'`,
-      `img-src ${webview.cspSource} data: blob:`,
-      `style-src ${webview.cspSource} 'unsafe-inline'`,
-      `font-src ${webview.cspSource} data:`,
-      `script-src 'nonce-${nonce}'`,
-    ].join('; ');
-
-    return `<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="Content-Security-Policy" content="${csp}" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link href="${styleUri}" rel="stylesheet" />
-    <title>Wardley Map</title>
-  </head>
-  <body>
-    <div id="app">
-      <div id="canvas" class="wardley-canvas"></div>
-      <div id="toolbar" class="toolbar"></div>
-    </div>
-    <script nonce="${nonce}" src="${scriptUri}"></script>
-  </body>
-</html>`;
   }
 }
