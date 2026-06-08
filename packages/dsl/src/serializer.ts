@@ -10,7 +10,7 @@ function r(n: number): string {
   return String(Math.round(n * 1000) / 1000);
 }
 
-/** Typen, die in der OWM-DSL UEBER IHREN NAMEN referenziert werden (Kanten-Endpunkte + Namespace). */
+/** Types referenced BY THEIR NAME in the OWM DSL (edge endpoints + namespace). */
 const NAMED_TYPES: ReadonlySet<string> = new Set(['anchor', 'component', 'accelerator', 'submap']);
 
 function defaultName(type: string): string {
@@ -24,11 +24,11 @@ function defaultName(type: string): string {
 }
 
 /**
- * Liefert pro Element-ID einen im DSL EINDEUTIGEN Namen für die referenzierbaren Typen
- * (component/anchor/…). Weil Kanten per Namen serialisiert werden (`A -> B`), wuerden doppelte oder
- * leere Labels beim Re-Import auf denselben Knoten kollabieren und Pfeile verschwinden lassen. Hier
- * wird darum bei Kollision ein Suffix (`Name 2`) und bei leerem Label ein Default vergeben — fuer
- * BEIDE Seiten (Knotenzeile UND Kantenreferenz) konsistent. Eindeutige Namen bleiben unveraendert.
+ * Returns a name per element ID that is UNIQUE within the DSL for the referenceable types
+ * (component/anchor/…). Because edges are serialized by name (`A -> B`), duplicate or empty
+ * labels would collapse onto the same node on re-import and make arrows disappear. So on
+ * collision a suffix (`Name 2`) is assigned and on an empty label a default — consistently for
+ * BOTH sides (node line AND edge reference). Unique names stay unchanged.
  */
 function uniqueNames(map: WardleyMap): Map<string, string> {
   const used = new Set<string>();
@@ -62,9 +62,9 @@ function decoratorSuffix(dec: ComponentDecorators | undefined): string {
 }
 
 /**
- * Serialisiert ein WardleyMap in Online-Wardley-Maps-Text. Deterministisch; schreibt nur
- * Syntax, die der OWM-Parser wieder einliest. `rawPassthrough` wird unveraendert angehaengt.
- * Koordinaten keyword-differenziert (component/anchor/note = [visibility, maturity];
+ * Serializes a WardleyMap into Online-Wardley-Maps text. Deterministic; writes only
+ * syntax the OWM parser reads back. `rawPassthrough` is appended unchanged.
+ * Coordinates are keyword-differentiated (component/anchor/note = [visibility, maturity];
  * pipeline = [maturityStart, maturityEnd]).
  */
 export function serializeDSL(map: WardleyMap): string {
@@ -110,9 +110,9 @@ export function serializeDSL(map: WardleyMap): string {
     }
   }
 
-  // Config-Keywords sind oben bereits aus der Map emittiert. Ein gleichnamiger rawPassthrough-
-  // Eintrag (z.B. eine unparsbare `evolution`-Zeile aus extern-authored DSL) wuerde sonst eine
-  // widerspruechliche Doppelzeile erzeugen — verwerfen (Config ist die Wahrheit).
+  // Config keywords were already emitted from the map above. A rawPassthrough entry with the
+  // same keyword (e.g. an unparsable `evolution` line from externally-authored DSL) would
+  // otherwise produce a contradictory duplicate line — drop it (config is the truth).
   if (map.rawPassthrough) {
     const emitted = new Set<string>();
     if (map.config.evolutionLabels) emitted.add('evolution');
@@ -134,7 +134,7 @@ function elementLine(el: MapElement, name: string): string {
     case 'component':
       return `component ${name} [${r(p.visibility)}, ${r(p.evolution)}]${decoratorSuffix(el.decorators)}${offsetSuffix(el.labelOffset)}`;
     case 'note':
-      // Zeilenumbrueche als literales `\n` kodieren -> die zeilenbasierte DSL bleibt einzeilig.
+      // Encode line breaks as literal `\n` -> the line-based DSL stays single-line.
       return `note ${name.replace(/\n/g, '\\n')} [${r(p.visibility)}, ${r(p.evolution)}]${el.color ? ` (color ${el.color})` : ''}`;
     case 'pipeline':
       return `pipeline ${name} [${r(el.evolutionStart)}, ${r(el.evolutionEnd)}]`;

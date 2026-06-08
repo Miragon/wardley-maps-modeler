@@ -1,9 +1,9 @@
 import { z } from 'zod';
 
 /**
- * Zod-Schemas spiegeln das Metamodell (types.ts) und bilden den Laufzeit-Validierungs-Gate.
- * Invarianten: 0 <= v,e <= 1; evolutionEnd > evolutionStart; eindeutige IDs; Edge-Endpunkte
- * referenzieren existierende Elemente (kreuzfeld-validiert in `validateMap`).
+ * Zod schemas mirror the metamodel (types.ts) and form the runtime validation gate.
+ * Invariants: 0 <= v,e <= 1; evolutionEnd > evolutionStart; unique IDs; edge endpoints
+ * reference existing elements (cross-field validated in `validateMap`).
  */
 
 const norm = z.number().min(0).max(1);
@@ -60,7 +60,7 @@ const pipelineSchema = z
     childIds: z.array(z.string()),
   })
   .refine((p) => p.evolutionEnd > p.evolutionStart, {
-    message: 'evolutionEnd muss groesser als evolutionStart sein',
+    message: 'evolutionEnd must be greater than evolutionStart',
     path: ['evolutionEnd'],
   });
 

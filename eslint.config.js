@@ -5,21 +5,21 @@ import prettier from 'eslint-config-prettier';
 import globals from 'globals';
 
 /**
- * Flat Config. Wichtigster projektspezifischer Baustein: das DOM-Boundary-Enforcement.
- * Die DOM-freien Pakete (schema-model, dsl, transforms) duerfen weder diagram-js noch
- * DOM-Bibliotheken/-Globals importieren (Leitprinzip P1, Konzept §9.1).
+ * Flat Config. The most important project-specific piece is DOM-boundary enforcement:
+ * the DOM-free packages (schema-model, dsl, transforms) must not import diagram-js or any
+ * DOM library/global (guiding principle P1, concept doc §9.1).
  */
 
 const DOM_RESTRICTED_IMPORTS = {
   paths: [
-    { name: 'diagram-js', message: 'DOM-freie Pakete duerfen diagram-js nicht importieren (P1).' },
-    { name: 'tiny-svg', message: 'DOM-freie Pakete duerfen tiny-svg nicht importieren (P1).' },
-    { name: 'min-dom', message: 'DOM-freie Pakete duerfen min-dom nicht importieren (P1).' },
+    { name: 'diagram-js', message: 'DOM-free packages must not import diagram-js (P1).' },
+    { name: 'tiny-svg', message: 'DOM-free packages must not import tiny-svg (P1).' },
+    { name: 'min-dom', message: 'DOM-free packages must not import min-dom (P1).' },
   ],
   patterns: [
     {
       group: ['diagram-js/*'],
-      message: 'DOM-freie Pakete duerfen diagram-js nicht importieren (P1).',
+      message: 'DOM-free packages must not import diagram-js (P1).',
     },
   ],
 };
@@ -54,14 +54,14 @@ export default tseslint.config(
       ],
     },
   },
-  // DOM-abhaengige Pakete/Apps: Browser-Globals erlaubt.
+  // DOM-dependent packages/apps: browser globals allowed.
   {
     files: ['packages/renderer/**/*.ts', 'apps/**/*.ts'],
     languageOptions: {
       globals: { ...globals.browser },
     },
   },
-  // DOM-FREIE Pakete: harte Grenze.
+  // DOM-FREE packages: hard boundary.
   {
     files: ['packages/schema-model/**/*.ts', 'packages/dsl/**/*.ts', 'packages/transforms/**/*.ts'],
     languageOptions: {
@@ -71,12 +71,12 @@ export default tseslint.config(
       'no-restricted-imports': ['error', DOM_RESTRICTED_IMPORTS],
       'no-restricted-globals': [
         'error',
-        { name: 'window', message: 'DOM-freies Paket: kein window (P1).' },
-        { name: 'document', message: 'DOM-freies Paket: kein document (P1).' },
+        { name: 'window', message: 'DOM-free package: no window (P1).' },
+        { name: 'document', message: 'DOM-free package: no document (P1).' },
       ],
     },
   },
-  // Tests duerfen lockerer sein.
+  // Tests may be more lenient.
   {
     files: ['**/*.{test,spec}.ts'],
     languageOptions: {

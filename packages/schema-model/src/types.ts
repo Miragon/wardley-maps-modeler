@@ -1,19 +1,19 @@
 /**
- * Wardley-Metamodell (Konzept §2.2).
+ * Wardley metamodel (concept doc §2.2).
  *
- * Alle Interfaces sind `readonly` und ausschliesslich Serialisierungs-/Schnittstellenformat.
- * Die Laufzeit-Wahrheit waehrend des Editierens lebt in den mutablen diagram-js-DI-Properties
- * (@wardley/renderer). `exportMap()` baut ein `WardleyMap` aus diesen Properties.
+ * All interfaces are `readonly` and serve purely as the serialization/interface format.
+ * The runtime source of truth while editing lives in the mutable diagram-js DI properties
+ * (@wardley/renderer). `exportMap()` builds a `WardleyMap` from those properties.
  *
- * Koordinaten sind kontinuierlich und normiert; die diskrete Evolution-Stage wird abgeleitet
- * (siehe `stage.ts`), nie persistiert (Leitprinzip P2).
+ * Coordinates are continuous and normalized; the discrete evolution stage is derived
+ * (see `stage.ts`), never persisted (guiding principle P2).
  */
 
-/** Normierte Position auf den zwei kontinuierlichen Achsen. Invariante: 0 <= v,e <= 1. */
+/** Normalized position on the two continuous axes. Invariant: 0 <= v,e <= 1. */
 export interface Coordinate {
-  /** Y: 1 = sichtbar (oben beim Anchor), 0 = infrastrukturell (unten). */
+  /** Y: 1 = visible (top, near the anchor), 0 = infrastructural (bottom). */
   readonly visibility: number;
-  /** X: 0 = Genesis (links), 1 = Commodity/Utility (rechts). */
+  /** X: 0 = Genesis (left), 1 = Commodity/Utility (right). */
   readonly evolution: number;
 }
 
@@ -29,7 +29,7 @@ export type ElementType =
 
 export type Method = 'build' | 'buy' | 'outsource';
 
-/** Decorator-Flags; market/ecosystem als Flags statt eigener Typen (modernisierte OWM-Syntax). */
+/** Decorator flags; market/ecosystem as flags rather than dedicated types (modernized OWM syntax). */
 export interface ComponentDecorators {
   readonly market?: boolean;
   readonly ecosystem?: boolean;
@@ -42,7 +42,7 @@ export interface LabelOffset {
   readonly dy: number;
 }
 
-/** Geplante Evolution (evolve). Am Knoten verankert. */
+/** Anchored to the node. */
 export interface Movement {
   readonly targetEvolution: number;
   readonly newLabel?: string;
@@ -50,7 +50,6 @@ export interface Movement {
   readonly labelOffset?: LabelOffset;
 }
 
-/** Gemeinsame Basis aller Knoten. */
 export interface MapElementBase {
   readonly id: string;
   readonly elementType: ElementType;
@@ -67,16 +66,16 @@ export interface ComponentElement extends MapElementBase {
   readonly elementType: 'component';
   readonly decorators?: ComponentDecorators;
   readonly movement?: Movement;
-  /** Zugehoerigkeit zu einer Pipeline (teilt deren visibility). */
+  /** Membership in a pipeline (shares its visibility). */
   readonly pipelineId?: string;
 }
 
 export interface PipelineElement extends MapElementBase {
   readonly elementType: 'pipeline';
-  /** DSL-Klammern fuer `pipeline` = [evolutionStart, evolutionEnd] (siehe §7.4). */
+  /** DSL brackets for `pipeline` = [evolutionStart, evolutionEnd] (see §7.4). */
   readonly evolutionStart: number;
   readonly evolutionEnd: number;
-  /** ComponentElement.id der Kinder; sie teilen die visibility der Pipeline. */
+  /** ComponentElement.id of the children; they share the pipeline's visibility. */
   readonly childIds: readonly string[];
 }
 
@@ -91,7 +90,7 @@ export type ClimaticPattern =
 export interface NoteElement extends MapElementBase {
   readonly elementType: 'note';
   readonly patternType?: ClimaticPattern;
-  /** Optionale Notiz-Farbe (CSS-Farbe, i.d.R. Hex aus der Renderer-`NOTE_COLORS`-Palette). */
+  /** Optional note color (CSS color, typically hex from the renderer's `NOTE_COLORS` palette). */
   readonly color?: string;
 }
 
@@ -112,8 +111,8 @@ export interface AcceleratorElement extends MapElementBase {
 export type AttitudeKind = 'pioneers' | 'settlers' | 'townplanners';
 
 export interface AttitudeElement extends MapElementBase {
-  /** OWM-Syntax: `<kind> [visibility, maturity] width height`. `position` = Ankerpunkt (oben links),
-   *  `width`/`height` in (OWM-)Pixeln. */
+  /** OWM syntax: `<kind> [visibility, maturity] width height`. `position` = anchor point (top left),
+   *  `width`/`height` in (OWM) pixels. */
   readonly elementType: 'attitude';
   readonly kind: AttitudeKind;
   readonly width: number;
@@ -125,7 +124,6 @@ export interface SubmapElement extends MapElementBase {
   readonly urlRef?: string;
 }
 
-/** Diskriminierte Union ueber `elementType`. */
 export type MapElement =
   | AnchorElement
   | ComponentElement
@@ -141,9 +139,9 @@ export type EdgeType = 'dependency' | 'flow';
 export interface DependencyLink {
   readonly id: string;
   readonly edgeType: 'dependency';
-  /** MapElement.id des sichtbareren/hoeheren Knotens. */
+  /** MapElement.id of the more visible/higher node. */
   readonly from: string;
-  /** MapElement.id der Abhaengigkeit. */
+  /** MapElement.id of the dependency. */
   readonly to: string;
   readonly label?: string;
 }
@@ -153,11 +151,11 @@ export interface FlowLink {
   readonly edgeType: 'flow';
   readonly from: string;
   readonly to: string;
-  /** Wert am Flow: `+'120ms'>`. */
+  /** Value on the flow: `+'120ms'>`. */
   readonly flowValue?: string;
   /** `+<>` */
   readonly bidirectional?: boolean;
-  /** Annotationstext nach `;`, z.B. `A +> B; limited by`. */
+  /** Annotation text after `;`, e.g. `A +> B; limited by`. */
   readonly label?: string;
 }
 
@@ -165,25 +163,24 @@ export type MapEdge = DependencyLink | FlowLink;
 
 export type MapStyle = 'wardley' | 'handwritten' | 'colour' | 'dark';
 
-/** Map-Level-Konfiguration (Achsenlabels, Stil, Groesse). */
 export interface MapConfig {
   readonly title: string;
   readonly size?: { readonly width: number; readonly height: number };
   readonly style?: MapStyle;
-  /** Custom X-Achsen-Stage-Labels, sonst Default Genesis/Custom/Product/Commodity. */
+  /** Custom X-axis stage labels, otherwise the default Genesis/Custom/Product/Commodity. */
   readonly evolutionLabels?: readonly [string, string, string, string];
-  /** Konfigurierbare Stage-Grenzen (Default [0.17, 0.40, 0.70]). */
+  /** Configurable stage boundaries (default [0.17, 0.40, 0.70]). */
   readonly stageBoundaries?: readonly [number, number, number];
   readonly yAxisLabel?: string;
   readonly annotationsBoxPosition?: Coordinate;
 }
 
-/** Wurzelobjekt. Domaene und Layout logisch (nicht physisch) getrennt. */
+/** Root object. Domain and layout are separated logically (not physically). */
 export interface WardleyMap {
   readonly schemaVersion: number;
   readonly config: MapConfig;
   readonly elements: readonly MapElement[];
   readonly edges: readonly MapEdge[];
-  /** Unbekannte/zukuenftige DSL-Zeilen verlustfrei erhalten (Round-Trip-Treue). */
+  /** Preserve unknown/future DSL lines losslessly (round-trip fidelity). */
   readonly rawPassthrough?: readonly string[];
 }

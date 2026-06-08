@@ -1,7 +1,7 @@
 {
   "name": "@wardley/renderer",
   "version": "0.0.0",
-  "description": "diagram-js-basierter Wardley-Renderer: Viewer / NavigatedViewer / (Modeler). DOM-abhängig.",
+  "description": "diagram-js-based Wardley renderer: Viewer / NavigatedViewer / (Modeler). DOM-dependent.",
   "license": "MIT",
   "type": "module",
   "sideEffects": [

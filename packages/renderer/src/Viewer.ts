@@ -5,7 +5,6 @@ import { evolutionGridModule } from './evolution-grid/index.js';
 import { wardleyDrawModule } from './draw/index.js';
 import { ioModule } from './io/index.js';
 
-/** Read-only Renderer: zeichnet eine Wardley-Map ohne Interaktion. */
 export class Viewer extends WardleyBaseViewer {
   protected _getModules(): ModuleDeclaration[] {
     return [wardleyModelModule, evolutionGridModule, wardleyDrawModule, ioModule];

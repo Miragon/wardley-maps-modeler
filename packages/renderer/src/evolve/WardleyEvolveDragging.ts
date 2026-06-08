@@ -9,7 +9,7 @@ import type { WardleyShape } from '../model/di-types.js';
 
 const PREFIX = 'wardley.evolve';
 const MIN_DELTA = 0.005;
-/** CSS-Klasse des roten Ziel-Kreises (vom Renderer gesetzt) — direkter Drag-Griff. */
+/** CSS class of the red target circle (set by the renderer) — direct drag handle. */
 const HANDLE_CLASS = 'wardley-evolve-handle';
 
 interface EvolveContext {
@@ -24,9 +24,9 @@ function clamp01(n: number): number {
 }
 
 /**
- * Setzt das Evolve-Ziel einer Komponente per Drag entlang der Evolution-Achse (statt Textfeld).
- * Waehrend des Ziehens Live-Vorschau (direkte Mutation + Re-Render); beim Loslassen genau EIN
- * undo-barer Commit ueber den commandStack (P4). ESC bricht ab und stellt den Originalzustand her.
+ * Sets a component's evolve target by dragging along the evolution axis (instead of a text field).
+ * During the drag a live preview (direct mutation + re-render); on release exactly ONE
+ * undoable commit via the commandStack (P4). ESC cancels and restores the original state.
  */
 export default class WardleyEvolveDragging {
   static $inject = [
@@ -52,7 +52,7 @@ export default class WardleyEvolveDragging {
       eventBus.fire('element.changed', { element: shape });
     };
 
-    // Screen-Pixel -> normierte Evolution (über die einzige Mathematik-Quelle, P7).
+    // Screen pixels -> normalized evolution (via the single source of math, P7).
     const evolutionAtClientX = (clientX: number, cy: number): number => {
       const rect = canvas.getContainer().getBoundingClientRect();
       const vb = canvas.viewbox();
@@ -60,10 +60,10 @@ export default class WardleyEvolveDragging {
       return clamp01(grid.fromCanvas({ x: canvasX, y: cy }).evolution);
     };
 
-    // Direkter Griff: mousedown auf dem roten Ziel-Kreis verschiebt das Evolve-Ziel per Drag.
-    // Capture-Phase + stopPropagation, damit diagram-js NICHT stattdessen den Knoten verschiebt.
-    // Eigene Dokument-Listener (statt dragging.init) — verlässliches, testbares mousedown-Dragging.
-    // Delegiert am Container -> überlebt das Re-Rendern des Kreises während der Vorschau.
+    // Direct handle: mousedown on the red target circle moves the evolve target by dragging.
+    // Capture phase + stopPropagation so that diagram-js does NOT move the node instead.
+    // Own document listeners (instead of dragging.init) — reliable, testable mousedown dragging.
+    // Delegated on the container -> survives the re-rendering of the circle during the preview.
     canvas.getContainer().addEventListener(
       'mousedown',
       (event: MouseEvent) => {
@@ -85,7 +85,7 @@ export default class WardleyEvolveDragging {
         const onUp = () => {
           document.removeEventListener('mousemove', onMove);
           document.removeEventListener('mouseup', onUp);
-          preview(shape, original); // Vorschau zurück, dann EIN undo-barer Commit (P4)
+          preview(shape, original); // reset preview, then ONE undoable commit (P4)
           if (target !== undefined && Math.abs(target - shape.evolution) > MIN_DELTA) {
             modeling.evolveComponent(shape, target);
           }
@@ -107,7 +107,7 @@ export default class WardleyEvolveDragging {
     eventBus.on(`${PREFIX}.end`, (event: { context: EvolveContext }) => {
       const ctx = event.context;
       const { shape, target } = ctx;
-      // Vorschau zuruecksetzen, dann als EINEN Command ausfuehren (sauberes Undo).
+      // Reset the preview, then execute as ONE command (clean undo).
       preview(shape, ctx.originalMovement);
       if (target !== undefined && Math.abs(target - shape.evolution) > MIN_DELTA) {
         modeling.evolveComponent(shape, target);
@@ -121,8 +121,8 @@ export default class WardleyEvolveDragging {
     });
   }
 
-  /** Startet den Evolve-Drag fuer `shape` (aus dem ContextPad): Ziel per Ziehen entlang der Achse
-   *  setzen bzw. nachträglich verschieben, mit Live-Vorschau; Commit beim Loslassen. */
+  /** Starts the evolve drag for `shape` (from the context pad): set the target by dragging along
+   *  the axis, or move it afterwards, with live preview; commit on release. */
   start(event: Event, shape: WardleyShape): void {
     const context: EvolveContext = {
       shape,

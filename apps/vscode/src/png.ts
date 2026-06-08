@@ -1,16 +1,16 @@
 /**
- * DOM-freie PNG-/Encoding-Helfer für die EINGEBETTETE Wardley-Szene (OWM-DSL).
+ * DOM-free PNG/encoding helpers for the EMBEDDED Wardley scene (OWM-DSL).
  *
- * Wird von BEIDEN Seiten genutzt:
- *  - Extension-Host (Node): liest `.wmap.png`/`.owm.png`-Bytes und extrahiert die DSL (`pngExtractText`
- *    + `decodeMap`), um sie der Webview als `init` zu schicken.
- *  - Webview (Browser): rastert das SVG zu PNG und bettet die DSL ein (`pngInsertText` + `encodeMap`).
+ * Used by BOTH sides:
+ *  - Extension host (Node): reads `.wmap.png`/`.owm.png` bytes and extracts the DSL (`pngExtractText`
+ *    + `decodeMap`) to send it to the webview as `init`.
+ *  - Webview (browser): rasterizes the SVG to PNG and embeds the DSL (`pngInsertText` + `encodeMap`).
  *
- * Alle Funktionen kommen ohne DOM aus (nur `TextEncoder`/`TextDecoder`/`atob`/`btoa`, in Node ≥18 und
- * im Browser global verfügbar). Die Kodierung ist identisch zur Demo-Webapp (apps/webapp/src/*).
+ * All functions work without the DOM (only `TextEncoder`/`TextDecoder`/`atob`/`btoa`, available
+ * globally in Node ≥18 and the browser). The encoding is identical to the demo webapp (apps/webapp/src/*).
  */
 
-/** PNG-tEXt-Keyword, unter dem die eingebettete Szene abgelegt wird. */
+/** PNG tEXt keyword under which the embedded scene is stored. */
 export const EMBED_KEYWORD = 'wardley-map';
 
 /** UTF-8 -> URL-safe Base64 (A-Za-z0-9-_, ohne Padding). */
@@ -21,7 +21,7 @@ export function encodeMap(text: string): string {
   return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-/** URL-safe Base64 -> UTF-8 (Gegenstück zu `encodeMap`). */
+/** URL-safe Base64 -> UTF-8 (counterpart to `encodeMap`). */
 export function decodeMap(b64: string): string {
   const norm = b64.replace(/-/g, '+').replace(/_/g, '/');
   const bin = atob(norm);
@@ -29,8 +29,6 @@ export function decodeMap(b64: string): string {
   for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
   return new TextDecoder().decode(bytes);
 }
-
-// --- PNG-tEXt-Chunk-Helfer ---
 
 const CRC_TABLE = (() => {
   const t = new Uint32Array(256);
@@ -54,7 +52,7 @@ function latin1(str: string): Uint8Array {
   return out;
 }
 
-/** Fügt einen tEXt-Chunk (keyword\0text) vor IEND ein. */
+/** Inserts a tEXt chunk (keyword\0text) before IEND. */
 export function pngInsertText(png: Uint8Array, keyword: string, text: string): Uint8Array {
   const data = new Uint8Array([...latin1(keyword), 0, ...latin1(text)]);
   const type = latin1('tEXt');
@@ -73,10 +71,10 @@ export function pngInsertText(png: Uint8Array, keyword: string, text: string): U
   return out;
 }
 
-/** Liest den Text des ERSTEN tEXt-Chunks mit gegebenem Keyword (oder null, wenn keiner existiert). */
+/** Reads the text of the FIRST tEXt chunk with the given keyword (or null if none exists). */
 export function pngExtractText(png: Uint8Array, keyword: string): string | null {
   const view = new DataView(png.buffer, png.byteOffset, png.byteLength);
-  let off = 8; // PNG-Signatur überspringen
+  let off = 8; // skip the PNG signature
   while (off + 8 <= png.length) {
     const len = view.getUint32(off);
     const type = String.fromCharCode(png[off + 4]!, png[off + 5]!, png[off + 6]!, png[off + 7]!);
@@ -95,11 +93,11 @@ export function pngExtractText(png: Uint8Array, keyword: string): string | null 
   return null;
 }
 
-/** Latin-1-Bytes -> String (chunkweise, damit auch große Texte den Call-Stack nicht sprengen). */
+/** Latin-1 bytes -> string (in chunks, so even large texts don't blow the call stack). */
 function latin1Decode(bytes: Uint8Array): string {
   let out = '';
-  // 0x8000 (32 KiB) hält das Spread-Argument-Limit (~64–128k) mit Sicherheitsabstand ein und
-  // verhindert „Maximum call stack size exceeded" bei großen eingebetteten Maps.
+  // 0x8000 (32 KiB) stays comfortably under the spread-argument limit (~64–128k) and prevents
+  // "Maximum call stack size exceeded" for large embedded maps.
   const CHUNK = 0x8000;
   for (let i = 0; i < bytes.length; i += CHUNK) {
     out += String.fromCharCode(...bytes.subarray(i, i + CHUNK));

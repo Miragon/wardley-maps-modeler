@@ -6,17 +6,17 @@ import type WardleyElementFactory from '../model/WardleyElementFactory.js';
 
 interface ActiveEdit {
   field: HTMLInputElement | HTMLTextAreaElement;
-  /** Speichert den aktuellen Wert und schliesst (für Enter, Blur, Klick nach außen). */
+  /** Saves the current value and closes (for Enter, blur, click outside). */
   commit: () => void;
-  /** Verwirft und schliesst (nur für Escape). */
+  /** Discards and closes (only for Escape). */
   cleanup: () => void;
 }
 
 /**
- * Eigenes Inline-Label-Editing als HTML-Overlay (bewusst nicht diagram-js-direct-editing, §8.5).
- * Commit laeuft ueber `wardleyModeling.updateLabel` -> commandStack (Undo, P4).
- * Notizen werden in einer `<textarea>` editiert (mehrzeilig: Enter = Zeilenumbruch,
- * Cmd/Ctrl+Enter oder Klick nach außen = speichern); alle anderen in einem `<input>` (Enter = speichern).
+ * Custom inline label editing as an HTML overlay (deliberately not diagram-js direct-editing, §8.5).
+ * Commit goes through `wardleyModeling.updateLabel` -> commandStack (undo, P4).
+ * Notes are edited in a `<textarea>` (multiline: Enter = line break, Cmd/Ctrl+Enter or click outside
+ * = save); everything else in an `<input>` (Enter = save).
  */
 export default class WardleyLabelEditing {
   static $inject = ['eventBus', 'canvas', 'wardleyModeling', 'wardleyElementFactory'];
@@ -32,7 +32,7 @@ export default class WardleyLabelEditing {
     eventBus.on('element.dblclick', (event: { element?: unknown }) => {
       if (isWardleyShape(event.element)) this.activate(event.element);
     });
-    // Klick/Drag/Pan außerhalb des Feldes = SPEICHERN (nicht verwerfen). Nur Escape verwirft.
+    // Click/drag/pan outside the field = SAVE (not discard). Only Escape discards.
     eventBus.on(['element.mousedown', 'drag.init', 'canvas.viewbox.changing'], () =>
       this.active?.commit(),
     );
@@ -82,9 +82,9 @@ export default class WardleyLabelEditing {
       const changed = value && value !== element.wardleyLabel;
       cleanup();
       if (!changed) return;
-      // Eindeutigkeit nur fuer verlinkbare Knoten erzwingen (doppelte Namen wuerden beim DSL-
-      // Round-Trip Knoten kollabieren lassen -> Pfeile verschwinden). Notizen sind nie Kanten-
-      // Endpunkte und duerfen sich daher wiederholen (z.B. mehrere "Risiko"-Hinweise).
+      // Enforce uniqueness only for linkable nodes (duplicate names would collapse nodes on the
+      // DSL round-trip -> arrows disappear). Notes are never edge endpoints and may therefore
+      // repeat (e.g. several "Risk" hints).
       const finalLabel = isNote ? value : this.factory.uniqueLabel(value, element.id);
       this.modeling.updateLabel(element, finalLabel);
     };
@@ -95,7 +95,7 @@ export default class WardleyLabelEditing {
         return;
       }
       if (e.key === 'Enter') {
-        // Notiz: nur mit Cmd/Ctrl speichern -> sonst Zeilenumbruch. Andere: Enter speichert.
+        // Note: save only with Cmd/Ctrl -> otherwise line break. Others: Enter saves.
         if (isNote && !(e.metaKey || e.ctrlKey)) return;
         e.preventDefault();
         commit();

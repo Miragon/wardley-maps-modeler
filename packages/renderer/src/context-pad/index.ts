@@ -1,7 +1,7 @@
 import type { ModuleDeclaration } from 'didi';
 import WardleyContextPadProvider from './WardleyContextPadProvider.js';
 
-/** Kontext-Aktionen je Element. */
+/** Context actions per element. */
 export const wardleyContextPadModule: ModuleDeclaration = {
   __init__: ['wardleyContextPadProvider'],
   wardleyContextPadProvider: ['type', WardleyContextPadProvider],

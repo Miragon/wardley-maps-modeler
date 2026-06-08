@@ -4,7 +4,7 @@ import type CommandHandler from 'diagram-js/lib/command/CommandHandler';
 export interface UpdatePropertiesContext {
   element: ElementLike & Record<string, unknown>;
   properties: Record<string, unknown>;
-  /** intern vom Handler gesetzt (fuer revert). */
+  /** set internally by the handler (for revert). */
   oldProperties?: Record<string, unknown>;
 }
 
@@ -14,9 +14,9 @@ function setOrDelete(obj: Record<string, unknown>, key: string, value: unknown):
 }
 
 /**
- * Generischer, undo-faehiger Command-Handler zum Setzen beliebiger Wardley-Properties
- * (wardleyLabel, decorators, movement, evolutionStart/End, ...). Gibt das geaenderte Element
- * zurueck -> CommandStack feuert `elements.changed` -> Re-Render.
+ * Generic, undoable command handler for setting arbitrary Wardley properties
+ * (wardleyLabel, decorators, movement, evolutionStart/End, ...). Returns the changed element
+ * -> CommandStack fires `elements.changed` -> re-render.
  */
 export default class UpdatePropertiesHandler implements CommandHandler {
   execute(context: UpdatePropertiesContext): ElementLike[] {

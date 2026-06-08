@@ -18,9 +18,9 @@ function mark(active: boolean, label: string): string {
 }
 
 /**
- * Popup-Untermenue (geoeffnet ueber das ContextPad-Zahnrad) zum direkten Setzen von
- * Typ (normal/market/ecosystem), Beschaffung (build/buy/outsource) und Inertia — statt Cycle-Buttons.
- * Alle Aktionen laufen ueber `wardleyModeling` (Undo/Redo).
+ * Popup submenu (opened via the context pad gear) for directly setting type (normal/market/
+ * ecosystem), sourcing (build/buy/outsource) and inertia — instead of cycle buttons.
+ * All actions go through `wardleyModeling` (undo/redo).
  */
 export default class WardleyElementSettingsProvider implements PopupMenuProvider {
   static $inject = ['popupMenu', 'wardleyModeling'];

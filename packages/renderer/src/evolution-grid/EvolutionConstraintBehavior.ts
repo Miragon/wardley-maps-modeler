@@ -18,9 +18,9 @@ interface CommandContextLike {
 }
 
 /**
- * Haelt nach jeder Geometrie-Aenderung (Move/Create/Resize) die normierten Wardley-Koordinaten
- * synchron zur Pixel-Geometrie — in BEIDEN Richtungen (postExecuted UND reverted), damit Undo/Redo
- * konsistent bleibt (Konzept §5.3). `EvolutionGrid` ist die einzige Mathematik-Quelle (P7).
+ * After every geometry change (move/create/resize), keeps the normalized Wardley coordinates
+ * in sync with the pixel geometry — in BOTH directions (postExecuted AND reverted), so that undo/redo
+ * stays consistent (concept doc §5.3). `EvolutionGrid` is the single source of math (P7).
  */
 export default class EvolutionConstraintBehavior extends CommandInterceptor {
   static override $inject = ['eventBus', 'evolutionGrid'];
@@ -47,7 +47,6 @@ export default class EvolutionConstraintBehavior extends CommandInterceptor {
     }
   }
 
-  /** Projiziert die aktuelle Pixel-Geometrie zurueck auf normierte Achsenwerte. */
   private syncFromGeometry(shape: WardleyShape): void {
     const cy = shape.y + shape.height / 2;
     if (shape.wardleyType === 'pipeline') {
@@ -60,7 +59,7 @@ export default class EvolutionConstraintBehavior extends CommandInterceptor {
       return;
     }
     if (shape.wardleyType === 'attitude') {
-      // Attitude-Position = Ankerpunkt (oben links), passend zur OWM-Semantik.
+      // Attitude position = anchor point (top left), matching the OWM semantics.
       const tl = this.grid.fromCanvas({ x: shape.x, y: shape.y });
       shape.evolution = tl.evolution;
       shape.visibility = tl.visibility;

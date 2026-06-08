@@ -1,6 +1,4 @@
-/** Zentrale Rendering-Konstanten (Geometrie, Farben, Typografie) — Aesthetik "Strategic Blueprint". */
-
-/** Default-Plotflaeche in diagram-px (Innenraum ohne Achsenraender). Zur Laufzeit via config.size aenderbar. */
+/** Default plot area in diagram px (interior without axis margins). Changeable at runtime via config.size. */
 export const PLOT = {
   width: 1080,
   height: 680,
@@ -10,31 +8,26 @@ export const PLOT = {
   marginBottom: 58,
 } as const;
 
-/** Minimal-/Default-Plotgroesse fuer "Map vergroessern/verkleinern". */
 export const PLOT_MIN = { width: 480, height: 320 } as const;
 
-/** Bounding-Box-Kantenlaenge eines Komponenten-/Anchor-Knotens (px) — BPMN-Event-Maße. */
 export const NODE_SIZE = 34;
-/** Komponenten-Kreis im BPMN-Event-Stil (sauberer Kreis, duenner Rand). */
 export const COMPONENT_RADIUS = 15;
-/** Innerer Ring fuer "evolving" (Intermediate-Event-Look). */
+/** Inner ring for "evolving" (intermediate-event look). */
 export const COMPONENT_INNER_RADIUS = 12;
-/** Anchor wird als User-Icon gezeichnet; Icongroesse. */
 export const ANCHOR_ICON_SIZE = 26;
 export const PIPELINE_HEIGHT = 30;
 
-/** Zeilenhoehe einer (mehrzeiligen) Notiz in px. */
 export const NOTE_LINE_HEIGHT = 17;
 const NOTE_PAD_X = 8;
 const NOTE_PAD_Y = 6;
-// Grobe, bewusst etwas grosszuegige Zeichenbreite (13px Spline Sans) — die Hitbox soll den Text
-// sicher abdecken (lieber etwas zu breit als zu schmal). Keine DOM-Messung -> deterministisch
-// (gilt auch fuer Import/Export/Headless).
+// Rough, deliberately slightly generous character width (13px Spline Sans) — the hitbox should cover
+// the text reliably (better a bit too wide than too narrow). No DOM measurement -> deterministic
+// (holds for import/export/headless too).
 const NOTE_CHAR_W = 7.5;
 
 /**
- * Box-Masse einer Notiz aus ihrem (ggf. mehrzeiligen) Text. Die Notiz-Shape wird damit so gross
- * wie ihr Text -> die Move-/Klick-Hitbox waechst mit (statt fixer 34px). Mindestmass = NODE_SIZE.
+ * Box dimensions of a note from its (possibly multi-line) text. The note shape grows as large as
+ * its text -> the move/click hitbox grows with it (instead of a fixed 34px). Minimum = NODE_SIZE.
  */
 export function noteMetrics(label: string): { lines: string[]; width: number; height: number } {
   const lines = (label && label.length ? label : 'note').split('\n');
@@ -68,10 +61,10 @@ export const COLORS = {
 } as const;
 
 /**
- * Notiz-Farbpalette (bpmn.io-artiger Mini-Picker; bewusst KEIN Full-Color-Picker). Werte sind
- * Hex und werden 1:1 als CSS-Farbe gerendert bzw. in der DSL als `(color …)` serialisiert.
- * Konvention (auch im Wardley-Mapping-Skill genutzt): grün = gut, rot = Problem/Risiko,
- * amber = beobachten, blau = Info, lila = Idee, slate = neutral.
+ * Note color palette (bpmn.io-style mini picker; deliberately NOT a full color picker). Values are
+ * hex and are rendered 1:1 as CSS color, or serialized in the DSL as `(color …)`.
+ * Convention (also used in the Wardley-mapping skill): green = good, red = problem/risk,
+ * amber = watch, blue = info, purple = idea, slate = neutral.
  */
 export const NOTE_COLORS = [
   { id: 'green', name: 'Green · good', value: '#15803d' },
@@ -84,7 +77,7 @@ export const NOTE_COLORS = [
   { id: 'slate', name: 'Slate · neutral', value: '#475569' },
 ] as const;
 
-/** Farben der Attitude-Regionen je Art (geteilt von Renderer + Palette-Icons). */
+/** Colors of the attitude regions per kind (shared by renderer + palette icons). */
 export const ATTITUDE_COLORS: Record<string, { fill: string; stroke: string }> = {
   pioneers: { fill: 'rgba(14,124,116,0.07)', stroke: '#0e7c74' },
   settlers: { fill: 'rgba(180,131,30,0.08)', stroke: '#b4831e' },
@@ -93,12 +86,12 @@ export const ATTITUDE_COLORS: Record<string, { fill: string; stroke: string }> =
 
 export const FONT = {
   /**
-   * Wird als `font-family`-Attribut DIREKT auf allen SVG-Text-Elementen gesetzt (Canvas-Labels,
-   * Achsen-/Stage-Text und folglich auch im SVG-Export) – nicht von einem CSS-Container vererbt.
-   * Greift in JEDEM Kontext auf die self-hostete 'Spline Sans Variable', sofern der Konsument sie
-   * bereitstellt; andernfalls (z. B. standalone geoeffnetes Export-SVG) fallback-sicher auf System-Sans.
-   * Die Library liefert die Schrift NICHT mit – Konsumenten müssen sie selbst einbinden
-   * (z. B. via @fontsource-variable/spline-sans), siehe README.
+   * Set as the `font-family` attribute DIRECTLY on all SVG text elements (canvas labels,
+   * axis/stage text and consequently the SVG export too) – not inherited from a CSS container.
+   * In EVERY context it reaches for the self-hosted 'Spline Sans Variable' if the consumer provides
+   * it; otherwise (e.g. an export SVG opened standalone) it falls back safely to a system sans.
+   * The library does NOT ship the font – consumers must include it themselves
+   * (e.g. via @fontsource-variable/spline-sans), see README.
    */
   family:
     "'Spline Sans Variable', 'Spline Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif",

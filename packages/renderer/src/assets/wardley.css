@@ -11,7 +11,6 @@
   width: 100%;
   height: 100%;
   background-color: var(--wardley-paper);
-  /* Dezente Papier-/Blueprint-Textur */
   background-image: radial-gradient(rgba(27, 27, 26, 0.04) 0.6px, transparent 0.6px);
   background-size: 22px 22px;
   font-family:
@@ -25,7 +24,6 @@
   overflow: hidden;
 }
 
-/* Achsen-Layer nicht anklickbar */
 .wardley-container .layer-wardley-axes {
   pointer-events: none;
 }
@@ -35,16 +33,16 @@
   -webkit-user-select: none;
 }
 
-/* Roter Evolve-Ziel-Kreis = direkter Drag-Griff (Verschieben des Ziels). Die Visual-Ebene ist
-   sonst pointer-events:none (diagram-js trifft über .djs-hit) — der Ghost liegt aber außerhalb der
-   Knoten-Hitbox, daher muss der Kreis selbst Events empfangen. */
+/* Red evolve-target circle = direct drag handle (moving the target). The visual layer is
+   otherwise pointer-events:none (diagram-js hits via .djs-hit) — but the ghost lies outside the
+   node hitbox, so the circle itself must receive events. */
 .wardley-container .wardley-evolve-handle {
   cursor: ew-resize;
   pointer-events: all;
 }
 
-/* Hover / Selektion: Akzentfarbe — aber NICHT auf reine Text-Visuals (z.B. Notiz), sonst bekommt
-   die Schrift beim Mouseover eine störende Kontur. */
+/* Hover / selection: accent color — but NOT on pure text visuals (e.g. notes), otherwise the
+   text gets a distracting outline on mouseover. */
 .wardley-container .djs-element.hover .djs-visual > :first-child:not(text),
 .wardley-container .djs-element.selected .djs-visual > :first-child:not(text) {
   stroke: var(--wardley-accent) !important;
@@ -55,7 +53,6 @@
   stroke-dasharray: 3 3;
 }
 
-/* Resize-Handles (Pipeline/Attitude) im Akzent */
 .wardley-container .djs-resizer-visual {
   fill: #fff;
   stroke: var(--wardley-accent);
@@ -64,14 +61,14 @@
   fill: none;
 }
 
-/* Palette: horizontale Floating-Toolbar (Excalidraw-Stil). Styling am Element selbst (.djs-palette),
-   NICHT am .wardley-container — so reist es mit, wenn der Konsument die Palette woanders hin haengt
-   (z. B. die Webapp in den Header). Default = floatend oben-mitte; vom Konsumenten ueberschreibbar. */
+/* Palette: horizontal floating toolbar (Excalidraw style). Styling on the element itself (.djs-palette),
+   NOT on .wardley-container — so it travels along when the consumer mounts the palette elsewhere
+   (e.g. the webapp into the header). Default = floating top-center; overridable by the consumer. */
 .djs-palette {
   left: 50%;
   top: 12px;
   transform: translateX(-50%);
-  width: auto; /* diagram-js setzt sonst feste 48px (vertikal) */
+  width: auto; /* diagram-js otherwise sets a fixed 48px (vertical) */
   display: flex;
   align-items: center;
   padding: 5px 7px;
@@ -87,7 +84,7 @@
   align-items: center;
 }
 .djs-palette .entry {
-  float: none; /* diagram-js nutzt float:left -> im Flexrow ueberfluessig */
+  float: none; /* diagram-js uses float:left -> redundant in the flex row */
   width: 40px;
   height: 40px;
   line-height: normal;
@@ -99,7 +96,7 @@
   background: rgba(14, 124, 116, 0.1);
 }
 
-/* Dezente, vertikale Trennlinie zwischen den Gruppen (diagram-js trennt Gruppen nicht von sich aus). */
+/* Subtle vertical separator between the groups (diagram-js does not separate groups on its own). */
 .djs-palette .group + .group {
   position: relative;
   margin-left: 9px;
@@ -115,7 +112,7 @@
   background: rgba(27, 27, 26, 0.1);
 }
 
-/* Palette-Icons (eigene HTML-Icons) — unscoped, reisen mit der umgehaengten Palette mit. */
+/* Palette icons (custom HTML icons) — unscoped, travel along with the relocated palette. */
 .wardley-palette-entry {
   display: flex;
   align-items: center;
@@ -131,7 +128,7 @@
   display: block;
 }
 
-/* ContextPad-Icons (bleiben im Canvas -> scoped) */
+/* ContextPad icons (stay in the canvas -> scoped) */
 .wardley-container .wardley-cp-entry {
   display: flex;
   align-items: center;
@@ -155,7 +152,6 @@
   background: rgba(14, 124, 116, 0.12);
 }
 
-/* Inline-Label-Editor */
 .wardley-container .wardley-label-input {
   font-family: inherit;
   font-size: 13px;
@@ -176,7 +172,6 @@
   font-style: italic;
 }
 
-/* Drag&Drop-Datei-Highlight */
 .wardley-container.drag-over::after {
   content: 'Drop Wardley map here (.wmap · .json · .svg · .png)';
   position: absolute;
@@ -194,7 +189,6 @@
   pointer-events: none;
 }
 
-/* Stilvariante: dark */
 .wardley-container.wardley-dark {
   --wardley-paper: #11151b;
   --wardley-ink: #e8eaed;
@@ -202,8 +196,8 @@
   background-image: radial-gradient(rgba(255, 255, 255, 0.05) 0.6px, transparent 0.6px);
 }
 
-/* Notiz-Farb-Picker (bpmn.io-artig): kompaktes 3x3-Raster kleiner Farb-Quadrate, kein Text.
-   Wird absolut IM .wardley-container positioniert (relativer Bezug). */
+/* Note color picker (bpmn.io style): compact 3x3 grid of small color squares, no text.
+   Positioned absolutely WITHIN .wardley-container (relative reference). */
 .wardley-container .wardley-color-picker {
   position: absolute;
   z-index: 300;
@@ -232,7 +226,6 @@
   outline: 2px solid var(--wardley-ink, #1b1b1a);
   outline-offset: 1px;
 }
-/* „Keine Farbe": weiß mit rotem Diagonalstrich. */
 .wardley-container .wardley-cp-none {
   background: #ffffff;
   background-image: linear-gradient(

@@ -5,7 +5,7 @@ import type ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
 import EvolutionGrid from '../src/evolution-grid/EvolutionGrid.js';
 import WardleyElementFactory from '../src/model/WardleyElementFactory.js';
 
-/** Factory mit gemocktem ElementFactory/Registry (createShape gibt die Attribute zurueck). */
+/** Factory with mocked ElementFactory/Registry (createShape returns the attributes). */
 function factory(existingLabels: string[]): WardleyElementFactory {
   const elementFactory = {
     createShape: (attrs: Record<string, unknown>) => attrs,
@@ -18,22 +18,22 @@ function factory(existingLabels: string[]): WardleyElementFactory {
   return new WardleyElementFactory(elementFactory, grid, registry);
 }
 
-describe('WardleyElementFactory.createNew: eindeutige Labels', () => {
-  // Regression: doppelte Labels fuehren beim DSL-Round-Trip zu ID-Kollisionen und verlieren Kanten.
-  it('vergibt das Basis-Label, wenn frei', () => {
-    expect(factory([]).createNew('component', 'Komponente').wardleyLabel).toBe('Komponente');
+describe('WardleyElementFactory.createNew: unique labels', () => {
+  // Regression: duplicate labels cause ID collisions on the DSL round-trip and lose edges.
+  it('assigns the base label when free', () => {
+    expect(factory([]).createNew('component', 'Component').wardleyLabel).toBe('Component');
   });
 
-  it('haengt einen Zaehler an, wenn das Label belegt ist', () => {
-    expect(factory(['Komponente']).createNew('component', 'Komponente').wardleyLabel).toBe(
-      'Komponente 2',
+  it('appends a counter when the label is taken', () => {
+    expect(factory(['Component']).createNew('component', 'Component').wardleyLabel).toBe(
+      'Component 2',
     );
     expect(
-      factory(['Komponente', 'Komponente 2']).createNew('component', 'Komponente').wardleyLabel,
-    ).toBe('Komponente 3');
+      factory(['Component', 'Component 2']).createNew('component', 'Component').wardleyLabel,
+    ).toBe('Component 3');
   });
 
-  it('gilt auch fuer andere Typen (z. B. Notiz)', () => {
-    expect(factory(['Notiz']).createNew('note', 'Notiz').wardleyLabel).toBe('Notiz 2');
+  it('applies to other types as well (e.g. note)', () => {
+    expect(factory(['Note']).createNew('note', 'Note').wardleyLabel).toBe('Note 2');
   });
 });

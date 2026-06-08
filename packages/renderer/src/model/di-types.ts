@@ -9,11 +9,11 @@ import type {
 } from '@wardley/schema-model';
 
 /**
- * diagram-js-Laufzeitmodell mit Wardley-Erweiterungen.
+ * diagram-js runtime model with Wardley extensions.
  *
- * Die Positions-Wahrheit waehrend des Editierens sind `evolution`/`visibility` (normiert),
- * NICHT `x`/`y` (Pixel) und NICHT das `businessObject` (Konzept §2.2, §5.6).
- * `businessObject` ist Identitaets-/Metadaten-Backref auf das urspruengliche Modell-Element.
+ * The positional truth while editing is `evolution`/`visibility` (normalized), NOT `x`/`y` (pixels)
+ * and NOT the `businessObject` (concept doc §2.2, §5.6).
+ * `businessObject` is the identity/metadata backref to the original model element.
  */
 
 export type WardleyShapeType =
@@ -30,24 +30,24 @@ export type WardleyConnectionType = 'dependency' | 'flow';
 
 export interface WardleyShape extends Shape {
   wardleyType: WardleyShapeType;
-  /** normiert [0,1] — Laufzeit-Wahrheit der X-Position. */
+  /** normalized [0,1] — runtime truth of the X position. */
   evolution: number;
-  /** normiert [0,1] — Laufzeit-Wahrheit der Y-Position. */
+  /** normalized [0,1] — runtime truth of the Y position. */
   visibility: number;
-  /** Anzeigetext (getrennt von diagram-js `label`, das ein Label-Element referenziert). */
+  /** Display text (separate from diagram-js `label`, which references a label element). */
   wardleyLabel: string;
   decorators?: ComponentDecorators;
   movement?: Movement;
-  /** nur Pipeline: Evolution-Range. */
+  /** pipeline only: evolution range. */
   evolutionStart?: number;
   evolutionEnd?: number;
-  /** nur Annotation. */
+  /** annotation only. */
   annotationNumber?: number;
-  /** nur Attitude-Region. */
+  /** attitude region only. */
   attitudeKind?: AttitudeKind;
-  /** nur Accelerator. */
+  /** accelerator only. */
   acceleratorDirection?: AcceleratorDirection;
-  /** nur Note: optionale Farbe (CSS-Farbe/Hex aus NOTE_COLORS). */
+  /** note only: optional color (CSS color/hex from NOTE_COLORS). */
   color?: string;
   businessObject?: MapElement;
 }
@@ -56,7 +56,7 @@ export interface WardleyConnection extends Connection {
   wardleyType: WardleyConnectionType;
   bidirectional?: boolean;
   flowValue?: string;
-  /** Annotationstext nach `;` (z.B. "limited by"). */
+  /** annotation text after `;` (e.g. "limited by"). */
   linkLabel?: string;
   businessObject?: MapEdge;
 }

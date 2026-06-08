@@ -1,4 +1,3 @@
-// Typen (Metamodell §2.2)
 export type {
   Coordinate,
   ElementType,
@@ -28,7 +27,6 @@ export type {
   WardleyMap,
 } from './types.js';
 
-// Stage-Ableitung
 export {
   evolutionStage,
   DEFAULT_STAGE_BOUNDARIES,
@@ -37,12 +35,9 @@ export {
 } from './stage.js';
 export type { EvolutionStage, EvolutionPreset } from './stage.js';
 
-// Validierung & Serialisierung
 export { validateMap, loadMap, parseMapJSON, serializeMap, createEmptyMap } from './serialize.js';
 
-// Schema (fuer fortgeschrittene Konsumenten)
 export { wardleyMapSchema, mapElementSchema, mapEdgeSchema } from './schema.js';
 export type { WardleyMapInput } from './schema.js';
 
-// Migrationen
 export { migrate, CURRENT_SCHEMA_VERSION } from './migrations.js';

@@ -9,10 +9,10 @@ import type WardleyElementFactory from '../model/WardleyElementFactory.js';
 import type { WardleyShape } from '../model/di-types.js';
 import { ROOT_ID, type ImportWarning, type RootBusinessObject } from './types.js';
 
-/** "Rahmen"-Typen liegen hinter den Verbindungen (Konzept-Anforderung: Rahmen ganz hinten). */
+/** "Frame" types sit behind the connections (concept doc requirement: frames at the very back). */
 const FRAME_TYPES: ReadonlySet<string> = new Set(['attitude', 'pipeline']);
 
-/** Z-Reihenfolge der Knoten untereinander: kleinere Zahl = weiter hinten. */
+/** Z-order of the nodes among themselves: smaller number = further back. */
 const TYPE_ORDER: Record<string, number> = {
   attitude: 0,
   pipeline: 1,
@@ -25,9 +25,9 @@ const TYPE_ORDER: Record<string, number> = {
 };
 
 /**
- * Brueckt das WardleyMap-Modell in den diagram-js-Canvas.
- * Nutzt fuer die Pixel-Projektion ausschliesslich `evolutionGrid` (P7). Laeuft bewusst am
- * commandStack vorbei (Import-Pfad, P4-Ausnahme): kein Undo, kein Dirty (Konzept §5.6).
+ * Bridges the WardleyMap model into the diagram-js canvas.
+ * Uses `evolutionGrid` exclusively for the pixel projection (P7). Deliberately bypasses the
+ * commandStack (import path, P4 exception): no undo, no dirty (concept doc §5.6).
  */
 export default class WardleyImporter {
   static $inject = [
@@ -59,7 +59,7 @@ export default class WardleyImporter {
       ...(map.rawPassthrough ? { rawPassthrough: map.rawPassthrough } : {}),
     };
 
-    // Bestehenden Root wiederverwenden (Re-Import), sonst neu anlegen.
+    // Reuse the existing root (re-import), otherwise create a new one.
     let existing: (Root & { businessObject?: RootBusinessObject }) | undefined;
     try {
       existing = this.canvas.getRootElement() as Root & { businessObject?: RootBusinessObject };
@@ -84,9 +84,9 @@ export default class WardleyImporter {
       (a, b) => (TYPE_ORDER[a.elementType] ?? 9) - (TYPE_ORDER[b.elementType] ?? 9),
     );
 
-    // Z-Order (hinten -> vorne): Rahmen (attitude/pipeline) -> Verbindungen -> Knoten.
-    // Rahmen + Knoten muessen vor den Verbindungen registriert sein; die Verbindungen werden
-    // anschliessend per parentIndex HINTER die Knoten (aber vor sie im DOM) eingefuegt.
+    // Z-order (back -> front): frames (attitude/pipeline) -> connections -> nodes.
+    // Frames + nodes must be registered before the connections; the connections are then
+    // inserted via parentIndex BEHIND the nodes (but before them in the DOM).
     const frames = ordered.filter((el) => FRAME_TYPES.has(el.elementType));
     const nodes = ordered.filter((el) => !FRAME_TYPES.has(el.elementType));
 
@@ -116,7 +116,7 @@ export default class WardleyImporter {
         edge.edgeType === 'flow'
           ? this.factory.createFlow(edge, source, target)
           : this.factory.createDependency(edge, source, target);
-      // Direkt hinter die Rahmen, vor alle Knoten einfuegen.
+      // Insert directly behind the frames, before all nodes.
       this.canvas.addConnection(conn, root, frameCount);
     }
 
@@ -144,7 +144,6 @@ export default class WardleyImporter {
       case 'submap':
         return this.factory.createSubmap(el);
       default: {
-        // Erschoepfend: alle MapElement-Typen werden gezeichnet.
         const exhaustive: never = el;
         void exhaustive;
         return undefined;
@@ -152,7 +151,6 @@ export default class WardleyImporter {
     }
   }
 
-  /** Entfernt alle Elemente (fuer Re-Import). */
   clear(): void {
     for (const el of [...this.elementRegistry.getAll()]) {
       const e = el as { waypoints?: unknown; id: string };
@@ -161,7 +159,7 @@ export default class WardleyImporter {
         if (e.waypoints) this.canvas.removeConnection(e.id);
         else this.canvas.removeShape(e.id);
       } catch {
-        // bereits entfernt (z.B. Kante an entfernter Shape) — ignorieren
+        // already removed (e.g. edge on a removed shape) — ignore
       }
     }
   }

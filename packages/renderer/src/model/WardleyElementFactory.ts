@@ -17,19 +17,17 @@ import type EvolutionGrid from '../evolution-grid/EvolutionGrid.js';
 import { NODE_SIZE, PIPELINE_HEIGHT, noteMetrics } from '../draw/styles.js';
 import type { WardleyConnection, WardleyShape } from './di-types.js';
 
-/** Optionale Defaults beim Drag-to-create (Palette). */
 export interface CreateNewExtra {
   attitudeKind?: AttitudeKind;
   acceleratorDirection?: AcceleratorDirection;
   annotationNumber?: number;
-  /** Komponenten-Decorator vorbelegen (z.B. Market-/Ecosystem-Palette-Eintrag). */
   market?: boolean;
   ecosystem?: boolean;
 }
 
 /**
- * Erzeugt diagram-js-Laufzeitelemente mit Wardley-Markern. Projiziert normierte Koordinaten
- * ueber die EINZIGE Mathematik-Quelle (EvolutionGrid, P7) nach Pixeln.
+ * Creates diagram-js runtime elements with Wardley markers. Projects normalized coordinates to
+ * pixels via the SINGLE math source (EvolutionGrid, P7).
  */
 export default class WardleyElementFactory {
   static $inject = ['elementFactory', 'evolutionGrid', 'elementRegistry'];
@@ -41,12 +39,12 @@ export default class WardleyElementFactory {
   ) {}
 
   /**
-   * Liefert ein eindeutiges Label: `base`, sonst `base 2`, `base 3`, … Eindeutige Labels sind
-   * Pflicht, weil die OWM-DSL Elemente UEBER IHREN NAMEN referenziert — doppelte Namen wuerden beim
-   * Serialisieren/Re-Import zu ID-Kollisionen fuehren und Kanten (Linien) verlieren.
+   * Returns a unique label: `base`, otherwise `base 2`, `base 3`, … Unique labels are mandatory
+   * because the OWM DSL references elements BY THEIR NAME — duplicate names would cause ID
+   * collisions on serialize/re-import and lose edges (lines).
    *
-   * @param excludeId optional die ID des gerade umbenannten Elements (zaehlt seinen eigenen
-   *        aktuellen Namen NICHT als Kollision — sonst wuerde jedes Umbenennen suffixen).
+   * @param excludeId optional ID of the element currently being renamed (does NOT count its own
+   *        current name as a collision — otherwise every rename would add a suffix).
    */
   uniqueLabel(base: string, excludeId?: string): string {
     const taken = new Set<string>();
@@ -81,8 +79,8 @@ export default class WardleyElementFactory {
   }
 
   createNote(el: NoteElement): WardleyShape {
-    // Notiz-Box waechst mit dem (ggf. mehrzeiligen) Text -> Move/Klick-Hitbox deckt den Text ab.
-    // Zentriert auf die Position (konsistent mit der Center-Rueckrechnung beim Move).
+    // Note box grows with the (possibly multiline) text -> move/click hitbox covers the text.
+    // Centered on the position (consistent with the center back-calculation on move).
     const { width, height } = noteMetrics(el.label);
     const center = this.grid.toCanvas(el.position);
     const shape = this.elementFactory.createShape({
@@ -123,7 +121,7 @@ export default class WardleyElementFactory {
       visibility: el.position.visibility,
       evolutionStart: el.evolutionStart,
       evolutionEnd: el.evolutionEnd,
-      // Rahmen: nur der Rand ist klickbar -> Innenklicks erreichen die Knoten (diagram-js isFrame).
+      // Frame: only the border is clickable -> inner clicks reach the nodes (diagram-js isFrame).
       isFrame: true,
       businessObject: el,
     });
@@ -152,7 +150,7 @@ export default class WardleyElementFactory {
   }
 
   createAttitude(el: AttitudeElement): WardleyShape {
-    // OWM: position = Ankerpunkt (oben links), width/height in px.
+    // OWM: position = anchor point (top left), width/height in px.
     const anchor = this.grid.toCanvas(el.position);
     const shape = this.elementFactory.createShape({
       id: el.id,
@@ -175,13 +173,12 @@ export default class WardleyElementFactory {
     return this.node('submap', el.id, el.label, el.position.visibility, el.position.evolution, el);
   }
 
-  /** Erzeugt eine neue, noch nicht platzierte Shape (fuer Palette-/Drag-to-create). */
   createNew(
     type: WardleyShape['wardleyType'],
     rawLabel: string,
     extra: CreateNewExtra = {},
   ): WardleyShape {
-    // Eindeutiges Label erzwingen -> verlustfreier DSL-Round-Trip (siehe uniqueLabel).
+    // Enforce a unique label -> lossless DSL round-trip (see uniqueLabel).
     const label = this.uniqueLabel(rawLabel);
     if (type === 'pipeline') {
       const shape = this.elementFactory.createShape({

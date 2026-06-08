@@ -2,14 +2,14 @@ import type Canvas from 'diagram-js/lib/core/Canvas';
 import { PLOT } from '../draw/styles.js';
 
 /**
- * Serialisiert den aktuellen Canvas in eigenstaendiges SVG (Snapshot/Export).
- * Setzt eine feste viewBox auf die aeussere Plotbegrenzung, damit das Ergebnis unabhaengig
- * vom aktuellen Zoom/Scroll ist.
+ * Serializes the current canvas into standalone SVG (snapshot/export).
+ * Sets a fixed viewBox to the outer plot bounds so the result is independent of the
+ * current zoom/scroll.
  */
 export function saveSVG(canvas: Canvas): { svg: string } {
   const container = canvas.getContainer();
   const source = container.querySelector('svg');
-  if (!source) throw new Error('Kein SVG im Canvas-Container gefunden.');
+  if (!source) throw new Error('No SVG found in the canvas container.');
 
   const clone = source.cloneNode(true) as SVGSVGElement;
 
@@ -20,8 +20,8 @@ export function saveSVG(canvas: Canvas): { svg: string } {
   clone.setAttribute('width', String(width));
   clone.setAttribute('height', String(height));
 
-  // diagram-js setzt eine viewbox-Transformation am aeussersten Layer; fuer den statischen
-  // Export neutralisieren wir Pan/Zoom, indem wir die viewBox (oben) die Geometrie bestimmen lassen.
+  // diagram-js sets a viewbox transform on the outermost layer; for the static export we
+  // neutralize pan/zoom by letting the viewBox (above) determine the geometry.
   const viewport = clone.querySelector<SVGGElement>('.viewport');
   if (viewport) viewport.removeAttribute('transform');
 

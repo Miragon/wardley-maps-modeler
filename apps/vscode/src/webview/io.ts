@@ -1,22 +1,20 @@
 /**
- * Bild-Export der Webview: SVG/PNG mit in die Datei EINGEBETTETER Szene (OWM-DSL), sodass
- * exportierte Bilder später wieder als Wardley-Map geöffnet werden können (Idee aus Excalidraw).
- * Identische Kodierung wie die Demo-Webapp (apps/webapp/src/io.ts + share.ts).
+ * Image export for the webview: SVG/PNG with the scene (OWM-DSL) EMBEDDED in the file, so exported
+ * images can later be reopened as a Wardley map (idea from Excalidraw). Identical encoding to the
+ * demo webapp (apps/webapp/src/io.ts + share.ts).
  *
- * Die reinen Byte-/Encoding-Helfer liegen DOM-frei in ../png.ts (auch vom Extension-Host genutzt).
- * Hier verbleibt nur das, was den Browser braucht (Rasterung via Canvas, Blob/FileReader).
+ * The pure byte/encoding helpers live DOM-free in ../png.ts (also used by the extension host).
+ * Only what the browser needs remains here (rasterization via canvas, Blob/FileReader).
  */
 
 import { EMBED_KEYWORD, encodeMap, pngInsertText } from '../png.js';
 
 const SVG_ATTR = 'data-wardley-map';
 
-/** Bettet die DSL als Attribut ins Wurzel-<svg> ein. */
 export function embedSvg(svg: string, dsl: string): string {
   return svg.replace(/<svg\b/, `<svg ${SVG_ATTR}="${encodeMap(dsl)}"`);
 }
 
-/** Rastert das SVG zu PNG (2x) und bettet die DSL als tEXt-Chunk ein. */
 export async function svgToEmbeddedPng(svg: string, dsl: string, scale = 2): Promise<Blob> {
   const { width, height } = svgSize(svg);
   const png = await rasterize(svg, width, height, scale);
@@ -62,7 +60,7 @@ async function rasterize(
   }
 }
 
-/** Blob -> Base64 (ohne Data-URL-Prefix) für den Transport an den Host. */
+/** Blob -> Base64 (without the data-URL prefix) for transport to the host. */
 export function blobToBase64(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();

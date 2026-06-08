@@ -13,12 +13,12 @@ import {
 } from '../src/index.js';
 
 describe('EVOLUTION_PRESETS (Landscape-Cheat-Sheet)', () => {
-  it('das erste Preset (Activities) entspricht dem Default', () => {
+  it('the first preset (Activities) matches the default', () => {
     expect(EVOLUTION_PRESETS[0]?.id).toBe('activities');
     expect(EVOLUTION_PRESETS[0]?.labels).toEqual(DEFAULT_EVOLUTION_LABELS);
   });
 
-  it('jedes Preset hat genau vier Stage-Labels und eine eindeutige id', () => {
+  it('each preset has exactly four stage labels and a unique id', () => {
     for (const p of EVOLUTION_PRESETS) {
       expect(p.labels).toHaveLength(4);
       expect(p.labels.every((l) => l.length > 0)).toBe(true);
@@ -27,14 +27,14 @@ describe('EVOLUTION_PRESETS (Landscape-Cheat-Sheet)', () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it('enthält die klassischen Landscape-Varianten', () => {
+  it('contains the classic Landscape variants', () => {
     const ids = EVOLUTION_PRESETS.map((p) => p.id);
     expect(ids).toEqual(expect.arrayContaining(['activities', 'practices', 'data', 'knowledge']));
   });
 });
 
 describe('evolutionStage', () => {
-  it('ordnet die vier Stages korrekt zu', () => {
+  it('maps the four stages correctly', () => {
     expect(evolutionStage(0.0)).toBe(0);
     expect(evolutionStage(0.16)).toBe(0);
     expect(evolutionStage(0.17)).toBe(1);
@@ -45,7 +45,7 @@ describe('evolutionStage', () => {
     expect(evolutionStage(1.0)).toBe(3);
   });
 
-  it('respektiert eigene Grenzen', () => {
+  it('respects custom boundaries', () => {
     expect(evolutionStage(0.5, [0.6, 0.7, 0.8])).toBe(0);
     expect(DEFAULT_STAGE_BOUNDARIES).toEqual([0.17, 0.4, 0.7]);
   });
@@ -71,15 +71,14 @@ const sample: WardleyMap = {
   edges: [{ id: 'dep_1', edgeType: 'dependency', from: 'anchor_1', to: 'cmp_kettle' }],
 };
 
-describe('Serialisierung', () => {
-  it('ist deterministisch: Elemente nach id sortiert, Keys stabil, Koordinaten gerundet', () => {
+describe('Serialization', () => {
+  it('is deterministic: elements sorted by id, keys stable, coordinates rounded', () => {
     const out = serializeMap(sample);
     expect(out.indexOf('anchor_1')).toBeLessThan(out.indexOf('cmp_kettle'));
-    // round-trip ist stabil
     expect(serializeMap(parseMapJSON(out))).toBe(out);
   });
 
-  it('rundet Koordinaten auf 3 Nachkommastellen', () => {
+  it('rounds coordinates to 3 decimal places', () => {
     const noisy = {
       ...sample,
       elements: [
@@ -91,20 +90,20 @@ describe('Serialisierung', () => {
   });
 });
 
-describe('Validierung', () => {
-  it('akzeptiert eine leere Map', () => {
+describe('Validation', () => {
+  it('accepts an empty map', () => {
     expect(() => validateMap(createEmptyMap())).not.toThrow();
   });
 
-  it('weist Edges mit unbekanntem Endpunkt ab', () => {
+  it('rejects edges with an unknown endpoint', () => {
     const bad = {
       ...sample,
       edges: [{ id: 'x', edgeType: 'dependency', from: 'ghost', to: 'cmp_kettle' }],
     };
-    expect(() => loadMap(bad)).toThrow(/referenziert kein Element/);
+    expect(() => loadMap(bad)).toThrow(/references no element/);
   });
 
-  it('weist Koordinaten ausserhalb [0,1] ab', () => {
+  it('rejects coordinates outside [0,1]', () => {
     const bad = {
       ...sample,
       elements: [{ ...sample.elements[0]!, position: { visibility: 1.5, evolution: 0.5 } }],
@@ -112,7 +111,7 @@ describe('Validierung', () => {
     expect(() => loadMap(bad)).toThrow();
   });
 
-  it('weist unbekannte hoehere schemaVersion ab', () => {
+  it('rejects an unknown higher schemaVersion', () => {
     expect(() => loadMap({ ...sample, schemaVersion: 99 })).toThrow(/schemaVersion/);
   });
 });

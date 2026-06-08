@@ -1,6 +1,6 @@
-/** URL-/Sharing-Helfer: Map (OWM-DSL) als URL-safe Base64 im Hash kodieren. */
+/** URL/sharing helpers: encode the map (OWM-DSL) as URL-safe Base64 in the hash. */
 
-/** UTF-8 -> URL-safe Base64 (A-Za-z0-9-_, ohne Padding). Auch fuer PNG-tEXt/SVG-Attribut nutzbar. */
+/** UTF-8 -> URL-safe Base64 (A-Za-z0-9-_, no padding). Also usable for the PNG tEXt / SVG attribute. */
 export function encodeMap(text: string): string {
   const bytes = new TextEncoder().encode(text);
   let bin = '';
@@ -8,7 +8,6 @@ export function encodeMap(text: string): string {
   return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-/** URL-safe Base64 -> UTF-8. */
 export function decodeMap(b64: string): string {
   let norm = b64.replace(/-/g, '+').replace(/_/g, '/');
   const pad = norm.length % 4;
@@ -20,7 +19,6 @@ export function decodeMap(b64: string): string {
 
 const HASH_PREFIX = '#m=';
 
-/** Liest die im Hash kodierte DSL (oder null). */
 export function readHashMap(): string | null {
   const h = location.hash;
   if (!h.startsWith(HASH_PREFIX)) return null;
@@ -31,12 +29,11 @@ export function readHashMap(): string | null {
   }
 }
 
-/** Aktualisiert den Hash mit der aktuellen DSL (ohne History-Eintrag). */
+/** Updates the hash with the current DSL (no history entry). */
 export function writeHashMap(dsl: string): void {
   history.replaceState(null, '', HASH_PREFIX + encodeMap(dsl));
 }
 
-/** Vollstaendige teilbare URL fuer die gegebene DSL. */
 export function shareUrl(dsl: string): string {
   return `${location.origin}${location.pathname}${HASH_PREFIX}${encodeMap(dsl)}`;
 }

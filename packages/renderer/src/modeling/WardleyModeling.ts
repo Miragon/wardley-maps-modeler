@@ -18,8 +18,8 @@ export interface EvolveOptions {
 }
 
 /**
- * High-Level-Mutationen auf Wardley-Shapes, die ueber den commandStack laufen (Undo/Redo, P4).
- * Registriert den generischen UpdatePropertiesHandler beim Bootstrap.
+ * High-level mutations on Wardley shapes that run through the commandStack (undo/redo, P4).
+ * Registers the generic UpdatePropertiesHandler at bootstrap.
  */
 export default class WardleyModeling {
   static $inject = ['commandStack'];
@@ -33,7 +33,7 @@ export default class WardleyModeling {
   }
 
   updateLabel(element: WardleyShape, label: string): void {
-    // Notizen: Box (und damit die Move-/Klick-Hitbox) an den neuen Text anpassen, Center halten.
+    // Notes: resize the box (and thus the move/click hitbox) to the new text, keeping the center.
     if (element.wardleyType === 'note') {
       const { width, height } = noteMetrics(label);
       const cx = element.x + element.width / 2;
@@ -78,7 +78,7 @@ export default class WardleyModeling {
     this.updateProperties(element, { decorators: Object.keys(dec).length ? dec : undefined });
   }
 
-  /** Setzt market/ecosystem (exklusiv) oder entfernt beide (`undefined`). */
+  /** Sets market/ecosystem (mutually exclusive) or removes both (`undefined`). */
   setMarketEcosystem(element: WardleyShape, kind: 'market' | 'ecosystem' | undefined): void {
     const dec: Record<string, unknown> = { ...(element.decorators ?? {}) };
     delete dec['market'];
@@ -87,7 +87,7 @@ export default class WardleyModeling {
     this.updateProperties(element, { decorators: Object.keys(dec).length ? dec : undefined });
   }
 
-  /** Setzt die Notiz-Farbe (CSS-Farbe/Hex) oder entfernt sie (`undefined` = Standardfarbe). */
+  /** Sets the note color (CSS color/hex) or removes it (`undefined` = default color). */
   setColor(element: WardleyShape, color: string | undefined): void {
     this.updateProperties(element, { color });
   }

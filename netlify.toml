@@ -1,22 +1,22 @@
-# Netlify-Deployment der Demo-Webapp (apps/webapp).
-# Monorepo: erst die Lib-Pakete bauen (Webapp loest @wardley/* ueber deren dist auf),
-# dann die Vite-Webapp. pnpm wird via package.json "packageManager" (corepack) genutzt.
+# Netlify deployment of the demo webapp (apps/webapp).
+# Monorepo: build the lib packages first (the webapp resolves @wardley/* via their dist),
+# then the Vite webapp. pnpm is used via package.json "packageManager" (corepack).
 
 [build]
-  # base auf Repo-Root erzwingen (ueberschreibt eine evtl. in der Netlify-UI gesetzte Base wie
-  # "packages/renderer", sonst loest publish falsch auf). publish ist relativ zur base.
+  # Force base to the repo root (overrides any base possibly set in the Netlify UI such as
+  # "packages/renderer", otherwise publish resolves wrong). publish is relative to base.
   base = "/"
-  # Die Webapp bündelt die @wardley/*-Pakete via Vite-Alias aus dem Source (siehe vite.config.ts),
-  # ist also selbst-enthaltend -> kein vorheriger Lib-Build nötig. Filter-Befehl ist cwd-unabhängig.
+  # The webapp bundles the @wardley/* packages from source via Vite aliases (see vite.config.ts),
+  # so it is self-contained -> no prior lib build needed. The filter command is cwd-independent.
   command = "pnpm --filter @wardley/webapp build"
   publish = "apps/webapp/dist"
 
 [build.environment]
-  # Vite 8 benoetigt Node 20.19+ / 22.12+.
+  # Vite 8 requires Node 20.19+ / 22.12+.
   NODE_VERSION = "22"
 
-# Single-Page-App: Map steckt im URL-Hash (#m=...), Routing ist hash-basiert.
-# Der Catch-all liefert fuer beliebige Pfade index.html aus (robust gegen Deep-Links).
+# Single-page app: the map lives in the URL hash (#m=...), routing is hash-based.
+# The catch-all serves index.html for any path (robust against deep links).
 [[redirects]]
   from = "/*"
   to = "/index.html"

@@ -9,9 +9,9 @@ function isConnectable(el: unknown): el is WardleyShape {
 }
 
 /**
- * Erlaubte Editier-Operationen (Konzept §5.4). Die `connection.create`-Regel gibt bei Erfolg die
- * Attribute der neuen Verbindung zurueck (`{ wardleyType: 'dependency' }`) — diagram-js Connect
- * uebernimmt sie als Connection-Attribute.
+ * Allowed editing operations (concept doc §5.4). On success the `connection.create` rule returns
+ * the new connection's attributes (`{ wardleyType: 'dependency' }`) — diagram-js Connect adopts
+ * them as connection attributes.
  */
 export default class WardleyRules extends RuleProvider {
   static override $inject = ['eventBus'];

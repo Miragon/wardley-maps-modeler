@@ -1,5 +1,5 @@
-// Self-hosted Fonts (DSGVO-konform, offline-fähig) statt Google-Fonts-CDN.
-// Fraunces 'standard' = opsz+wght-Achsen (optisches Sizing); Spline Sans = wght-Achse.
+// Self-hosted fonts (GDPR-compliant, offline-capable) instead of the Google Fonts CDN.
+// Fraunces 'standard' = opsz+wght axes (optical sizing); Spline Sans = wght axis.
 import '@fontsource-variable/fraunces/standard.css';
 import '@fontsource-variable/spline-sans/index.css';
 import '@wardley/renderer/assets/wardley.css';
@@ -25,7 +25,6 @@ import { createEmptyMap, EVOLUTION_PRESETS, DEFAULT_EVOLUTION_LABELS } from '@wa
 import { readHashMap, writeHashMap, shareUrl } from './share.js';
 import { openFile, embedSvg, svgToEmbeddedPng, downloadBlob, downloadText } from './io.js';
 
-/** Beispiel: Tea Shop (wird erst über „Beispiel anzeigen“ geladen, nicht beim Start). */
 const TEA_SHOP = `title Tea Shop
 anchor Business [0.95, 0.63]
 anchor Public [0.95, 0.78]
@@ -56,9 +55,9 @@ Object.assign(globalThis as Record<string, unknown>, {
   __wardleyIo: { openFile, embedSvg, svgToEmbeddedPng },
 });
 
-// --- Standard-Ausschnitt nach Import/Reload ---
-// Map einpassen, aber oben Platz für die Floating-Chrome (Palette mittig, Menü links, Teilen rechts)
-// und etwas Rand an den Seiten/unten freilassen -> nichts überlappt.
+// --- Default viewport after import/reload ---
+// Fit the map, but leave room at the top for the floating chrome (palette center, menu left, share
+// right) and some margin on the sides/bottom -> nothing overlaps.
 const VIEW_INSET = { top: 92, side: 32, bottom: 32 };
 function fitView(): void {
   if (!container) return;
@@ -77,15 +76,15 @@ function fitView(): void {
   const availH = Math.max(H - VIEW_INSET.top - VIEW_INSET.bottom, 50);
   const s = Math.min(availW / p.width, availH / p.height);
   canvas.viewbox({
-    x: p.x + p.width / 2 - W / 2 / s, // horizontal zentriert
-    y: p.y - VIEW_INSET.top / s, // Oberkante unter die Chrome
+    x: p.x + p.width / 2 - W / 2 / s,
+    y: p.y - VIEW_INSET.top / s, // top edge below the chrome
     width: W / s,
     height: H / s,
   });
 }
 viewer.on('import.done', fitView);
 
-// --- Button-/Menü-Icons ---
+// --- Button / menu icons ---
 function setLabel(id: string, icon: string, label: string): void {
   const el = document.getElementById(id);
   if (el) el.innerHTML = `${iconMarkup(icon, 16)}<span>${label}</span>`;
@@ -105,7 +104,7 @@ setLabel('m-axis', ICON_EDIT, 'X-axis labels…');
 const sizeField = document.querySelector('.menu-field span');
 if (sizeField) sizeField.innerHTML = `${iconMarkup(ICON_ASPECT_RATIO, 16)}<span>Map size</span>`;
 
-// --- Hamburger-Menü (Excalidraw-Stil): öffnen/schließen ---
+// --- Hamburger menu (Excalidraw style): open/close ---
 const menuBtn = document.getElementById('btn-menu');
 const dropdown = document.getElementById('menu-dropdown');
 function setMenuOpen(open: boolean): void {
@@ -123,7 +122,6 @@ document.addEventListener('click', (e) => {
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') setMenuOpen(false);
 });
-/** Verknüpft einen Menüpunkt mit einer Aktion und schließt danach das Menü. */
 function onMenu(id: string, action: () => void): void {
   document.getElementById(id)?.addEventListener('click', () => {
     setMenuOpen(false);
@@ -131,31 +129,30 @@ function onMenu(id: string, action: () => void): void {
   });
 }
 
-// --- Empty-State + URL-Sync (zentral: was passiert, wenn sich das Modell ändert) ---
+// --- Empty state + URL sync (central: what happens when the model changes) ---
 const emptyState = document.getElementById('empty-state');
 function isEmptyMap(): boolean {
   const map = viewer.exportMap();
   return map.elements.length === 0 && map.edges.length === 0;
 }
-/** Wie `isEmptyMap`, aber zählt auch eine angepasste Achsen-Config als „zu erhalten“ (Persistenz). */
+/** Like `isEmptyMap`, but also counts a customized axis config as "worth keeping" (persistence). */
 function isBlankMap(): boolean {
   const map = viewer.exportMap();
   return isEmptyMap() && !map.config.evolutionLabels && !map.config.yAxisLabel;
 }
 let urlTimer: ReturnType<typeof setTimeout> | undefined;
-/** Schreibt den aktuellen Stand SOFORT in den Hash (bzw. räumt ihn bei leerer Map auf). */
 function syncUrlNow(): void {
   clearTimeout(urlTimer);
   urlTimer = undefined;
-  // Leere Map ohne Custom-Config -> Hash entfernen (saubere URL, leerer Start bleibt teilbar).
+  // Empty map without custom config -> drop the hash (clean URL, an empty start stays shareable).
   if (isBlankMap()) history.replaceState(null, '', location.pathname + location.search);
   else writeHashMap(viewer.exportDSL());
 }
 /**
- * Empty-State umschalten + URL synchronisieren. Diskrete Editieraktionen (Zeichnen, Verbinden,
- * Verschieben, Löschen) werden SOFORT persistiert — sonst geht eine gerade gemachte Änderung
- * (z.B. ein frisch gezeichneter Pfeil) bei sehr schnellem Neuladen verloren. Nur das Achsen-
- * Live-Tippen (`wardley.config.changed`, ein Event pro Tastendruck) wird entprellt.
+ * Toggle the empty state + sync the URL. Discrete edit actions (draw, connect, move, delete) are
+ * persisted IMMEDIATELY — otherwise a change just made (e.g. a freshly drawn arrow) is lost on a
+ * very fast reload. Only axis live-typing (`wardley.config.changed`, one event per keystroke) is
+ * debounced.
  */
 function onModelChanged(debounce = false): void {
   const empty = isEmptyMap();
@@ -167,14 +164,14 @@ function onModelChanged(debounce = false): void {
 viewer.on('commandStack.changed', () => onModelChanged());
 viewer.on('import.done', () => onModelChanged());
 viewer.on('wardley.config.changed', () => onModelChanged(true));
-// Belt-and-suspenders: ausstehenden (entprellten) Achsen-Sync vor dem Verlassen noch schreiben.
+// Belt-and-suspenders: flush a pending (debounced) axis sync before leaving the page.
 const flushUrl = (): void => {
   if (urlTimer !== undefined) syncUrlNow();
 };
 window.addEventListener('beforeunload', flushUrl);
 window.addEventListener('pagehide', flushUrl);
 
-// --- Aktionen ---
+// --- Actions ---
 function showExample(): void {
   void viewer.importDSL(TEA_SHOP);
 }
@@ -202,7 +199,7 @@ async function load(file: File): Promise<void> {
   }
 }
 
-// --- JSON/DSL-Export-Panel ---
+// --- JSON/DSL export panel ---
 const overlay = document.getElementById('output');
 const outTitle = document.getElementById('output-title');
 const outText = document.getElementById('output-text') as HTMLTextAreaElement | null;
@@ -227,7 +224,7 @@ function exportPng(): void {
   });
 }
 
-// --- Menüpunkte verdrahten ---
+// --- Wire up menu items ---
 onMenu('m-open', pickFile);
 onMenu('m-example', showExample);
 onMenu('m-new', () => {
@@ -245,7 +242,7 @@ document.getElementById('map-size')?.addEventListener('change', (e) => {
   setMenuOpen(false);
 });
 
-// --- X-Achsen-Beschriftung (Preset wählen ODER einzelne Stages frei beschriften) ---
+// --- X-axis labels (pick a preset OR label individual stages freely) ---
 const CUSTOM_PRESET = 'custom';
 const axisOverlay = document.getElementById('axis-overlay');
 const axisPreset = document.getElementById('axis-preset') as HTMLSelectElement | null;
@@ -253,7 +250,7 @@ const axisInputs = [0, 1, 2, 3].map(
   (i) => document.getElementById(`axis-s${i}`) as HTMLInputElement | null,
 );
 
-// Preset-Optionen aus der Single-Source-of-Truth (@wardley/schema-model) + freie „Custom“-Wahl.
+// Preset options from the single source of truth (@wardley/schema-model) + a free "Custom" choice.
 if (axisPreset) {
   for (const p of EVOLUTION_PRESETS) {
     const opt = document.createElement('option');
@@ -270,7 +267,7 @@ if (axisPreset) {
 function currentAxisLabels(): readonly string[] {
   return viewer.exportMap().config.evolutionLabels ?? DEFAULT_EVOLUTION_LABELS;
 }
-/** id des Presets, dessen Labels exakt `labels` entsprechen, sonst „custom“. */
+/** id of the preset whose labels exactly match `labels`, otherwise "custom". */
 function presetIdFor(labels: readonly string[]): string {
   return (
     EVOLUTION_PRESETS.find((p) => p.labels.every((v, i) => v === labels[i]))?.id ?? CUSTOM_PRESET
@@ -282,10 +279,10 @@ function fillAxisInputs(labels: readonly string[]): void {
   });
 }
 /**
- * Inputs -> Map. Leere/Whitespace-Stages fallen auf den Default dieser Position zurück (ein leeres
- * Achsen-Label ist weder sinnvoll noch im `->`-getrennten DSL darstellbar; deckt auch das
- * mid-typing-Leeren ab). `->` würde den DSL-Trenner einschleusen -> durch einen echten Pfeil
- * ersetzen. So bleibt der Round-Trip verlustfrei. Default-Set => Labels entfernen (saubere DSL/URL).
+ * Inputs -> map. Empty/whitespace stages fall back to the default for that position (an empty axis
+ * label is neither meaningful nor representable in the `->`-separated DSL; this also covers clearing
+ * a field mid-typing). A literal `->` would inject the DSL separator -> replace it with a real
+ * arrow. This keeps the round-trip lossless. Default set => remove labels (clean DSL/URL).
  */
 function applyAxisLabels(): void {
   const labels = axisInputs.map((el, i) => {
@@ -310,7 +307,7 @@ onMenu('m-axis', () => {
 });
 axisPreset?.addEventListener('change', () => {
   const preset = EVOLUTION_PRESETS.find((p) => p.id === axisPreset.value);
-  if (!preset) return; // „Custom“ -> Eingaben unverändert lassen
+  if (!preset) return; // "Custom" -> leave the inputs unchanged
   fillAxisInputs(preset.labels);
   applyAxisLabels();
 });
@@ -327,10 +324,10 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && axisOverlay && !axisOverlay.hidden) closeAxisDialog();
 });
 
-// --- Empty-State-Button ---
+// --- Empty-state button ---
 document.getElementById('btn-example')?.addEventListener('click', showExample);
 
-// --- Output-Panel schließen/kopieren ---
+// --- Close/copy the output panel ---
 document.getElementById('output-close')?.addEventListener('click', () => {
   if (overlay) overlay.hidden = true;
 });
@@ -343,7 +340,7 @@ document.getElementById('output-copy')?.addEventListener('click', () => {
   outText.select();
 });
 
-// --- Teilen ---
+// --- Share ---
 document.getElementById('btn-share')?.addEventListener('click', () => {
   const url = shareUrl(viewer.exportDSL());
   writeHashMap(viewer.exportDSL());
@@ -353,7 +350,7 @@ document.getElementById('btn-share')?.addEventListener('click', () => {
   });
 });
 
-// --- Drag&Drop (auf der gesamten Bühne, auch über dem Empty-State) ---
+// --- Drag & drop (over the whole stage, including over the empty state) ---
 const stage = document.querySelector('.app-stage');
 let dragDepth = 0;
 stage?.addEventListener('dragenter', (e) => {
@@ -380,12 +377,12 @@ stage?.addEventListener('drop', (e) => {
   if (file) void load(file);
 });
 
-// --- Start: Map aus URL-Hash laden, sonst LEERE Leinwand (kein Auto-Beispiel) ---
+// --- Startup: load the map from the URL hash, otherwise an EMPTY canvas (no auto-example) ---
 const initial = readHashMap();
 void (initial ? viewer.importDSL(initial) : viewer.importMap(createEmptyMap('New map')));
 
-// Geteilten Link in bereits offenen Tab einfügen: Hash-Änderung übernehmen.
-// (writeHashMap nutzt history.replaceState und feuert KEIN hashchange -> keine Schleife.)
+// Pasting a shared link into an already-open tab: adopt the hash change.
+// (writeHashMap uses history.replaceState and fires NO hashchange -> no loop.)
 window.addEventListener('hashchange', () => {
   const dsl = readHashMap();
   if (dsl && dsl !== viewer.exportDSL()) void viewer.importDSL(dsl);

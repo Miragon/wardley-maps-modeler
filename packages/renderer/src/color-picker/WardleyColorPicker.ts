@@ -5,10 +5,10 @@ import type { WardleyShape } from '../model/di-types.js';
 import { NOTE_COLORS } from '../draw/styles.js';
 
 /**
- * Kompakter Farb-Picker (bpmn.io-artig): ein 3x3-Raster kleiner Farb-Quadrate (kein Text),
- * angeklickt am ContextPad einer Notiz. Eigener Popover (statt diagram-js PopupMenu), damit das
- * Swatch-Grid exakt und ohne Text dargestellt werden kann. Setzt die Farbe via `wardleyModeling`
- * (Undo/Redo). Erste Zelle = „keine Farbe".
+ * Compact color picker (bpmn.io-style): a 3x3 grid of small color squares (no text), opened from a
+ * note's context pad. Uses its own popover (instead of diagram-js PopupMenu) so the swatch grid can
+ * be rendered exactly and without text. Sets the color via `wardleyModeling` (undo/redo). First
+ * cell = "no color".
  */
 export default class WardleyColorPicker {
   static $inject = ['canvas', 'eventBus', 'wardleyModeling'];
@@ -27,11 +27,11 @@ export default class WardleyColorPicker {
     eventBus: EventBus,
     private readonly modeling: WardleyModeling,
   ) {
-    // Bei Pan/Zoom, Drag oder Re-Import schließen (sonst steht der Popover falsch).
+    // Close on pan/zoom, drag or re-import (otherwise the popover ends up misplaced).
     eventBus.on(['canvas.viewbox.changing', 'drag.init', 'diagram.clear'], () => this.close());
   }
 
-  /** Öffnet das Swatch-Raster für `shape` an der Klickposition (Viewport-Koordinaten). */
+  /** Opens the swatch grid for `shape` at the click position (viewport coordinates). */
   open(shape: WardleyShape, clientX: number, clientY: number): void {
     this.close();
     const container = this.canvas.getContainer();
@@ -61,7 +61,7 @@ export default class WardleyColorPicker {
 
     container.appendChild(pop);
 
-    // Innerhalb des (overflow:hidden) Containers halten.
+    // Keep it within the (overflow:hidden) container.
     const cw = container.clientWidth;
     const ch = container.clientHeight;
     const pw = pop.offsetWidth;
@@ -72,7 +72,7 @@ export default class WardleyColorPicker {
     pop.style.top = `${top}px`;
 
     this.popover = pop;
-    // Listener verzögert anhängen, damit der öffnende Klick den Popover nicht sofort schließt.
+    // Attach listeners with a delay so the opening click does not immediately close the popover.
     setTimeout(() => {
       document.addEventListener('click', this.onDocPointer, true);
       document.addEventListener('keydown', this.onKey, true);

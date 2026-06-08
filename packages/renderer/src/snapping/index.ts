@@ -1,7 +1,7 @@
 import type { ModuleDeclaration } from 'didi';
 import StageSnapping from './StageSnapping.js';
 
-/** Snapping an die Evolution-Stage-Grenzen (Editor-only). */
+/** Snapping to the evolution stage boundaries (editor-only). */
 export const stageSnappingModule: ModuleDeclaration = {
   __init__: ['stageSnapping'],
   stageSnapping: ['type', StageSnapping],

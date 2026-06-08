@@ -6,12 +6,12 @@
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="apple-touch-icon" href="/favicon.png" />
     <title>Wardley Mapping</title>
-    <!-- Fonts werden self-hosted via @fontsource (in src/main.ts importiert) geladen –
-         kein externer Google-Fonts-CDN (offline-fähig & DSGVO-konform). -->
+    <!-- Fonts are self-hosted via @fontsource (imported in src/main.ts) –
+         no external Google Fonts CDN (works offline & GDPR-compliant). -->
   </head>
   <body>
     <div id="app">
-      <!-- Canvas füllt die volle Fläche; die Chrome floatet darüber (Excalidraw-Stil, kein Header). -->
+      <!-- Canvas fills the whole area; the chrome floats above it (Excalidraw style, no header). -->
       <div class="app-stage">
         <div id="canvas" class="app-canvas"></div>
         <div id="empty-state" class="empty-state" hidden>
@@ -27,7 +27,7 @@
         </div>
       </div>
 
-      <!-- Floating-Menü oben links -->
+      <!-- Floating menu, top left -->
       <div class="app-menu" id="app-menu">
         <button
           id="btn-menu"
@@ -72,7 +72,7 @@
         </div>
       </div>
 
-      <!-- Floating-Teilen-Button oben rechts -->
+      <!-- Floating share button, top right -->
       <div class="app-toolbar">
         <button id="btn-share" type="button" class="primary">Share</button>
       </div>
@@ -92,7 +92,7 @@
       </div>
     </div>
 
-    <!-- X-Achsen-Beschriftung: Preset wählen ODER einzelne Stages frei beschriften -->
+    <!-- X-axis labels: pick a preset OR label individual stages freely -->
     <div id="axis-overlay" class="output-overlay" hidden>
       <div class="axis-panel">
         <header class="output-head">

@@ -1,7 +1,6 @@
 import type { ModuleDeclaration } from 'didi';
 import WardleyEvolveDragging from './WardleyEvolveDragging.js';
 
-/** Evolve-Ziel per Drag setzen. */
 export const wardleyEvolveModule: ModuleDeclaration = {
   __init__: ['wardleyEvolveDragging'],
   wardleyEvolveDragging: ['type', WardleyEvolveDragging],

@@ -7,9 +7,8 @@ import { Viewer } from './Viewer.js';
 import { PanConstraintModule } from './pan-constraint/index.js';
 
 /**
- * Read-only + Navigation: Zoom (Scroll), Pan (Drag/Tastatur), Selektion.
- * Hinweis: `keyboard-move-selection` haengt von `modeling` ab und gehoert daher erst in den
- * (spaeteren) Modeler, nicht in den read-only NavigatedViewer.
+ * `keyboard-move-selection` depends on `modeling` and therefore belongs in the (later) Modeler,
+ * not in the read-only NavigatedViewer.
  */
 export class NavigatedViewer extends Viewer {
   protected override _getModules(): ModuleDeclaration[] {
