@@ -2,7 +2,7 @@
 //   1. Extension host  (Node/CJS, `vscode` external)  -> dist/extension.cjs
 //   2. Webview          (Browser/IIFE, Modeler+CSS)    -> dist/webview.js (+ dist/webview.css)
 //
-// Like the demo webapp, we bundle the @wardley/* packages straight from SOURCE (aliased to
+// Like the demo webapp, we bundle the @miragon/wardley-* packages straight from SOURCE (aliased to
 // src/index.ts). That makes the build self-contained: no prior lib build needed, and the
 // diagram-js imports resolve relative to the renderer source (packages/renderer/node_modules).
 import * as esbuild from 'esbuild';
@@ -18,10 +18,10 @@ const r = (p) => resolve(root, p);
 
 /** Package aliases pointing at the TS source (mirrors apps/webapp/vite.config.ts). */
 const alias = {
-  '@wardley/renderer': r('packages/renderer/src/index.ts'),
-  '@wardley/schema-model': r('packages/schema-model/src/index.ts'),
-  '@wardley/dsl': r('packages/dsl/src/index.ts'),
-  '@wardley/transforms': r('packages/transforms/src/index.ts'),
+  '@miragon/wardley-renderer': r('packages/renderer/src/index.ts'),
+  '@miragon/wardley-schema-model': r('packages/schema-model/src/index.ts'),
+  '@miragon/wardley-dsl': r('packages/dsl/src/index.ts'),
+  '@miragon/wardley-transforms': r('packages/transforms/src/index.ts'),
 };
 
 /** @type {import('esbuild').BuildOptions} */

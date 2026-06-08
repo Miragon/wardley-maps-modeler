@@ -17,15 +17,15 @@ Architektonisch orientieren wir uns am Schichtenmodell von bpmn-js (`BaseViewer 
 
 ### 1.2 Leitprinzipien (Design Tenets)
 
-| #   | Prinzip                                                 | Konsequenz                                                                                                                                                                                           |
-| --- | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| P1  | DOM-Freiheit des Domänenkerns                           | Schema, DSL-Parser/Serializer, reine Transform-Funktionen importieren **nie** `diagram-js`, `tiny-svg`, `min-dom`, `window` oder `document`. Lauffähig in Node (Extension-Host), Browser und Vitest. |
-| P2  | Kontinuum als Quelle der Wahrheit                       | Position als `{ visibility: 0..1, evolution: 0..1 }`. Evolution-Stage wird **abgeleitet**, nie persistiert.                                                                                          |
-| P3  | Genau eine Undo-Quelle pro Editor-Variante              | In beiden Targets (Webapp **und** VS Code) ist der diagram-js `commandStack` die **alleinige** Undo-Quelle. `@wardley/transforms` enthält bewusst **keinen** eigenen Stack (Rollenklärung in §4.3).  |
-| P4  | Editier-Mutationen nur über `modeling` → `commandStack` | Nie direkt `canvas.addShape` im Editor-Flow; sonst kein Undo/Redo und kein `elements.changed`. Einzige bewusste Ausnahme: der Import-Pfad (§5.6), der den Stack danach leert.                        |
-| P5  | Fixe, frisch aufgelöste Versionen überall               | `package.json` ohne `^ ~ >= *`. Zentralisiert via pnpm `catalog:`; aufgelöst am **echten Implementierungsdatum** (siehe §10.1).                                                                      |
-| P6  | Round-Trip zur OWM-DSL als Designziel                   | Verlustfreie Interop mit Online-Wardley-Maps-Text (mit Raw-Passthrough für Unbekanntes), validiert gegen den **offiziellen** OWM-Parser, nicht nur den eigenen.                                      |
-| P7  | Eine einzige Koordinaten-Mathematik                     | Pixel↔normiert lebt ausschließlich in `EvolutionGrid` (`toCanvas`/`fromCanvas`). Importer und Constraint-Behavior rufen nur diese eine Quelle (siehe §5.6, R-Liste).                                 |
+| #   | Prinzip                                                 | Konsequenz                                                                                                                                                                                                  |
+| --- | ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| P1  | DOM-Freiheit des Domänenkerns                           | Schema, DSL-Parser/Serializer, reine Transform-Funktionen importieren **nie** `diagram-js`, `tiny-svg`, `min-dom`, `window` oder `document`. Lauffähig in Node (Extension-Host), Browser und Vitest.        |
+| P2  | Kontinuum als Quelle der Wahrheit                       | Position als `{ visibility: 0..1, evolution: 0..1 }`. Evolution-Stage wird **abgeleitet**, nie persistiert.                                                                                                 |
+| P3  | Genau eine Undo-Quelle pro Editor-Variante              | In beiden Targets (Webapp **und** VS Code) ist der diagram-js `commandStack` die **alleinige** Undo-Quelle. `@miragon/wardley-transforms` enthält bewusst **keinen** eigenen Stack (Rollenklärung in §4.3). |
+| P4  | Editier-Mutationen nur über `modeling` → `commandStack` | Nie direkt `canvas.addShape` im Editor-Flow; sonst kein Undo/Redo und kein `elements.changed`. Einzige bewusste Ausnahme: der Import-Pfad (§5.6), der den Stack danach leert.                               |
+| P5  | Fixe, frisch aufgelöste Versionen überall               | Third-Party-Deps in jeder `package.json` exakt gepinnt, ohne `^ ~ >=` (`.npmrc`: `save-exact=true`); aufgelöst am **echten Implementierungsdatum** (siehe §10.1).                                           |
+| P6  | Round-Trip zur OWM-DSL als Designziel                   | Verlustfreie Interop mit Online-Wardley-Maps-Text (mit Raw-Passthrough für Unbekanntes), validiert gegen den **offiziellen** OWM-Parser, nicht nur den eigenen.                                             |
+| P7  | Eine einzige Koordinaten-Mathematik                     | Pixel↔normiert lebt ausschließlich in `EvolutionGrid` (`toCanvas`/`fromCanvas`). Importer und Constraint-Behavior rufen nur diese eine Quelle (siehe §5.6, R-Liste).                                        |
 
 ### 1.3 Scope (V1)
 
@@ -79,7 +79,7 @@ Architektonisch orientieren wir uns am Schichtenmodell von bpmn-js (`BaseViewer 
 >
 > Im Code speichern wir **immer** explizit benannte Felder (`{ visibility, evolution }`, bzw. `evolutionStart`/`evolutionEnd` für Pipelines), **nie** ein `[x, y]`-Tupel, um Spiegelung zu vermeiden.
 
-### 2.2 Metamodell – TS-Interface-Skizzen (Paket `@wardley/schema-model`, DOM-frei)
+### 2.2 Metamodell – TS-Interface-Skizzen (Paket `@miragon/wardley-schema-model`, DOM-frei)
 
 > **Designregel (Live-Modell vs. Serialisierungsformat):** Alle folgenden `WardleyMap`-Interfaces sind `readonly` und ausschließlich **Serialisierungs-/Schnittstellenformat**. Die **Laufzeit-Wahrheit** während des Editierens lebt in den **mutablen** diagram-js-DI-Properties (`shape.evolution`, `shape.visibility`, …). `exportMap()` baut das `WardleyMap` aus diesen DI-Properties — nicht umgekehrt. Das `businessObject` am diagram-js-Element ist reines Identitäts-/Metadaten-Backref und **nicht** die Positions-Wahrheit (sonst zwei konkurrierende Quellen). Diese Trennung ist bewusst (siehe §5.6, §8 und R-Liste).
 
@@ -271,7 +271,7 @@ export function evolutionStage(
 }
 ```
 
-**Validierung:** Zod-Schemas spiegeln die Interfaces (`@wardley/schema-model` exportiert `WardleyMapSchema`). Invarianten: `0 ≤ v,e ≤ 1`; `evolutionEnd > evolutionStart`; Edge-`from`/`to` referenzieren existierende `id`; eindeutige IDs; `attitude.rect`-Grenzen normiert und aufsteigend.
+**Validierung:** Zod-Schemas spiegeln die Interfaces (`@miragon/wardley-schema-model` exportiert `WardleyMapSchema`). Invarianten: `0 ≤ v,e ≤ 1`; `evolutionEnd > evolutionStart`; Edge-`from`/`to` referenzieren existierende `id`; eindeutige IDs; `attitude.rect`-Grenzen normiert und aufsteigend.
 
 ---
 
@@ -326,20 +326,20 @@ Einzige Nicht-MIT-Komponenten: `inherits-browser` (ISC) und `htm` (Apache-2.0, t
 ┌──────────────────────────────────────────────────────────────────────┐
 │  TARGETS (Host-Adapter: File-IO, Lifecycle, Messaging)                 │
 │  ┌───────────────────────┐        ┌──────────────────────────────┐    │
-│  │ @wardley/webapp (Vite)│        │ @wardley/vscode (Extension)   │    │
+│  │ @miragon/wardley-webapp (Vite)│        │ @miragon/wardley-vscode (Extension)   │    │
 │  │  Vanilla / React-Wrap │        │  CustomEditorProvider + Webview│   │
 │  └───────────┬───────────┘        └───────────────┬──────────────┘    │
 └──────────────┼────────────────────────────────────┼───────────────────┘
                │            (gleicher Core)          │
 ┌──────────────▼────────────────────────────────────▼───────────────────┐
 │  UI-ADAPTER (optional, dünn)                                            │
-│  @wardley/react  (useEffect → new Modeler(ref), cleanup → destroy)      │
+│  @miragon/wardley-react  (useEffect → new Modeler(ref), cleanup → destroy)      │
 │  hängt vom Core ab, NICHT umgekehrt                                     │
 └────────────────────────────────────┬───────────────────────────────────┘
                                       │
 ┌─────────────────────────────────────▼──────────────────────────────────┐
 │  CORE / diagram-js-Schicht  (DOM-abhängig)                              │
-│  @wardley/renderer                                                       │
+│  @miragon/wardley-renderer                                                       │
 │   ┌──────────────────────────────────────────────────────────────────┐ │
 │   │ WardleyBaseViewer ─ Viewer ─ NavigatedViewer ─ Modeler            │ │
 │   │ additionalModules: model · draw · modeling · rules · palette ·    │ │
@@ -353,9 +353,9 @@ Einzige Nicht-MIT-Komponenten: `inherits-browser` (ISC) und `htm` (Apache-2.0, t
                                       │  (importiert NIE diagram-js/DOM)
 ┌─────────────────────────────────────▼──────────────────────────────────┐
 │  SCHEMA / DOMÄNE  (DOM-frei, läuft in Node + Browser + Vitest)          │
-│  @wardley/schema-model   Typen + Zod-Schema + Stage-Ableitung + Migration│
-│  @wardley/dsl            OWM-Text ↔ Modell  /  JSON ↔ Modell  (determin.) │
-│  @wardley/transforms     reine WardleyMap→WardleyMap-Funktionen (KEIN Stack)│
+│  @miragon/wardley-schema-model   Typen + Zod-Schema + Stage-Ableitung + Migration│
+│  @miragon/wardley-dsl            OWM-Text ↔ Modell  /  JSON ↔ Modell  (determin.) │
+│  @miragon/wardley-transforms     reine WardleyMap→WardleyMap-Funktionen (KEIN Stack)│
 └──────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -374,15 +374,15 @@ User-Drag ──► diagram-js Move ──► rules.allowed('shape.move')  (Rule
 
 Die **Brücke Geometrie ↔ Semantik** (Pixel-`x/y` ↔ normiertes `{evolution, visibility}`) ist die zentrale Wardley-spezifische Schicht: die Mathematik liegt **ausschließlich** in `EvolutionGrid` (Koordinaten-Transformer); das `EvolutionConstraintBehavior` (CommandInterceptor) ist der einzige _Aufrufer_ im Editier-Flow und gleicht das frei positionierende `x/y`-Modell von diagram-js mit der Achsen-Semantik ab.
 
-### 4.3 Rollenklärung: diagram-js `commandStack` vs. `@wardley/transforms` (P3)
+### 4.3 Rollenklärung: diagram-js `commandStack` vs. `@miragon/wardley-transforms` (P3)
 
 Damit kein zweites, konkurrierendes Undo-System entsteht (Widerspruch zu P3), gilt verbindlich:
 
 - **Undo/Redo gehört ausschließlich dem diagram-js `commandStack`** — in **beiden** Targets.
-- **`@wardley/transforms`** enthält **rein DOM-freie, seiteneffektfreie Funktionen** `WardleyMap → WardleyMap` (z.B. `evolveComponent`, `setMethod`, `toggleInertia`, `setPipelineRange`) **ohne eigenen Stack und ohne inverse Commands**. Zweck: Headless-Nutzung, DSL-Tooling, deterministische Tests, ggf. Server-/Batch-Verarbeitung.
-- Im Editor wrappen die diagram-js-`CommandHandler` (in `@wardley/renderer`, Modul `wardleyModeling`) diese reinen Funktionen, sodass die _eine_ Undo-Quelle (`commandStack`) erhalten bleibt. „Inverse Commands" leben damit als diagram-js-`revert()`-Implementierungen in den Handlern, **nicht** als zweiter Stack in `@wardley/transforms`.
+- **`@miragon/wardley-transforms`** enthält **rein DOM-freie, seiteneffektfreie Funktionen** `WardleyMap → WardleyMap` (z.B. `evolveComponent`, `setMethod`, `toggleInertia`, `setPipelineRange`) **ohne eigenen Stack und ohne inverse Commands**. Zweck: Headless-Nutzung, DSL-Tooling, deterministische Tests, ggf. Server-/Batch-Verarbeitung.
+- Im Editor wrappen die diagram-js-`CommandHandler` (in `@miragon/wardley-renderer`, Modul `wardleyModeling`) diese reinen Funktionen, sodass die _eine_ Undo-Quelle (`commandStack`) erhalten bleibt. „Inverse Commands" leben damit als diagram-js-`revert()`-Implementierungen in den Handlern, **nicht** als zweiter Stack in `@miragon/wardley-transforms`.
 
-> Konsequenz für die Paket-Umbenennung: Das frühere `@wardley/commands` heißt jetzt `@wardley/transforms`, und die Beschreibung „inverse Commands / Undo-Basis" entfällt dort.
+> Konsequenz für die Paket-Umbenennung: Das frühere `@miragon/wardley-commands` heißt jetzt `@miragon/wardley-transforms`, und die Beschreibung „inverse Commands / Undo-Basis" entfällt dort.
 
 ---
 
@@ -392,21 +392,21 @@ Jedes Wardley-Modul ist ein didi-`ModuleDeclaration` (POJO). **Alle eigenen Serv
 
 ### 5.1 Modul-Übersicht
 
-| Modul (DI-Name)                 | Verantwortung                                                                 | Zentrale API / Services                                                                         |
-| ------------------------------- | ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| **`wardleyModelModule`**        | Eigene `ElementFactory` mit Wardley-Defaults & IDs                            | `wardleyElementFactory.createComponent/createPipeline/createDependency/createFlow/createAnchor` |
-| **`wardleyDrawModule`**         | SVG-Rendering aller Wardley-Typen                                             | `wardleyRenderer` (BaseRenderer-Subklasse, `renderPriority` 1500)                               |
-| **`wardleyModelingModule`**     | High-Level-Mutationen + eigene CommandHandler (wrappt `@wardley/transforms`)  | `wardleyModeling.evolveComponent/setMethod/toggleInertia/setPipelineRange/…`                    |
-| **`evolutionGridModule`**       | Achsen-Hintergrund, Grid, **einzige** Pixel↔normiert-Transformation           | `evolutionGrid.toCanvas(coord)/fromCanvas(point)/stageOf(x)`; rendert Achsen-Layer              |
-| **`evolutionConstraintModule`** | Behavior: hält x/y synchron zu evolution/visibility, clampt, snappt           | CommandInterceptor auf `shape.move`/`shape.create`/`elements.move` postExecute                  |
-| **`stageSnappingModule`**       | Snapping an Stage-Grenzen & Grid während Drag                                 | erweitert diagram-js `Snapping`                                                                 |
-| **`wardleyRulesModule`**        | Erlaubte Operationen (was darf verbunden/bewegt werden)                       | `wardleyRules` (RuleProvider-Subklasse)                                                         |
-| **`wardleyPaletteModule`**      | Werkzeug-Palette (Komponente, Pipeline, Note, Anchor, …)                      | `wardleyPaletteProvider.getPaletteEntries()`                                                    |
-| **`wardleyContextPadModule`**   | Kontext-Aktionen je Element (verbinden, evolve, löschen, inertia)             | `wardleyContextPadProvider.getContextPadEntries(el)`                                            |
-| **`labelEditingModule`**        | Eigener Inline-Label-Editor (HTML-Overlay; nicht `diagram-js-direct-editing`) | `wardleyLabelEditing.activate(element)`                                                         |
-| **`overlaysWardleyModule`**     | HTML-Overlays (Evolve-Pfeil-Tooltip, Annotation-Legende)                      | nutzt diagram-js `Overlays`                                                                     |
-| **`copyPasteWardleyModule`**    | Kopieren/Einfügen mit Wardley-Semantik-Erhalt                                 | erweitert diagram-js `CopyPaste`                                                                |
-| **`ioModule`**                  | Brücke Modell ↔ diagram-js, `importMap`/`exportMap`/`saveSVG`                 | `wardleyImporter.import(map)`, `wardleyExporter.export()`                                       |
+| Modul (DI-Name)                 | Verantwortung                                                                        | Zentrale API / Services                                                                         |
+| ------------------------------- | ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
+| **`wardleyModelModule`**        | Eigene `ElementFactory` mit Wardley-Defaults & IDs                                   | `wardleyElementFactory.createComponent/createPipeline/createDependency/createFlow/createAnchor` |
+| **`wardleyDrawModule`**         | SVG-Rendering aller Wardley-Typen                                                    | `wardleyRenderer` (BaseRenderer-Subklasse, `renderPriority` 1500)                               |
+| **`wardleyModelingModule`**     | High-Level-Mutationen + eigene CommandHandler (wrappt `@miragon/wardley-transforms`) | `wardleyModeling.evolveComponent/setMethod/toggleInertia/setPipelineRange/…`                    |
+| **`evolutionGridModule`**       | Achsen-Hintergrund, Grid, **einzige** Pixel↔normiert-Transformation                  | `evolutionGrid.toCanvas(coord)/fromCanvas(point)/stageOf(x)`; rendert Achsen-Layer              |
+| **`evolutionConstraintModule`** | Behavior: hält x/y synchron zu evolution/visibility, clampt, snappt                  | CommandInterceptor auf `shape.move`/`shape.create`/`elements.move` postExecute                  |
+| **`stageSnappingModule`**       | Snapping an Stage-Grenzen & Grid während Drag                                        | erweitert diagram-js `Snapping`                                                                 |
+| **`wardleyRulesModule`**        | Erlaubte Operationen (was darf verbunden/bewegt werden)                              | `wardleyRules` (RuleProvider-Subklasse)                                                         |
+| **`wardleyPaletteModule`**      | Werkzeug-Palette (Komponente, Pipeline, Note, Anchor, …)                             | `wardleyPaletteProvider.getPaletteEntries()`                                                    |
+| **`wardleyContextPadModule`**   | Kontext-Aktionen je Element (verbinden, evolve, löschen, inertia)                    | `wardleyContextPadProvider.getContextPadEntries(el)`                                            |
+| **`labelEditingModule`**        | Eigener Inline-Label-Editor (HTML-Overlay; nicht `diagram-js-direct-editing`)        | `wardleyLabelEditing.activate(element)`                                                         |
+| **`overlaysWardleyModule`**     | HTML-Overlays (Evolve-Pfeil-Tooltip, Annotation-Legende)                             | nutzt diagram-js `Overlays`                                                                     |
+| **`copyPasteWardleyModule`**    | Kopieren/Einfügen mit Wardley-Semantik-Erhalt                                        | erweitert diagram-js `CopyPaste`                                                                |
+| **`ioModule`**                  | Brücke Modell ↔ diagram-js, `importMap`/`exportMap`/`saveSVG`                        | `wardleyImporter.import(map)`, `wardleyExporter.export()`                                       |
 
 Wiederverwendete diagram-js-Stock-Module (transitive über `__depends__` weitgehend automatisch) mit **verifizierten** Importpfaden:
 
@@ -590,7 +590,7 @@ export class WardleyRules extends RuleProvider {
 ### 6.1 Schichtung (analog bpmn-js, eigener Code)
 
 ```typescript
-// @wardley/renderer
+// @miragon/wardley-renderer
 
 export interface WardleyViewerOptions {
   container?: HTMLElement;
@@ -688,7 +688,7 @@ Subklassen überschreiben **nur** `_modules` (concat-Muster wie bpmn-js); der Li
 ### 6.2 additionalModules-Muster (Konsument)
 
 ```typescript
-import { Modeler } from '@wardley/renderer';
+import { Modeler } from '@miragon/wardley-renderer';
 import { myThemeModule } from './my-theme'; // eigener Renderer mit höherer Priorität
 
 const modeler = new Modeler({
@@ -745,13 +745,13 @@ Primärformat ist das `WardleyMap`-JSON aus §2.2 mit `schemaVersion` (Start: `1
 
 ### 7.2 Migrations
 
-Migrations als geordnete Kette reiner Funktionen `migrate_N_to_Nplus1(json): json` in `@wardley/schema-model`. `loadMap(unknownJson)` liest `schemaVersion`, wendet alle nötigen Migrationen an und validiert am Ende gegen das aktuelle Zod-Schema. Unbekannte höhere Versionen → harter Fehler.
+Migrations als geordnete Kette reiner Funktionen `migrate_N_to_Nplus1(json): json` in `@miragon/wardley-schema-model`. `loadMap(unknownJson)` liest `schemaVersion`, wendet alle nötigen Migrationen an und validiert am Ende gegen das aktuelle Zod-Schema. Unbekannte höhere Versionen → harter Fehler.
 
 ### 7.3 Trennung Domäne vs. Layout
 
 Wir trennen **logisch**, nicht physisch in zwei Dateien: Domäne = `label`, `decorators`, `movement`, `edges`; Layout = `position`, `labelOffset`, `config.size/style`. Begründung: Round-Trip-Treue zur OWM-DSL (die Koordinaten inline führt) ist Designziel; eine separate Layout-Datei würde die DSL-Interop verkomplizieren. Auto-Layout (Backlog) berechnet `position` für koordinatenlose Knoten zur Laufzeit, ohne das Format zu spalten.
 
-### 7.4 OWM-Text-DSL-Interop (`@wardley/dsl`)
+### 7.4 OWM-Text-DSL-Interop (`@miragon/wardley-dsl`)
 
 **Parser** (Tokenizer + recursive descent, kein Generator-Tool nötig — die DSL ist zeilenorientiert):
 
@@ -840,25 +840,25 @@ Eigener, nicht-interaktiver diagram-js-Layer (`canvas.getLayer('wardley-axes', -
 
 ## 9. Multi-Target-Strategie
 
-### 9.1 pnpm-Monorepo-Paketaufteilung
+### 9.1 npm-Monorepo-Paketaufteilung
 
-| Paket                   | Zweck                                                            | DOM-abhängig? | Build                           |
-| ----------------------- | ---------------------------------------------------------------- | ------------- | ------------------------------- |
-| `@wardley/schema-model` | TS-Typen + Zod-Schema + Stage-Ableitung + Migrationen            | **Nein**      | tsup (ESM+CJS, dts)             |
-| `@wardley/dsl`          | OWM-Text ↔ Modell, JSON ↔ Modell (deterministisch)               | **Nein**      | tsup                            |
-| `@wardley/transforms`   | reine `WardleyMap→WardleyMap`-Funktionen (KEIN Undo-Stack, §4.3) | **Nein**      | tsup                            |
-| `@wardley/renderer`     | diagram-js-Bootstrap, eigene Module, Viewer/Modeler, CSS         | **Ja**        | Vite lib mode + vite-plugin-dts |
-| `@wardley/react`        | dünnes React-Binding (optional)                                  | **Ja**        | tsup                            |
-| `@wardley/webapp`       | Vite-App (Vanilla, optional React)                               | **Ja**        | Vite app                        |
-| `@wardley/vscode`       | VS Code Extension (Host CJS + Webview ESM)                       | gemischt      | esbuild (Host) + Vite (Webview) |
+| Paket                           | Zweck                                                            | DOM-abhängig? | Build                           |
+| ------------------------------- | ---------------------------------------------------------------- | ------------- | ------------------------------- |
+| `@miragon/wardley-schema-model` | TS-Typen + Zod-Schema + Stage-Ableitung + Migrationen            | **Nein**      | tsup (ESM+CJS, dts)             |
+| `@miragon/wardley-dsl`          | OWM-Text ↔ Modell, JSON ↔ Modell (deterministisch)               | **Nein**      | tsup                            |
+| `@miragon/wardley-transforms`   | reine `WardleyMap→WardleyMap`-Funktionen (KEIN Undo-Stack, §4.3) | **Nein**      | tsup                            |
+| `@miragon/wardley-renderer`     | diagram-js-Bootstrap, eigene Module, Viewer/Modeler, CSS         | **Ja**        | Vite lib mode + vite-plugin-dts |
+| `@miragon/wardley-react`        | dünnes React-Binding (optional)                                  | **Ja**        | tsup                            |
+| `@miragon/wardley-webapp`       | Vite-App (Vanilla, optional React)                               | **Ja**        | Vite app                        |
+| `@miragon/wardley-vscode`       | VS Code Extension (Host CJS + Webview ESM)                       | gemischt      | esbuild (Host) + Vite (Webview) |
 
-**Boundary-Enforcement:** ESLint `no-restricted-imports` verbietet `diagram-js`, `tiny-svg`, `min-dom`, `window`, `document` in den DOM-freien Paketen; zusätzlich `dependency-cruiser` im CI. pnpm strict `node_modules` verhindert Phantom-Imports (Webapp „sieht" diagram-js nur über `@wardley/renderer`).
+**Boundary-Enforcement:** ESLint `no-restricted-imports` verbietet `diagram-js`, `tiny-svg`, `min-dom`, `window`, `document` in den DOM-freien Paketen; zusätzlich `dependency-cruiser` im CI.
 
-Interne Verlinkung: `workspace:*`. Externe Deps: `catalog:` (siehe §10).
+Interne Verlinkung: `"*"` (npm-Workspaces verlinken das lokale Paket). Externe Deps: exakt inline gepinnt (siehe §10).
 
 ### 9.2 Webapp-Wrapper
 
-`@wardley/webapp`: Vite-App, instanziiert `new Modeler({ container })`, importiert `wardley.css` aus `@wardley/renderer`. Persistenz-Adapter: File System Access API (Speichern/Öffnen `.wardley.json` oder `.wmap` DSL), Fallback Download/LocalStorage-Autosave. Undo-Quelle = diagram-js `commandStack` (P3).
+`@miragon/wardley-webapp`: Vite-App, instanziiert `new Modeler({ container })`, importiert `wardley.css` aus `@miragon/wardley-renderer`. Persistenz-Adapter: File System Access API (Speichern/Öffnen `.wardley.json` oder `.wmap` DSL), Fallback Download/LocalStorage-Autosave. Undo-Quelle = diagram-js `commandStack` (P3).
 
 ### 9.3 VS Code: Custom Editor + Webview
 
@@ -901,7 +901,7 @@ _Format-Konfliktwarnung (neu):_ Liegt ein `CustomEditorProvider` auf einer `*.js
 - **Hot-Exit:** `backupCustomDocument` → `saveCustomDocument` in Temp-Verzeichnis.
 - **Externe Änderung** (Git/Editor): `update{content}` → Webview `importMap`, danach `commandStack.clear()` (siehe §5.6, verhindert falsches Dirty).
 
-**Build zweigleisig:** Extension-Host als **CJS** via esbuild (`platform: node`, `external: ['vscode']`); Webview als **ESM** via Vite (hostet denselben `@wardley/renderer`-Modeler wie die Webapp).
+**Build zweigleisig:** Extension-Host als **CJS** via esbuild (`platform: node`, `external: ['vscode']`); Webview als **ESM** via Vite (hostet denselben `@miragon/wardley-renderer`-Modeler wie die Webapp).
 
 ---
 
@@ -909,47 +909,57 @@ _Format-Konfliktwarnung (neu):_ Liegt ein `CustomEditorProvider` auf einer `*.js
 
 ### 10.1 Versionen (fix gepinnt, frisch aufgelöst, Stand 2026-06)
 
-Zentral in `pnpm-workspace.yaml` unter `catalog:`; alle `package.json` referenzieren `catalog:`. **Keine** `^ ~ >= *`. Die folgenden Versionen wurden gegen die npm-Registry **am Erstelldatum verifiziert** (Korrekturen ggü. Vorfassung sind markiert). **Verbindliche Regel:** Der Catalog wird am **tatsächlichen Implementierungsdatum** erneut frisch aufgelöst und anschließend per Renovate/Dependabot gepflegt — eine veraltete „Stand"-Angabe darf nicht stehen bleiben (P5).
+Third-Party-Versionen werden **exakt inline** in jeder `package.json` gepinnt (kein zentraler Catalog mehr; `.npmrc` setzt `save-exact=true`). **Keine** `^ ~ >=` — das einzige erlaubte `*` ist die interne `@miragon/wardley-*`-Workspace-Verlinkung. Die folgende Liste ist die Referenz der gepinnten Versionen, gegen die npm-Registry **am Erstelldatum verifiziert** (Korrekturen ggü. Vorfassung sind markiert). **Verbindliche Regel:** Versionen werden am **tatsächlichen Implementierungsdatum** erneut frisch aufgelöst und anschließend per Dependabot gepflegt — eine veraltete „Stand"-Angabe darf nicht stehen bleiben (P5).
+
+Die `workspaces` werden im Root-`package.json` deklariert (in topologischer Build-Reihenfolge, da npm `-w`-Ziele seriell in Listenreihenfolge baut):
+
+```jsonc
+// package.json (root)
+"workspaces": [
+  "packages/schema-model",
+  "packages/dsl",
+  "packages/transforms",
+  "packages/renderer",
+  "apps/webapp",
+  "apps/vscode"
+]
+```
 
 ```yaml
-# pnpm-workspace.yaml
-packages:
-  - 'packages/*'
-  - 'apps/*'
-catalog:
-  # --- Runtime (renderer) ---
-  diagram-js: 15.16.0 # verifiziert
-  didi: 11.0.0 # verifiziert
-  tiny-svg: 4.1.4 # verifiziert
-  min-dom: 5.3.0 # verifiziert
-  min-dash: 5.0.0 # verifiziert
-  object-refs: 0.4.0
-  inherits-browser: 0.1.0
-  path-intersection: 4.1.0
-  clsx: 2.1.1
-  # --- Domäne ---
-  zod: 4.4.3 # verifiziert
-  # --- Build/Tooling ---
-  typescript: 6.0.3 # verifiziert
-  vite: 8.0.16 # verifiziert
-  vite-plugin-dts: 5.0.2
-  tsup: 8.5.1
-  esbuild: 0.28.0 # KORRIGIERT (war fälschlich 0.27.0)
-  # --- Test ---
-  vitest: 4.1.8 # verifiziert
-  '@vitest/browser': 4.1.8 # NEU: Browser-Mode (Playwright-Provider), siehe §11
-  '@playwright/test': 1.60.0 # verifiziert
-  jsdom: 29.1.1 # KORRIGIERT (war fälschlich 25.0.1)
-  # --- Lint/Format ---
-  eslint: 10.4.1 # verifiziert
-  prettier: 3.8.3 # verifiziert
-  husky: 9.1.7 # verifiziert
-  lint-staged: 17.0.7 # verifiziert
-  license-checker-rseidelsohn: 5.0.1 # KORRIGIERT (war fälschlich 4.3.0)
-  dependency-cruiser: 16.10.0
-  # --- Types ---
-  '@types/node': 25.9.1 # verifiziert
-  '@types/vscode': 1.120.0 # KORRIGIERT (war fälschlich 1.99.0)
+# Gepinnte Versionen (Referenz; inline in den jeweiligen package.json gepflegt)
+# --- Runtime (renderer) ---
+diagram-js: 15.16.0 # verifiziert
+didi: 11.0.0 # verifiziert
+tiny-svg: 4.1.4 # verifiziert
+min-dom: 5.3.0 # verifiziert
+min-dash: 5.0.0 # verifiziert
+object-refs: 0.4.0
+inherits-browser: 0.1.0
+path-intersection: 4.1.0
+clsx: 2.1.1
+# --- Domäne ---
+zod: 4.4.3 # verifiziert
+# --- Build/Tooling ---
+typescript: 6.0.3 # verifiziert
+vite: 8.0.16 # verifiziert
+vite-plugin-dts: 5.0.2
+tsup: 8.5.1
+esbuild: 0.28.0 # KORRIGIERT (war fälschlich 0.27.0)
+# --- Test ---
+vitest: 4.1.8 # verifiziert
+'@vitest/browser': 4.1.8 # NEU: Browser-Mode (Playwright-Provider), siehe §11
+'@playwright/test': 1.60.0 # verifiziert
+jsdom: 29.1.1 # KORRIGIERT (war fälschlich 25.0.1)
+# --- Lint/Format ---
+eslint: 10.4.1 # verifiziert
+prettier: 3.8.3 # verifiziert
+husky: 9.1.7 # verifiziert
+lint-staged: 17.0.7 # verifiziert
+license-checker-rseidelsohn: 5.0.1 # KORRIGIERT (war fälschlich 4.3.0)
+dependency-cruiser: 16.10.0
+# --- Types ---
+'@types/node': 25.9.1 # verifiziert
+'@types/vscode': 1.120.0 # KORRIGIERT (war fälschlich 1.99.0)
 ```
 
 > **diagram-js 15.16.0** bringt eigene `.d.ts` mit (`types: lib/Diagram.d.ts`) — **kein** `@types/diagram-js` installieren. Verifiziert: 15.x hat **kein** `exports`-Feld und ist **nicht** `type: module` (sondern `"module": "lib/Diagram.js"`) → Subpath-Imports (`diagram-js/lib/...`, inkl. `lib/navigation/*`) müssen vom Bundler/`tsc` aufgelöst werden und sind im M0-Spike (§5.1) zu verifizieren. **Backlog:** Migration auf diagram-js 16 (`type: module`, vollständige `exports`-Map) — ändert Importpfade, daher bewusst auf 15.16.0 gepinnt.
@@ -965,7 +975,7 @@ catalog:
 ### 10.3 Build
 
 - **DOM-freie Pakete** (`schema-model`, `dsl`, `transforms`): **tsup** (esbuild-basiert, `dts: true`, dual ESM/CJS, externalisiert Deps automatisch).
-- **`@wardley/renderer`** (mit CSS): **Vite lib mode** + `vite-plugin-dts`, `build.rollupOptions.external: ['diagram-js', /^diagram-js\//, 'tiny-svg', 'min-dom', 'min-dash', 'didi', 'object-refs', 'inherits-browser', 'path-intersection', 'clsx']` → diagram-js & Co. landen **nicht** doppelt im Bundle (peer/external). Bundle-Size-Check im CI (R5).
+- **`@miragon/wardley-renderer`** (mit CSS): **Vite lib mode** + `vite-plugin-dts`, `build.rollupOptions.external: ['diagram-js', /^diagram-js\//, 'tiny-svg', 'min-dom', 'min-dash', 'didi', 'object-refs', 'inherits-browser', 'path-intersection', 'clsx']` → diagram-js & Co. landen **nicht** doppelt im Bundle (peer/external). Bundle-Size-Check im CI (R5).
 - **Webapp:** Vite app.
 - **Extension:** esbuild (Host, CJS) + Vite (Webview, ESM).
 - ESM-first überall.
@@ -974,7 +984,7 @@ catalog:
 
 - **ESLint 10** Flat Config (`eslint.config.js`), `typescript-eslint`, `import`-Plugin, `no-restricted-imports` für Boundaries (§9.1).
 - **Prettier 3** als Formatter (über `eslint-config-prettier` entkoppelt).
-- **Husky 9** (bereits vorhanden): `pre-commit` ruft `pnpm exec lint-staged` + `pnpm run lint`. Bestehende `.husky`-Hooks bleiben unverändert.
+- **Husky 9** (bereits vorhanden): `pre-commit` ruft `npx lint-staged` + `npm run lint`. Bestehende `.husky`-Hooks bleiben unverändert.
 - **lint-staged**:
 
 ```jsonc
@@ -986,7 +996,7 @@ catalog:
   },
   "scripts": {
     "lint": "eslint . && tsc -b --noEmit",
-    "build": "pnpm -r build",
+    "build": "npm run build --workspaces --if-present",
     "test": "vitest run",
   },
 }
@@ -994,11 +1004,11 @@ catalog:
 
 ```sh
 # .husky/pre-commit  (bestehend, unverändert)
-pnpm exec lint-staged
-pnpm run lint
+npx lint-staged
+npm run lint
 ```
 
-> `pnpm run lint` (vom pre-commit aufgerufen) führt ESLint **und** `tsc -b` Typecheck aus.
+> `npm run lint` (vom pre-commit aufgerufen) führt ESLint **und** `tsc -b` Typecheck aus.
 
 ---
 
@@ -1008,7 +1018,7 @@ pnpm run lint
 
 | Ebene                     | Werkzeug                                                                 | Umfang                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | ------------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Unit (Domäne)**         | Vitest, Node-Env (ggf. jsdom für reine DOM-Hilfen)                       | Zod-Validierung, Stage-Ableitung, Migrationen; `@wardley/transforms` (reine Funktionen, idempotent/deterministisch); **DSL Round-Trip** Golden-Files (Parse→Serialize→Parse-Idempotenz, beide Syntaxen, **Pipeline `[maturityStart, maturityEnd]` + asymmetrische Koordinaten**, `rawPassthrough`-Erhalt) **plus** Round-Trip gegen die echte OWM-Implementierung als CI-Gate.                                         |
+| **Unit (Domäne)**         | Vitest, Node-Env (ggf. jsdom für reine DOM-Hilfen)                       | Zod-Validierung, Stage-Ableitung, Migrationen; `@miragon/wardley-transforms` (reine Funktionen, idempotent/deterministisch); **DSL Round-Trip** Golden-Files (Parse→Serialize→Parse-Idempotenz, beide Syntaxen, **Pipeline `[maturityStart, maturityEnd]` + asymmetrische Koordinaten**, `rawPassthrough`-Erhalt) **plus** Round-Trip gegen die echte OWM-Implementierung als CI-Gate.                                 |
 | **Mathematik-Invariante** | Vitest, Node-Env                                                         | `EvolutionGrid`: `toCanvas(fromCanvas(p)) ≈ p` und umgekehrt (innerhalb Rundungstoleranz), als einzige Mathematik-Quelle (P7).                                                                                                                                                                                                                                                                                         |
 | **Integration (Module)**  | **Vitest Browser Mode (Chromium)**                                       | diagram-js mit echtem Injector im **echten Browser-DOM** bootstrappen: `importMap` → `elementRegistry` prüfen; `modeling.moveShape` → `EvolutionConstraintBehavior` clampt/snappt korrekt; `wardleyRules` erlaubt/verbietet erwartete Verbindungen; `commandStack` undo/redo stellt Modell wieder her; `exportMap` ist Roundtrip-treu zu `importMap`. Reine DI-Verdrahtung (ohne Layout-Messung) darf in jsdom laufen. |
 | **E2E**                   | **Playwright**                                                           | Webapp: Palette-Drag-Create, Drag mit Snapping, Verbinden, evolve, Undo/Redo, Save/Load, SVG-Export. VS-Code-Webview separat (Extension-Test-Harness).                                                                                                                                                                                                                                                                 |
@@ -1039,8 +1049,8 @@ Dritte erweitern die Map über das **`additionalModules`-Muster** (didi), ohne F
 wardley-mapping/
 ├─ .husky/                      # bereits vorhanden: pre-commit -> lint-staged + lint
 ├─ .claude/
-├─ pnpm-workspace.yaml          # packages/* apps/* + catalog: (fixe Versionen)
-├─ package.json                 # root: scripts, lint-staged, devDeps (catalog:)
+├─ .npmrc                       # save-exact=true
+├─ package.json                 # root: workspaces, scripts, lint-staged, devDeps (fix gepinnt)
 ├─ tsconfig.json                # references auf alle Pakete
 ├─ tsconfig.base.json           # strict, bundler resolution
 ├─ eslint.config.js             # Flat Config + Boundaries
@@ -1089,15 +1099,15 @@ wardley-mapping/
 
 ## 14. Roadmap / Meilensteine
 
-| Meilenstein                | Inhalt                                                                                                                                                                                                                                                                                                                                      | Abgrenzung                               |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
-| **M0 – Scaffolding**       | pnpm-Monorepo, `catalog:` (am Implementierungsdatum frisch aufgelöst), tsconfig-References, ESLint/Prettier/dependency-cruiser, Vitest (+ Browser-Mode), husky-Anbindung, CI mit license-check + Provenienz-Heuristik. **diagram-js-Subpath-Import-Spike** (`lib/navigation/*`, `keyboard-move-selection` etc. gegen 15.16.0 verifizieren). | Kein Fachcode.                           |
-| **M1 – Domänenkern**       | `@wardley/schema-model` (Typen, Zod, Stage, Migration v1), `@wardley/dsl` (Parser+Serializer beide Syntaxen, **keyword-differenzierte Koordinaten inkl. Pipeline**, Round-Trip-Golden-Files + OWM-Parser-Gate; Decorator-Syntax inkl. `(inertia)` gegen OWM-Quelle verifiziert), `@wardley/transforms`. 100 % DOM-frei, Unit-getestet.      | Kein Rendering.                          |
-| **M2 – Read-only Viewer**  | `@wardley/renderer`: Bootstrap, `EvolutionGrid` (+ Achsen-Layer, einzige Mathematik), `WardleyRenderer` (Komponente, Anchor, Dependency, Pipeline), `importMap`/`exportMap`/`saveSVG`, `Viewer`/`NavigatedViewer`, **`attachTo`/`detach`-Grundgerüst (Eigenimpl.)**. Browser-Mode-Integrationstests.                                        | Nicht editierbar.                        |
-| **MVP (= M3)**             | `Modeler`: Palette (Komponente/Pipeline/Note/Anchor), Create/Move mit `EvolutionConstraintBehavior` + Stage-Snapping, Connect (Dependency), ContextPad, `wardleyRules`, eigenes Inline-Label-Editing, Undo/Redo. Webapp mit File-Persistenz + Playwright-E2E.                                                                               | Flow/evolve/inertia/attitude noch nicht. |
-| **M4 – Wardley-Fülle**     | Flow-Links (`+>`/`+<>`), Movement/evolve (roter Pfeil), Inertia, Build/Buy/Outsource-Decorator, Market/Ecosystem, Annotation + Legende, Accelerator, Attitude-Regionen. Style-Varianten. Visuelle Snapshot-Tests (Browser).                                                                                                                 | –                                        |
-| **M5 – VS Code Extension** | `CustomEditorProvider` (+ `priority: option` für `.json` bzw. Format-Entscheidung aus OF1) + `WardleyDocument`, Webview hostet Modeler, postMessage-Protokoll mit **öffentlichem `seq`-Counter** (kein `_stackIdx`), Undo/Dirty/Save/Hot-Exit, CSP/nonce, `supportsMultipleEditorsPerDocument:false` (dokumentiert), zweigleisiger Build.   | –                                        |
-| **V1 (= M6)**              | Stabilisierung: API-Freeze + SemVer, `attachTo`/`detach`-Robustheit, copyPaste, alignment, vollständige THIRD-PARTY-NOTICES, Doku, `@wardley/react`-Binding, Performance-Pass (große Maps).                                                                                                                                                 | –                                        |
+| Meilenstein                | Inhalt                                                                                                                                                                                                                                                                                                                                                               | Abgrenzung                               |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| **M0 – Scaffolding**       | npm-Workspaces-Monorepo, inline gepinnte Versionen (am Implementierungsdatum frisch aufgelöst), tsconfig-References, ESLint/Prettier/dependency-cruiser, Vitest (+ Browser-Mode), husky-Anbindung, CI mit license-check + Provenienz-Heuristik. **diagram-js-Subpath-Import-Spike** (`lib/navigation/*`, `keyboard-move-selection` etc. gegen 15.16.0 verifizieren). | Kein Fachcode.                           |
+| **M1 – Domänenkern**       | `@miragon/wardley-schema-model` (Typen, Zod, Stage, Migration v1), `@miragon/wardley-dsl` (Parser+Serializer beide Syntaxen, **keyword-differenzierte Koordinaten inkl. Pipeline**, Round-Trip-Golden-Files + OWM-Parser-Gate; Decorator-Syntax inkl. `(inertia)` gegen OWM-Quelle verifiziert), `@miragon/wardley-transforms`. 100 % DOM-frei, Unit-getestet.       | Kein Rendering.                          |
+| **M2 – Read-only Viewer**  | `@miragon/wardley-renderer`: Bootstrap, `EvolutionGrid` (+ Achsen-Layer, einzige Mathematik), `WardleyRenderer` (Komponente, Anchor, Dependency, Pipeline), `importMap`/`exportMap`/`saveSVG`, `Viewer`/`NavigatedViewer`, **`attachTo`/`detach`-Grundgerüst (Eigenimpl.)**. Browser-Mode-Integrationstests.                                                         | Nicht editierbar.                        |
+| **MVP (= M3)**             | `Modeler`: Palette (Komponente/Pipeline/Note/Anchor), Create/Move mit `EvolutionConstraintBehavior` + Stage-Snapping, Connect (Dependency), ContextPad, `wardleyRules`, eigenes Inline-Label-Editing, Undo/Redo. Webapp mit File-Persistenz + Playwright-E2E.                                                                                                        | Flow/evolve/inertia/attitude noch nicht. |
+| **M4 – Wardley-Fülle**     | Flow-Links (`+>`/`+<>`), Movement/evolve (roter Pfeil), Inertia, Build/Buy/Outsource-Decorator, Market/Ecosystem, Annotation + Legende, Accelerator, Attitude-Regionen. Style-Varianten. Visuelle Snapshot-Tests (Browser).                                                                                                                                          | –                                        |
+| **M5 – VS Code Extension** | `CustomEditorProvider` (+ `priority: option` für `.json` bzw. Format-Entscheidung aus OF1) + `WardleyDocument`, Webview hostet Modeler, postMessage-Protokoll mit **öffentlichem `seq`-Counter** (kein `_stackIdx`), Undo/Dirty/Save/Hot-Exit, CSP/nonce, `supportsMultipleEditorsPerDocument:false` (dokumentiert), zweigleisiger Build.                            | –                                        |
+| **V1 (= M6)**              | Stabilisierung: API-Freeze + SemVer, `attachTo`/`detach`-Robustheit, copyPaste, alignment, vollständige THIRD-PARTY-NOTICES, Doku, `@miragon/wardley-react`-Binding, Performance-Pass (große Maps).                                                                                                                                                                  | –                                        |
 
 **Backlog (Post-V1):** Auto-Layout-Solver, Submap-Drill-down, diagram-js-16-Migration, Minimap, `supportsMultipleEditorsPerDocument:true` (Split-View mit commandStack-Broadcast), Kollaboration/CRDT, Theming-API.
 
@@ -1115,16 +1125,16 @@ wardley-mapping/
 | R4  | **Doppelter Undo-Stack** (VS Code WorkspaceEdit ↔ commandStack) → Desync.                                                                       | `CustomEditorProvider`: commandStack einzige Wahrheit; `makeEdit` mit `seq`-Deduplizierung; bei JSON-Format ggf. CustomTextEditorProvider mit „WorkspaceEdit nur beim Save".                                       |
 | R5  | **Vite lib mode bundelt Deps ein** → diagram-js doppelt.                                                                                        | `rollupOptions.external` explizit setzen; Bundle-Size-Check im CI.                                                                                                                                                 |
 | R6  | **Versehentliche bpmn-js-Kontamination** aktiviert Watermark-Pflicht.                                                                           | license-checker-Allowlist + `SEE LICENSE IN LICENSE`-Trigger + Block auf bpmn-js/dmn-js/form-js/cmmn-js im Produktionsbaum + Provenienz-Heuristik/PR-Template (§3.5); kein Copy-Paste aus bpmn-js.                 |
-| R7  | **DOM-freie Pakete importieren versehentlich diagram-js/DOM**.                                                                                  | ESLint `no-restricted-imports` + dependency-cruiser + pnpm strict node_modules.                                                                                                                                    |
+| R7  | **DOM-freie Pakete importieren versehentlich diagram-js/DOM**.                                                                                  | ESLint `no-restricted-imports` + dependency-cruiser.                                                                                                                                                               |
 | R8  | **Nicht-deterministische Serialisierung** → verrauschte Git-Diffs, falsche Webview-Reloads.                                                     | Stabile Sortierung, Koordinaten auf 3 Stellen runden, Round-Trip-Golden-Tests.                                                                                                                                     |
 | R9  | **Flow-Semantik (`+>`/`+<>`) schlecht dokumentiert**.                                                                                           | Gegen reale OWM-Beispiele + offiziellen OWM-Parser testen, vor Implementierung verifizieren.                                                                                                                       |
-| R10 | **Preact (diagram-js-ui) im selben Webview** → doppelte Runtime bei React-Webapp.                                                               | `@wardley/renderer` als external/peer halten; nur benötigte Feature-Module einbinden.                                                                                                                              |
+| R10 | **Preact (diagram-js-ui) im selben Webview** → doppelte Runtime bei React-Webapp.                                                               | `@miragon/wardley-renderer` als external/peer halten; nur benötigte Feature-Module einbinden.                                                                                                                      |
 | R11 | **Stage-Grenzen nicht normiert** → falsche Stage-Anzeige.                                                                                       | Grenzen konfigurierbar (`MapConfig.stageBoundaries`, Default 0.17/0.40/0.70), nie hartkodiert.                                                                                                                     |
 | R12 | **jsdom ungeeignet für SVG-Renderer-Tests** (`getBBox`/`getComputedTextLength` fehlen) → schein-bestandene Tests.                               | Renderer-/Move-/Snapping-/Label-Tests im **Vitest Browser Mode (Chromium)**; jsdom nur für DOM-freie + reine DI-Verdrahtung.                                                                                       |
 | R13 | **Zwei Codepfade für Pixel↔normiert** (Importer vs. Behavior) → Drift.                                                                          | Mathematik **ausschließlich** in `EvolutionGrid` (P7); beide rufen nur diese; Roundtrip-Invariante als Test.                                                                                                       |
 | R14 | **`attachTo`/`detach` nicht in diagram-js** → unerwarteter Eigenaufwand.                                                                        | Als Eigenimplementierung deklariert und in M2/M6 eingeplant; alternativ aus V1 streichen (dokumentiert).                                                                                                           |
 | R15 | **CustomEditorProvider auf `.json` blockiert Texteditor/Diff**.                                                                                 | `priority: "option"` auf `.json`; Format-Entscheidung (OF1) vor M5; ggf. CustomTextEditorProvider für JSON.                                                                                                        |
-| R16 | **Veralteter Versions-Catalog** untergräbt P5.                                                                                                  | Catalog am Implementierungsdatum frisch auflösen, Renovate/Dependabot, keine veraltete „Stand"-Angabe stehen lassen.                                                                                               |
+| R16 | **Veraltete Versions-Pins** untergraben P5.                                                                                                     | Versionen am Implementierungsdatum frisch auflösen, Dependabot (inkl. `cooldown`), keine veraltete „Stand"-Angabe stehen lassen.                                                                                   |
 | R17 | **Modul-Importpfade falsch** (`navigation/*`, `keyboard-move-selection`).                                                                       | Korrigierte Tabelle (§5.1) + M0-Spike gegen echte Version.                                                                                                                                                         |
 
 ### 15.2 Offene Fragen
@@ -1139,4 +1149,4 @@ wardley-mapping/
 
 ---
 
-**Zusammenfassung der Kernentscheidungen:** diagram-js (MIT) als Fundament, eigener Code in bpmn-js-Schichtung (inkl. selbst implementierter `attachTo`/`detach`); plain TS + Zod statt moddle; `{visibility, evolution}`-Kontinuum als Wahrheit mit abgeleiteter Stage; **eine** Geometrie↔Semantik-Mathematik in `EvolutionGrid`, aufgerufen von Importer und `EvolutionConstraintBehavior`; keyword-differenzierte OWM-DSL-Koordinaten (Pipeline = `[maturityStart, maturityEnd]`); pnpm-Monorepo mit strikter DOM-Boundary und frisch aufgelösten, fixen `catalog:`-Versionen; VS Code via `CustomEditorProvider` mit commandStack als einziger Undo-Quelle und öffentlichem `seq`-Counter (keine privaten diagram-js-Felder); Renderer-Tests im Vitest Browser Mode (nicht jsdom); OWM-DSL-Round-Trip gegen den offiziellen Parser als CI-Gate. `@wardley/transforms` liefert rein DOM-freie Funktionen ohne eigenen Undo-Stack (P3). `diagram-js-direct-editing` ist MIT — der Label-Editor-Eigenbau ist technisch, nicht lizenzrechtlich begründet.
+**Zusammenfassung der Kernentscheidungen:** diagram-js (MIT) als Fundament, eigener Code in bpmn-js-Schichtung (inkl. selbst implementierter `attachTo`/`detach`); plain TS + Zod statt moddle; `{visibility, evolution}`-Kontinuum als Wahrheit mit abgeleiteter Stage; **eine** Geometrie↔Semantik-Mathematik in `EvolutionGrid`, aufgerufen von Importer und `EvolutionConstraintBehavior`; keyword-differenzierte OWM-DSL-Koordinaten (Pipeline = `[maturityStart, maturityEnd]`); npm-Workspaces-Monorepo mit strikter DOM-Boundary und frisch aufgelösten, inline gepinnten Versionen; VS Code via `CustomEditorProvider` mit commandStack als einziger Undo-Quelle und öffentlichem `seq`-Counter (keine privaten diagram-js-Felder); Renderer-Tests im Vitest Browser Mode (nicht jsdom); OWM-DSL-Round-Trip gegen den offiziellen Parser als CI-Gate. `@miragon/wardley-transforms` liefert rein DOM-freie Funktionen ohne eigenen Undo-Stack (P3). `diagram-js-direct-editing` ist MIT — der Label-Editor-Eigenbau ist technisch, nicht lizenzrechtlich begründet.

@@ -1,10 +1,10 @@
 {
-  "name": "@wardley/vscode",
+  "name": "wardley-mapping-modeler",
   "private": true,
   "version": "0.0.0",
   "displayName": "Wardley Maps",
   "description": "View and edit Wardley Maps (.wmap / .owm) directly in VS Code — a diagram-js editor for the OWM-DSL.",
-  "publisher": "wardley",
+  "publisher": "miragon",
   "license": "MIT",
   "engines": {
     "vscode": "^1.96.0"
@@ -105,19 +105,19 @@
     "watch": "node esbuild.config.mjs --watch",
     "typecheck": "tsc -p tsconfig.json",
     "vscode:prepublish": "node esbuild.config.mjs --production",
-    "package": "vsce package --no-dependencies -o wardley-vscode.vsix"
+    "package": "vsce package --no-dependencies -o wardley-mapping-modeler.vsix"
   },
   "dependencies": {
-    "@fontsource-variable/spline-sans": "catalog:",
-    "@wardley/dsl": "workspace:*",
-    "@wardley/renderer": "workspace:*",
-    "@wardley/schema-model": "workspace:*"
+    "@fontsource-variable/spline-sans": "5.2.8",
+    "@miragon/wardley-dsl": "*",
+    "@miragon/wardley-renderer": "*",
+    "@miragon/wardley-schema-model": "*"
   },
   "devDependencies": {
-    "@types/node": "catalog:",
-    "@types/vscode": "catalog:",
-    "@vscode/vsce": "catalog:",
-    "esbuild": "catalog:",
-    "typescript": "catalog:"
+    "@types/node": "25.9.1",
+    "@types/vscode": "1.120.0",
+    "@vscode/vsce": "3.9.2",
+    "esbuild": "0.28.0",
+    "typescript": "6.0.3"
   }
 }

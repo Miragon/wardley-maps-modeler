@@ -1,5 +1,5 @@
 {
-  "name": "@wardley/dsl",
+  "name": "@miragon/wardley-dsl",
   "version": "0.0.0",
   "description": "DOM-free bridge: Online-Wardley-Maps text DSL <-> WardleyMap model and JSON bridge.",
   "license": "MIT",
@@ -23,11 +23,11 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@wardley/schema-model": "workspace:*"
+    "@miragon/wardley-schema-model": "*"
   },
   "devDependencies": {
-    "tsup": "catalog:",
-    "typescript": "catalog:",
-    "vitest": "catalog:"
+    "tsup": "8.5.1",
+    "typescript": "6.0.3",
+    "vitest": "4.1.8"
   }
 }

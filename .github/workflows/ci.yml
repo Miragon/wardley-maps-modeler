@@ -7,7 +7,6 @@ on:
   merge_group:
   workflow_dispatch:
 
-# Least privilege by default; jobs raise scopes only where needed.
 permissions:
   contents: read
 
@@ -21,37 +20,37 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/setup
-      - run: pnpm run lint
+      - run: npm run lint
 
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/setup
-      # vitest resolves @wardley/* via their built dist/, so build before testing.
-      - run: pnpm build
-      - run: pnpm test
+      # vitest resolves @miragon/wardley-* via their built dist/, so build before testing.
+      - run: npm run build
+      - run: npm test
 
   depcruise:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/setup
-      - run: pnpm run depcruise
+      - run: npm run depcruise
 
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/setup
-      - run: pnpm build
+      - run: npm run build
 
   format-check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/setup
-      - run: pnpm run format:check
+      - run: npm run format:check
 
   # Blocks PRs that introduce dependencies with known vulnerabilities (PR-only).
   dependency-review:

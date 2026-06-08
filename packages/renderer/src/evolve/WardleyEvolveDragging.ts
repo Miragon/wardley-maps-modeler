@@ -2,7 +2,7 @@ import type EventBus from 'diagram-js/lib/core/EventBus';
 import type Dragging from 'diagram-js/lib/features/dragging/Dragging';
 import type Canvas from 'diagram-js/lib/core/Canvas';
 import type ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
-import type { Movement } from '@wardley/schema-model';
+import type { Movement } from '@miragon/wardley-schema-model';
 import type EvolutionGrid from '../evolution-grid/EvolutionGrid.js';
 import type WardleyModeling from '../modeling/WardleyModeling.js';
 import type { WardleyShape } from '../model/di-types.js';

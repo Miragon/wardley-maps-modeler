@@ -3,7 +3,7 @@
  *
  * All interfaces are `readonly` and serve purely as the serialization/interface format.
  * The runtime source of truth while editing lives in the mutable diagram-js DI properties
- * (@wardley/renderer). `exportMap()` builds a `WardleyMap` from those properties.
+ * (@miragon/wardley-renderer). `exportMap()` builds a `WardleyMap` from those properties.
  *
  * Coordinates are continuous and normalized; the discrete evolution stage is derived
  * (see `stage.ts`), never persisted (guiding principle P2).

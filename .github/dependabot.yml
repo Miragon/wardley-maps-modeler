@@ -1,7 +1,5 @@
 version: 2
 updates:
-  # npm dependencies (pnpm workspace). Grouped into a single PR per run to keep the
-  # central catalog: pins in pnpm-workspace.yaml moving together.
   - package-ecosystem: 'npm'
     directory: '/'
     schedule:
@@ -9,6 +7,8 @@ updates:
     labels:
       - 'dependencies'
     open-pull-requests-limit: 5
+    cooldown:
+      default-days: 3
     groups:
       npm-dependencies:
         patterns:
@@ -18,8 +18,6 @@ updates:
           - 'minor'
           - 'major'
 
-  # GitHub Actions are SHA-pinned, so updates arrive as a single grouped PR that bumps
-  # both the SHA and its `# vX.Y.Z` comment.
   - package-ecosystem: 'github-actions'
     directory: '/'
     schedule:
@@ -27,6 +25,8 @@ updates:
     labels:
       - 'dependencies'
     open-pull-requests-limit: 5
+    cooldown:
+      default-days: 3
     groups:
       github-actions:
         patterns:

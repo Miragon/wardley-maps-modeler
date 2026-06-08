@@ -1,14 +1,14 @@
 # Netlify deployment of the demo webapp (apps/webapp).
-# Monorepo: build the lib packages first (the webapp resolves @wardley/* via their dist),
-# then the Vite webapp. pnpm is used via package.json "packageManager" (corepack).
+# npm-workspaces monorepo: based on package-lock.json, Netlify runs `npm install`
+# automatically, then the build command builds the webapp.
 
 [build]
   # Force base to the repo root (overrides any base possibly set in the Netlify UI such as
   # "packages/renderer", otherwise publish resolves wrong). publish is relative to base.
   base = "/"
-  # The webapp bundles the @wardley/* packages from source via Vite aliases (see vite.config.ts),
-  # so it is self-contained -> no prior lib build needed. The filter command is cwd-independent.
-  command = "pnpm --filter @wardley/webapp build"
+  # The webapp bundles the @miragon/wardley-* packages from source via Vite aliases (see vite.config.ts),
+  # so it is self-contained -> no prior lib build needed.
+  command = "npm run build:webapp"
   publish = "apps/webapp/dist"
 
 [build.environment]

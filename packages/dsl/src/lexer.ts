@@ -3,7 +3,7 @@
  * The DSL is line-based; a full tokenizer/generator is not needed.
  */
 
-import type { Method } from '@wardley/schema-model';
+import type { Method } from '@miragon/wardley-schema-model';
 
 export interface ParsedCoords {
   readonly a: number;

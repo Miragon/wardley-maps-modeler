@@ -1,4 +1,4 @@
-import type { MapConfig } from '@wardley/schema-model';
+import type { MapConfig } from '@miragon/wardley-schema-model';
 
 /** ID of the diagram-js root element of the Wardley map. */
 export const ROOT_ID = 'wardley-root';

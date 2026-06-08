@@ -6,7 +6,7 @@ import type {
   MapEdge,
   MapElement,
   Movement,
-} from '@wardley/schema-model';
+} from '@miragon/wardley-schema-model';
 
 /**
  * diagram-js runtime model with Wardley extensions.

@@ -9,8 +9,8 @@ import {
   ICON_DOWNLOAD,
   ICON_IMAGE,
   ICON_EDIT,
-} from '@wardley/renderer';
-import { EVOLUTION_PRESETS, DEFAULT_EVOLUTION_LABELS } from '@wardley/schema-model';
+} from '@miragon/wardley-renderer';
+import { EVOLUTION_PRESETS, DEFAULT_EVOLUTION_LABELS } from '@miragon/wardley-schema-model';
 import './style.css';
 import { embedSvg, svgToEmbeddedPng, blobToBase64 } from './io.js';
 import type { HostToWebview, WebviewToHost } from '../protocol.js';

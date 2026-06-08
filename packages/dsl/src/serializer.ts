@@ -4,7 +4,7 @@ import type {
   LabelOffset,
   MapElement,
   WardleyMap,
-} from '@wardley/schema-model';
+} from '@miragon/wardley-schema-model';
 
 function r(n: number): string {
   return String(Math.round(n * 1000) / 1000);

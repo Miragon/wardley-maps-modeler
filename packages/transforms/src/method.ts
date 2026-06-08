@@ -1,4 +1,4 @@
-import type { ComponentDecorators, Method, WardleyMap } from '@wardley/schema-model';
+import type { ComponentDecorators, Method, WardleyMap } from '@miragon/wardley-schema-model';
 import { updateElement, compact } from './util.js';
 
 /** Sets (or clears with `undefined`) the sourcing method build/buy/outsource. */

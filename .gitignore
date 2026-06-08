@@ -12,3 +12,4 @@ playwright-report/
 
 # Ignore only local Claude settings; skills + project guardrails (settings.json, rules/) stay tracked
 .claude/settings.local.json
+.claude/logs/

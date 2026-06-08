@@ -1,5 +1,5 @@
 {
-  "name": "@wardley/webapp",
+  "name": "@miragon/wardley-webapp",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -9,14 +9,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@fontsource-variable/fraunces": "catalog:",
-    "@fontsource-variable/spline-sans": "catalog:",
-    "@wardley/dsl": "workspace:*",
-    "@wardley/renderer": "workspace:*",
-    "@wardley/schema-model": "workspace:*"
+    "@fontsource-variable/fraunces": "5.2.9",
+    "@fontsource-variable/spline-sans": "5.2.8",
+    "@miragon/wardley-dsl": "*",
+    "@miragon/wardley-renderer": "*",
+    "@miragon/wardley-schema-model": "*"
   },
   "devDependencies": {
-    "typescript": "catalog:",
-    "vite": "catalog:"
+    "typescript": "6.0.3",
+    "vite": "8.0.16"
   }
 }

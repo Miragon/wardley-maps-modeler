@@ -3,8 +3,8 @@
  * — with the scene (DSL) EMBEDDED in the image file, so that exported PNG/SVG can be reopened
  * via drag & drop (idea borrowed from Excalidraw).
  */
-import { loadMap } from '@wardley/schema-model';
-import type { Modeler } from '@wardley/renderer';
+import { loadMap } from '@miragon/wardley-schema-model';
+import type { Modeler } from '@miragon/wardley-renderer';
 import { encodeMap, decodeMap } from './share.js';
 
 const EMBED_KEYWORD = 'wardley-map';

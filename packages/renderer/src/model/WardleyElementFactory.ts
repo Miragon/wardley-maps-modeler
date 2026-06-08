@@ -12,7 +12,7 @@ import type {
   NoteElement,
   PipelineElement,
   SubmapElement,
-} from '@wardley/schema-model';
+} from '@miragon/wardley-schema-model';
 import type EvolutionGrid from '../evolution-grid/EvolutionGrid.js';
 import { NODE_SIZE, PIPELINE_HEIGHT, noteMetrics } from '../draw/styles.js';
 import type { WardleyConnection, WardleyShape } from './di-types.js';
