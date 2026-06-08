@@ -1,6 +1,6 @@
 name: Refactor
 description: Propose a code refactoring or structural improvement
-title: "[Refactor]: "
+title: '[Refactor]: '
 labels:
   - refactor
 body:

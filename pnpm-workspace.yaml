@@ -38,7 +38,7 @@ catalog:
   esbuild: 0.28.0
 
   # --- VS Code Extension ---
-  '@types/vscode': 1.96.0
+  '@types/vscode': 1.120.0
   '@vscode/vsce': 3.9.2
 
   # --- Test ---
@@ -58,6 +58,10 @@ catalog:
 
   # --- Types ---
   '@types/node': 25.9.1
+
+# Supply-chain cooldown: ignore versions published <3 days ago (the Exclude list below
+# was inert without this base value).
+minimumReleaseAge: 4320
 
 minimumReleaseAgeExclude:
   - '@bpmn-io/diagram-js-ui@0.2.4'
