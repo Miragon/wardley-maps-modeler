@@ -16,6 +16,15 @@ npm run lint    # eslint . + type-check (same check the pre-commit hook runs)
 Useful extras: `npm run dev:webapp`, `npm run dev:vscode`, `npm run depcruise` (module-graph check),
 `npm run format` (Prettier).
 
+## Browser & e2e tests
+
+`npm run test:browser` (Vitest browser mode) and `npm run test:e2e` (Playwright, in `e2e/`) need a
+Chromium browser. Locally, run `npx playwright install chromium` once. In CI these two jobs run inside
+the official Playwright container (`mcr.microsoft.com/playwright`), which ships the browser + system
+libs pre-installed — so **when you bump `@playwright/test` in `e2e/package.json`, bump the matching
+image tag in [`.github/workflows/ci.yml`](.github/workflows/ci.yml) too** (the version pin-check does
+not catch this).
+
 ## Pre-commit reality
 
 The Husky hook (`.husky/pre-commit`) runs **only** `lint-staged` + `npm run lint` — i.e. ESLint and

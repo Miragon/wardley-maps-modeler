@@ -32,19 +32,23 @@ jobs:
 
   test-browser:
     runs-on: ubuntu-latest
+    needs: [lint, build]
+    container:
+      image: mcr.microsoft.com/playwright:v1.60.0-noble
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/setup
       - run: npm run build
-      - run: npx playwright install --with-deps chromium
       - run: npm run test:browser
 
   e2e:
     runs-on: ubuntu-latest
+    needs: [lint, build]
+    container:
+      image: mcr.microsoft.com/playwright:v1.60.0-noble
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/setup
-      - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
       - if: failure()
         uses: actions/upload-artifact@v4
