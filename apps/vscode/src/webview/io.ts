@@ -2,18 +2,14 @@
  * Bild-Export der Webview: SVG/PNG mit in die Datei EINGEBETTETER Szene (OWM-DSL), sodass
  * exportierte Bilder später wieder als Wardley-Map geöffnet werden können (Idee aus Excalidraw).
  * Identische Kodierung wie die Demo-Webapp (apps/webapp/src/io.ts + share.ts).
+ *
+ * Die reinen Byte-/Encoding-Helfer liegen DOM-frei in ../png.ts (auch vom Extension-Host genutzt).
+ * Hier verbleibt nur das, was den Browser braucht (Rasterung via Canvas, Blob/FileReader).
  */
 
-const EMBED_KEYWORD = 'wardley-map';
-const SVG_ATTR = 'data-wardley-map';
+import { EMBED_KEYWORD, encodeMap, pngInsertText } from '../png.js';
 
-/** UTF-8 -> URL-safe Base64 (A-Za-z0-9-_, ohne Padding). */
-function encodeMap(text: string): string {
-  const bytes = new TextEncoder().encode(text);
-  let bin = '';
-  for (const b of bytes) bin += String.fromCharCode(b);
-  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
+const SVG_ATTR = 'data-wardley-map';
 
 /** Bettet die DSL als Attribut ins Wurzel-<svg> ein. */
 export function embedSvg(svg: string, dsl: string): string {
@@ -74,59 +70,4 @@ export function blobToBase64(blob: Blob): Promise<string> {
     reader.onerror = () => reject(new Error('Could not read the export blob.'));
     reader.readAsDataURL(blob);
   });
-}
-
-// --- PNG-tEXt-Chunk-Helfer ---
-
-const CRC_TABLE = (() => {
-  const t = new Uint32Array(256);
-  for (let n = 0; n < 256; n++) {
-    let c = n;
-    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
-    t[n] = c >>> 0;
-  }
-  return t;
-})();
-
-function crc32(bytes: Uint8Array): number {
-  let c = 0xffffffff;
-  for (let i = 0; i < bytes.length; i++) c = CRC_TABLE[(c ^ bytes[i]!) & 0xff]! ^ (c >>> 8);
-  return (c ^ 0xffffffff) >>> 0;
-}
-
-function latin1(str: string): Uint8Array {
-  const out = new Uint8Array(str.length);
-  for (let i = 0; i < str.length; i++) out[i] = str.charCodeAt(i) & 0xff;
-  return out;
-}
-
-/** Fügt einen tEXt-Chunk (keyword\0text) vor IEND ein. */
-function pngInsertText(png: Uint8Array, keyword: string, text: string): Uint8Array {
-  const data = new Uint8Array([...latin1(keyword), 0, ...latin1(text)]);
-  const type = latin1('tEXt');
-  const chunk = new Uint8Array(12 + data.length);
-  const view = new DataView(chunk.buffer);
-  view.setUint32(0, data.length);
-  chunk.set(type, 4);
-  chunk.set(data, 8);
-  view.setUint32(8 + data.length, crc32(new Uint8Array([...type, ...data])));
-
-  const iendStart = findIend(png);
-  const out = new Uint8Array(png.length + chunk.length);
-  out.set(png.subarray(0, iendStart), 0);
-  out.set(chunk, iendStart);
-  out.set(png.subarray(iendStart), iendStart + chunk.length);
-  return out;
-}
-
-function findIend(png: Uint8Array): number {
-  const view = new DataView(png.buffer, png.byteOffset, png.byteLength);
-  let off = 8;
-  while (off + 8 <= png.length) {
-    const len = view.getUint32(off);
-    const type = String.fromCharCode(png[off + 4]!, png[off + 5]!, png[off + 6]!, png[off + 7]!);
-    if (type === 'IEND') return off;
-    off += 12 + len;
-  }
-  return png.length;
 }

@@ -40,6 +40,16 @@ let importing = false; // unterdrückt Edit-Echo während des Imports
 let importFailed = false; // letzter Import (z.B. extern getippter Text) war unparsbar
 let initialized = false; // erstes init erfolgt -> ab dann Zoom/Ausschnitt erhalten
 
+// Importe STRIKT serialisieren: init/update kommen als (nicht awaitete) Messages rein; ohne
+// Verkettung könnten zwei schnelle Updates (z.B. mehrere Undos) gleichzeitig importieren und in
+// falscher Reihenfolge fertig werden. Zudem hängt sich der PNG-Save (respondPng) an diese Kette,
+// damit nie ein halb-importierter Stand gerastert wird.
+let importChain: Promise<void> = Promise.resolve();
+function enqueueImport(text: string, fit: boolean): Promise<void> {
+  importChain = importChain.then(() => importText(text, fit)).catch(() => {});
+  return importChain;
+}
+
 /** Vergleicht zwei DSL-Texte modulo Zeilenenden/Trailing-Whitespace (= Save-Transforms). */
 function sameMapText(a: string, b: string): boolean {
   return a.replace(/\r\n/g, '\n').trim() === b.replace(/\r\n/g, '\n').trim();
@@ -95,9 +105,30 @@ modeler.on('commandStack.changed', pushEdit);
 
 window.addEventListener('message', (event: MessageEvent<HostToWebview>) => {
   const msg = event.data;
-  if (msg.type === 'init') void importText(msg.text, true);
-  else if (msg.type === 'update') void importText(msg.text, false);
+  if (msg.type === 'init') void enqueueImport(msg.text, true);
+  else if (msg.type === 'update') void enqueueImport(msg.text, false);
+  else if (msg.type === 'requestPng') void respondPng(msg.id);
 });
+
+/**
+ * PNG-Editor: Host bittet ums fertige, eingebettete PNG (Save/Backup). Wir rastern den aktuellen
+ * Stand und schicken Base64 zurück — Fehler werden als `error` gemeldet, damit der Host den Save
+ * sauber abbrechen kann statt eine kaputte Datei zu schreiben.
+ *
+ * Zuerst auf alle bis hierher eingereihten Importe warten (`importChain`), damit nicht ein gerade
+ * laufendes init/update einen halb-importierten Zustand in das PNG rastert (sonst Datenverlust).
+ */
+async function respondPng(id: number): Promise<void> {
+  try {
+    await importChain;
+    deselect();
+    const { svg } = await modeler.saveSVG();
+    const blob = await svgToEmbeddedPng(svg, modeler.exportDSL());
+    vscode.postMessage({ type: 'pngResponse', id, data: await blobToBase64(blob) });
+  } catch (err) {
+    vscode.postMessage({ type: 'pngResponse', id, error: (err as Error).message });
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Viewport: Map einpassen, oben Platz für die schwebende Toolbar lassen
