@@ -54,7 +54,7 @@ describe('Modeler integration (real browser DOM)', () => {
     expect(labels).toEqual(['Customer', 'Platform']);
 
     // Browser-only invariant: a real getBBox() yields a non-zero box. jsdom returns 0×0, so this is
-    // exactly why the integration layer needs Browser Mode (KONZEPT.md §11).
+    // exactly why the integration layer needs Browser Mode.
     const gfx = registry.getGraphics(findByLabel(registry, 'Platform')) as SVGGraphicsElement;
     const box = gfx.getBBox();
     expect(box.width).toBeGreaterThan(0);

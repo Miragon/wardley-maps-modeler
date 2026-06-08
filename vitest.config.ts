@@ -2,7 +2,7 @@ import { defineConfig } from 'vitest/config';
 import { playwright } from '@vitest/browser-playwright';
 
 // Two projects so the default `npm test` stays fast and node-only, while the renderer
-// browser-integration layer (KONZEPT.md §11) runs opt-in in real Chromium via `npm run test:browser`.
+// browser-integration layer runs opt-in in real Chromium via `npm run test:browser`.
 // jsdom can't provide SVGElement.getBBox() / getComputedTextLength(), which the renderer relies on.
 export default defineConfig({
   test: {
