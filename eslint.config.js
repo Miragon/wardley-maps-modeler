@@ -54,9 +54,9 @@ export default tseslint.config(
       ],
     },
   },
-  // DOM-dependent packages/apps: browser globals allowed.
+  // DOM-dependent packages/apps + E2E specs (page.evaluate runs in the browser): browser globals allowed.
   {
-    files: ['packages/renderer/**/*.ts', 'apps/**/*.ts'],
+    files: ['packages/renderer/**/*.ts', 'apps/**/*.ts', 'e2e/**/*.ts'],
     languageOptions: {
       globals: { ...globals.browser },
     },

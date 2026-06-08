@@ -9,6 +9,9 @@ test-results/
 playwright-report/
 /e2e/.cache/
 .playwright-mcp/
+# Vitest Browser Mode failure artifacts (transient; not visual-regression baselines)
+.vitest-attachments/
+__screenshots__/
 
 # Ignore only local Claude settings; skills + project guardrails (settings.json, rules/) stay tracked
 .claude/settings.local.json

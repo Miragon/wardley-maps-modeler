@@ -30,6 +30,35 @@ jobs:
       - run: npm run build
       - run: npm test
 
+  # Renderer integration tests in real Chromium (Vitest Browser Mode, KONZEPT.md §11).
+  # Non-blocking for now: runs on every PR/push but is not yet a required check.
+  test-browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/setup
+      # vitest resolves @miragon/wardley-* via their built dist/, so build before the browser run too.
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:browser
+
+  # Playwright E2E driving the webapp dev server on :5180 (KONZEPT.md §11).
+  # Non-blocking for now: runs on every PR/push but is not yet a required check.
+  # No build step: the webapp dev server resolves @miragon/wardley-* from source via Vite aliases.
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/setup
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: e2e/playwright-report/
+          retention-days: 7
+
   depcruise:
     runs-on: ubuntu-latest
     steps:
