@@ -4,9 +4,6 @@ updates:
     directory: '/'
     schedule:
       interval: 'weekly'
-    # Don't auto-rebase open PRs on every push to the base branch — that
-    # triggers a "Dependabot Updates" run after each merge to main. Keep
-    # Dependabot to its configured schedule only.
     rebase-strategy: 'disabled'
     labels:
       - 'dependencies'
