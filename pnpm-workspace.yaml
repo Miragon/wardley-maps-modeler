@@ -38,7 +38,7 @@ catalog:
   esbuild: 0.28.0
 
   # --- VS Code Extension ---
-  '@types/vscode': 1.96.0
+  '@types/vscode': 1.120.0
   '@vscode/vsce': 3.9.2
 
   # --- Test ---
