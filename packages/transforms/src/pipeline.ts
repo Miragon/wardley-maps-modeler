@@ -1,4 +1,4 @@
-import type { WardleyMap } from '@wardley/schema-model';
+import type { WardleyMap } from '@miragon/wardley-schema-model';
 import { updateElement } from './util.js';
 
 /** Invariant: end > start, both in [0,1]. */

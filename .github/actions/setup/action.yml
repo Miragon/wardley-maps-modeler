@@ -1,5 +1,5 @@
 name: Setup
-description: Install pnpm + Node and restore dependencies with a frozen lockfile.
+description: Install Node and restore dependencies with a clean, lockfile-pinned npm install.
 
 inputs:
   node-version:
@@ -10,12 +10,10 @@ inputs:
 runs:
   using: composite
   steps:
-    - uses: pnpm/action-setup@v6
-
     - uses: actions/setup-node@v6
       with:
         node-version: ${{ inputs.node-version }}
-        cache: pnpm
+        cache: npm
 
-    - run: pnpm install --frozen-lockfile
+    - run: npm ci
       shell: bash

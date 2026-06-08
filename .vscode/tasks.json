@@ -4,14 +4,14 @@
     {
       "label": "wardley-vscode: build",
       "type": "shell",
-      "command": "pnpm --filter @wardley/vscode build",
+      "command": "npm run build -w apps/vscode",
       "group": "build",
       "problemMatcher": []
     },
     {
       "label": "wardley-vscode: watch",
       "type": "shell",
-      "command": "pnpm --filter @wardley/vscode watch",
+      "command": "npm run watch -w apps/vscode",
       "isBackground": true,
       "group": "build",
       "problemMatcher": []

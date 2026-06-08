@@ -17,7 +17,7 @@ import {
   type PipelineElement,
   type SubmapElement,
   type WardleyMap,
-} from '@wardley/schema-model';
+} from '@miragon/wardley-schema-model';
 import {
   keywordOf,
   parseColor,

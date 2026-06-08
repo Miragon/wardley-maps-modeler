@@ -2,7 +2,7 @@
 // Fraunces 'standard' = opsz+wght axes (optical sizing); Spline Sans = wght axis.
 import '@fontsource-variable/fraunces/standard.css';
 import '@fontsource-variable/spline-sans/index.css';
-import '@wardley/renderer/assets/wardley.css';
+import '@miragon/wardley-renderer/assets/wardley.css';
 import './style.css';
 import {
   Modeler,
@@ -20,8 +20,12 @@ import {
   ICON_SHARE,
   ICON_ASPECT_RATIO,
   ICON_EDIT,
-} from '@wardley/renderer';
-import { createEmptyMap, EVOLUTION_PRESETS, DEFAULT_EVOLUTION_LABELS } from '@wardley/schema-model';
+} from '@miragon/wardley-renderer';
+import {
+  createEmptyMap,
+  EVOLUTION_PRESETS,
+  DEFAULT_EVOLUTION_LABELS,
+} from '@miragon/wardley-schema-model';
 import { readHashMap, writeHashMap, shareUrl } from './share.js';
 import { openFile, embedSvg, svgToEmbeddedPng, downloadBlob, downloadText } from './io.js';
 
@@ -250,7 +254,7 @@ const axisInputs = [0, 1, 2, 3].map(
   (i) => document.getElementById(`axis-s${i}`) as HTMLInputElement | null,
 );
 
-// Preset options from the single source of truth (@wardley/schema-model) + a free "Custom" choice.
+// Preset options from the single source of truth (@miragon/wardley-schema-model) + a free "Custom" choice.
 if (axisPreset) {
   for (const p of EVOLUTION_PRESETS) {
     const opt = document.createElement('option');

@@ -12,7 +12,7 @@ import {
   type PipelineElement,
   type SubmapElement,
   type WardleyMap,
-} from '@wardley/schema-model';
+} from '@miragon/wardley-schema-model';
 import { isWardleyConnection, isWardleyShape, type WardleyShape } from '../model/di-types.js';
 import { ROOT_ID, type RootBusinessObject } from './types.js';
 

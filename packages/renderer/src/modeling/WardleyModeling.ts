@@ -1,5 +1,5 @@
 import type CommandStack from 'diagram-js/lib/command/CommandStack';
-import type { Method } from '@wardley/schema-model';
+import type { Method } from '@miragon/wardley-schema-model';
 import type { WardleyShape } from '../model/di-types.js';
 import { noteMetrics } from '../draw/styles.js';
 import UpdatePropertiesHandler from './cmd/UpdatePropertiesHandler.js';

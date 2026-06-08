@@ -1,4 +1,4 @@
-import type { ComponentDecorators, WardleyMap } from '@wardley/schema-model';
+import type { ComponentDecorators, WardleyMap } from '@miragon/wardley-schema-model';
 import { updateElement, compact } from './util.js';
 
 export function toggleInertia(map: WardleyMap, componentId: string): WardleyMap {

@@ -29,16 +29,16 @@ circles, users/anchors as icons, and the evolution grid carries the standard sta
 
 ## Monorepo
 
-pnpm workspace with exact, centrally pinned versions (via `catalog:` in `pnpm-workspace.yaml`).
+npm workspaces with exact, pinned versions in each package's `package.json` (`.npmrc` sets `save-exact=true`).
 
-| Package                                          | Purpose                                                                                                  | DOM-dependent? |
-| ------------------------------------------------ | -------------------------------------------------------------------------------------------------------- | -------------- |
-| [`@wardley/schema-model`](packages/schema-model) | Metamodel (types), Zod validation, stage derivation, migrations, deterministic JSON serialization        | **no**         |
-| [`@wardley/dsl`](packages/dsl)                   | Online-Wardley-Maps text DSL ↔ model (keyword-differentiated coordinates, `rawPassthrough`), JSON bridge | **no**         |
-| [`@wardley/transforms`](packages/transforms)     | pure `WardleyMap → WardleyMap` transforms (evolve, method, inertia, pipeline) — no undo stack            | **no**         |
-| [`@wardley/renderer`](packages/renderer)         | diagram-js bootstrap, `EvolutionGrid`, `WardleyRenderer`, `Viewer`/`NavigatedViewer`, import/export, CSS | **yes**        |
-| [`apps/webapp`](apps/webapp)                     | Vite demo app (the editor shown above)                                                                   | **yes**        |
-| [`apps/vscode`](apps/vscode)                     | VS Code extension — custom editor for `.wmap`/`.owm` (esbuild-bundled webview + host)                    | **yes**        |
+| Package                                                  | Purpose                                                                                                  | DOM-dependent? |
+| -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | -------------- |
+| [`@miragon/wardley-schema-model`](packages/schema-model) | Metamodel (types), Zod validation, stage derivation, migrations, deterministic JSON serialization        | **no**         |
+| [`@miragon/wardley-dsl`](packages/dsl)                   | Online-Wardley-Maps text DSL ↔ model (keyword-differentiated coordinates, `rawPassthrough`), JSON bridge | **no**         |
+| [`@miragon/wardley-transforms`](packages/transforms)     | pure `WardleyMap → WardleyMap` transforms (evolve, method, inertia, pipeline) — no undo stack            | **no**         |
+| [`@miragon/wardley-renderer`](packages/renderer)         | diagram-js bootstrap, `EvolutionGrid`, `WardleyRenderer`, `Viewer`/`NavigatedViewer`, import/export, CSS | **yes**        |
+| [`apps/webapp`](apps/webapp)                             | Vite demo app (the editor shown above)                                                                   | **yes**        |
+| [`apps/vscode`](apps/vscode)                             | VS Code extension — custom editor for `.wmap`/`.owm` (esbuild-bundled webview + host)                    | **yes**        |
 
 The DOM-freedom of the core packages is enforced twice: ESLint (`no-restricted-imports` /
 `no-restricted-globals`) and `dependency-cruiser` (module graph).
@@ -88,11 +88,11 @@ The DOM-freedom of the core packages is enforced twice: ESLint (`no-restricted-i
   diagram-js `Modeler` and mirrors graphical edits back via `WorkspaceEdit` (echo-guarded two-way
   sync). Collapsed menu (top-right): fit · map size · X-axis labels · export SVG/PNG (scene
   embedded); undo/redo is left to VS Code (`Ctrl/Cmd+Z`).
-  Two esbuild bundles (host `extension.cjs` + webview), `@wardley/*` bundled from source. See
+  Two esbuild bundles (host `extension.cjs` + webview), `@miragon/wardley-*` bundled from source. See
   [`apps/vscode/README.md`](apps/vscode/README.md).
 - **Open** (roadmap §14): annotations legend box rendering, pipeline-block DSL &
   the `url` keyword (currently preserved losslessly via `rawPassthrough`), attitude resize, submap
-  drill-down, auto-layout, copy/paste, a `@wardley/react` binding.
+  drill-down, auto-layout, copy/paste, a `@miragon/wardley-react` binding.
 
 ## Screenshots
 
@@ -139,20 +139,20 @@ Checked against [docs.onlinewardleymaps.com](https://docs.onlinewardleymaps.com/
 ## Commands
 
 ```bash
-pnpm install         # dependencies (exact versions via catalog:)
-pnpm build           # build all lib packages (tsup / Vite lib mode)
-pnpm test            # all unit tests (vitest)
-pnpm run lint        # ESLint + tsc (type-check) — same as the husky pre-commit
-pnpm run typecheck   # type-check only (repo-wide, from sources)
-pnpm run depcruise   # check the DOM boundary
-pnpm run dev:webapp  # demo web app at http://localhost:5180
+npm install          # dependencies (exact pinned versions)
+npm run build        # build all lib packages (tsup / Vite lib mode)
+npm test             # all unit tests (vitest)
+npm run lint         # ESLint + tsc (type-check) — same as the husky pre-commit
+npm run typecheck    # type-check only (repo-wide, from sources)
+npm run depcruise    # check the DOM boundary
+npm run dev:webapp   # demo web app at http://localhost:5180
 ```
 
 ## Library usage
 
 ```ts
-import { NavigatedViewer } from '@wardley/renderer';
-import '@wardley/renderer/assets/wardley.css';
+import { NavigatedViewer } from '@miragon/wardley-renderer';
+import '@miragon/wardley-renderer/assets/wardley.css';
 
 const viewer = new NavigatedViewer({ container: document.querySelector('#canvas')! });
 

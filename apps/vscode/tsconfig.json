@@ -6,10 +6,10 @@
     "types": ["node", "vscode"],
     "baseUrl": ".",
     "paths": {
-      "@wardley/renderer": ["../../packages/renderer/src/index.ts"],
-      "@wardley/schema-model": ["../../packages/schema-model/src/index.ts"],
-      "@wardley/dsl": ["../../packages/dsl/src/index.ts"],
-      "@wardley/transforms": ["../../packages/transforms/src/index.ts"]
+      "@miragon/wardley-renderer": ["../../packages/renderer/src/index.ts"],
+      "@miragon/wardley-schema-model": ["../../packages/schema-model/src/index.ts"],
+      "@miragon/wardley-dsl": ["../../packages/dsl/src/index.ts"],
+      "@miragon/wardley-transforms": ["../../packages/transforms/src/index.ts"]
     }
   },
   "include": ["src/**/*.ts"]

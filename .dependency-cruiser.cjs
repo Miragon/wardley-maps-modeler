@@ -1,7 +1,7 @@
 /**
  * DOM-boundary enforcement at the module-graph level (concept doc §9.1, P1).
  * Complements the ESLint rule: forbids DOM-free packages from depending on diagram-js /
- * DOM libraries or on the DOM-dependent @wardley/renderer.
+ * DOM libraries or on the DOM-dependent @miragon/wardley-renderer.
  */
 /** @type {import('dependency-cruiser').IConfiguration} */
 module.exports = {

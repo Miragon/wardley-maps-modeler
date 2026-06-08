@@ -1,4 +1,4 @@
-import type { Method, Movement, WardleyMap } from '@wardley/schema-model';
+import type { Method, Movement, WardleyMap } from '@miragon/wardley-schema-model';
 import { updateElement, compact } from './util.js';
 
 export interface EvolveOptions {

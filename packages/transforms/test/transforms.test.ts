@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { createEmptyMap, type ComponentElement, type WardleyMap } from '@wardley/schema-model';
+import {
+  createEmptyMap,
+  type ComponentElement,
+  type WardleyMap,
+} from '@miragon/wardley-schema-model';
 import { evolveComponent, setMethod, toggleInertia, setPipelineRange } from '../src/index.js';
 
 function mapWith(...elements: WardleyMap['elements']): WardleyMap {

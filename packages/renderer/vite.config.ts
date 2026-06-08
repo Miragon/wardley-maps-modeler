@@ -15,8 +15,8 @@ const EXTERNAL = [
   'inherits-browser',
   'path-intersection',
   'clsx',
-  '@wardley/schema-model',
-  '@wardley/dsl',
+  '@miragon/wardley-schema-model',
+  '@miragon/wardley-dsl',
 ];
 
 export default defineConfig({

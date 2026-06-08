@@ -1,5 +1,5 @@
 {
-  "name": "@wardley/renderer",
+  "name": "@miragon/wardley-renderer",
   "version": "0.0.0",
   "description": "diagram-js-based Wardley renderer: Viewer / NavigatedViewer / (Modeler). DOM-dependent.",
   "license": "MIT",
@@ -25,18 +25,18 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@wardley/dsl": "workspace:*",
-    "@wardley/schema-model": "workspace:*",
-    "clsx": "catalog:",
-    "diagram-js": "catalog:",
-    "didi": "catalog:",
-    "tiny-svg": "catalog:"
+    "@miragon/wardley-dsl": "0.0.0",
+    "@miragon/wardley-schema-model": "0.0.0",
+    "clsx": "2.1.1",
+    "diagram-js": "15.16.0",
+    "didi": "11.0.0",
+    "tiny-svg": "4.1.4"
   },
   "devDependencies": {
-    "jsdom": "catalog:",
-    "typescript": "catalog:",
-    "vite": "catalog:",
-    "vite-plugin-dts": "catalog:",
-    "vitest": "catalog:"
+    "jsdom": "29.1.1",
+    "typescript": "6.0.3",
+    "vite": "8.0.16",
+    "vite-plugin-dts": "5.0.2",
+    "vitest": "4.1.8"
   }
 }

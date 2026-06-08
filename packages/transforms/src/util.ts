@@ -1,4 +1,4 @@
-import type { MapElement, WardleyMap } from '@wardley/schema-model';
+import type { MapElement, WardleyMap } from '@miragon/wardley-schema-model';
 
 export function updateElement(
   map: WardleyMap,

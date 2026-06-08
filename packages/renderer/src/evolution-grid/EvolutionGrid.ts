@@ -11,7 +11,7 @@ import {
   type Coordinate,
   type EvolutionStage,
   type MapConfig,
-} from '@wardley/schema-model';
+} from '@miragon/wardley-schema-model';
 import type Canvas from 'diagram-js/lib/core/Canvas';
 import type { Point } from 'diagram-js/lib/util/Types';
 import { PLOT, PLOT_MIN, COLORS, FONT } from '../draw/styles.js';
