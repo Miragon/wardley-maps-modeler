@@ -31,8 +31,8 @@ body {
   position: relative;
 }
 
-/* --- Floating-Chrome über dem Canvas (kein Header-Balken, Excalidraw-Stil) ---
-   Menü links, Teilen rechts, Werkzeug-Palette (vom Renderer) zentriert oben. */
+/* --- Floating chrome over the canvas (no header bar, Excalidraw style) ---
+   Menu on the left, Share on the right, tool palette (from the renderer) centered at the top. */
 .app-menu {
   position: absolute;
   top: 12px;
@@ -153,7 +153,7 @@ body {
   cursor: pointer;
 }
 
-/* --- Toolbar (floatend oben rechts: nur Teilen) --- */
+/* --- Toolbar (floating top-right: Share only) --- */
 .app-toolbar {
   position: absolute;
   top: 12px;
@@ -194,7 +194,7 @@ body {
   background: #0c6a63;
 }
 
-/* --- Bühne (Canvas + Empty-State): füllt #app, Chrome floatet darüber --- */
+/* --- Stage (canvas + empty state): fills #app, chrome floats over it --- */
 .app-stage {
   position: absolute;
   inset: 0;
@@ -204,7 +204,7 @@ body {
   inset: 0;
 }
 
-/* Drag&Drop-Hinweis auf Webapp-Ebene (DnD liegt auf der Bühne, nicht im Renderer) */
+/* Drag & drop hint at the webapp level (DnD lives on the stage, not in the renderer) */
 .app-stage.drag-over::after {
   content: 'Drop Wardley map here';
   position: absolute;
@@ -232,7 +232,7 @@ body {
   z-index: 5;
   display: grid;
   place-items: center;
-  /* Klicks/Drops gehen durch auf das Canvas; nur die Karte ist interaktiv. */
+  /* Clicks/drops pass through to the canvas; only the card is interactive. */
   pointer-events: none;
 }
 .empty-card {
@@ -369,7 +369,7 @@ body {
   white-space: pre;
 }
 
-/* --- X-Achsen-Beschriftung (Modal: Preset + freie Stage-Labels) --- */
+/* --- X-axis labels (modal: preset + free-form stage labels) --- */
 .axis-panel {
   display: flex;
   flex-direction: column;

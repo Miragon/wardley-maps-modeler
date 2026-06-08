@@ -2,10 +2,9 @@ import * as vscode from 'vscode';
 import { WardleyEditorProvider } from './WardleyEditorProvider.js';
 import { WardleyPngEditorProvider } from './WardleyPngEditorProvider.js';
 
-/** Leere Map (nur Titel) — die Leinwand zeigt das Evolutions-Raster ohne Komponenten. */
 const EMPTY_MAP = 'title New map\n';
 
-/** Tea-Shop-Beispiel (identisch zur Demo-Webapp), als Einstieg. */
+/** Tea shop example (identical to the demo webapp), as a starting point. */
 const EXAMPLE_MAP = `title Tea Shop
 anchor Business [0.95, 0.63]
 anchor Public [0.95, 0.78]
@@ -39,13 +38,10 @@ export function activate(context: vscode.ExtensionContext): void {
 }
 
 export function deactivate(): void {
-  /* nichts zu tun — alle Ressourcen hängen an context.subscriptions */
+  /* nothing to do — all resources are tied to context.subscriptions */
 }
 
-/**
- * Fragt einen Speicherort ab, schreibt die Start-DSL und öffnet die Datei im Wardley-Editor.
- * (Ein echter Datei-URI statt eines Untitled-Docs ist für CustomTextEditor am robustesten.)
- */
+/** A real file URI rather than an untitled doc is most robust for CustomTextEditor. */
 async function createMap(initial: string): Promise<void> {
   const options: vscode.SaveDialogOptions = {
     title: 'New Wardley Map',
@@ -62,16 +58,15 @@ async function createMap(initial: string): Promise<void> {
   await vscode.commands.executeCommand('vscode.openWith', target, WardleyEditorProvider.viewType);
 }
 
-/** Vorschlag fürs Save-Dialog: `wardley-map.wmap` im ersten Workspace-Ordner (falls vorhanden). */
 function defaultMapUri(): vscode.Uri | undefined {
   const folder = vscode.workspace.workspaceFolders?.[0];
   return folder ? vscode.Uri.joinPath(folder.uri, 'wardley-map.wmap') : undefined;
 }
 
 /**
- * Legt eine neue, eingebettete PNG-Map (`*.wmap.png`) an und öffnet sie im PNG-Editor. Die Datei
- * startet als 0-Byte-Platzhalter (Render geht nur in der Webview) und ist sofort „dirty": ein Cmd+S
- * materialisiert das gerenderte PNG mit eingebetteter Map.
+ * Creates a new, embedded PNG map (`*.wmap.png`) and opens it in the PNG editor. The file starts as
+ * a 0-byte placeholder (rendering only works in the webview) and is immediately "dirty": a Cmd+S
+ * materializes the rendered PNG with the embedded map.
  */
 async function createPngMap(): Promise<void> {
   const folder = vscode.workspace.workspaceFolders?.[0];
@@ -85,7 +80,7 @@ async function createPngMap(): Promise<void> {
   const chosen = await vscode.window.showSaveDialog(options);
   if (!chosen) return;
 
-  // Sicherstellen, dass der Editor die Datei auch beansprucht (er bindet nur *.wmap.png/*.owm.png).
+  // Ensure the editor will actually claim the file (it only binds *.wmap.png/*.owm.png).
   const target = /\.(wmap|owm)\.png$/i.test(chosen.path)
     ? chosen
     : chosen.with({ path: `${chosen.path.replace(/\.png$/i, '')}.wmap.png` });

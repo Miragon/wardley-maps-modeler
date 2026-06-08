@@ -3,14 +3,14 @@ packages:
   - 'apps/*'
 
 allowBuilds:
-  # vsce-sign/keytar sind nur fürs Signieren/Publishen relevant — für Build & `vsce package`
-  # nicht nötig, daher keine nativen Build-Skripte zulassen.
+  # vsce-sign/keytar matter only for signing/publishing — not needed for build & `vsce package`,
+  # so don't allow their native build scripts.
   '@vscode/vsce-sign': false
   esbuild: true
   keytar: false
 
-# Zentrale, fix gepinnte Versionen (Guardrail: keine ^ ~ >= *).
-# Am Implementierungsdatum (2026-06) frisch gegen die npm-Registry aufgeloest.
+# Centrally, exactly pinned versions (guardrail: no ^ ~ >= *).
+# Resolved fresh against the npm registry at the implementation date (2026-06).
 catalog:
   # --- Runtime (renderer) ---
   diagram-js: 15.16.0

@@ -1,9 +1,9 @@
 import { resolve } from 'node:path';
 import { defineConfig } from 'vite';
 
-// Die Demo-Webapp bündelt die @wardley/*-Pakete direkt aus dem SOURCE (wie die tsconfig-paths).
-// Das macht den Build selbst-enthaltend: kein vorheriger Lib-Build / kein dist-CSS-Dateiname nötig
-// (robust für Netlify). Reihenfolge: spezifischer CSS-Subpath VOR dem Paket-Alias.
+// The demo webapp bundles the @wardley/* packages straight from SOURCE (like the tsconfig paths).
+// This keeps the build self-contained: no prior lib build / no dist CSS filename needed
+// (robust for Netlify). Ordering: the specific CSS subpath BEFORE the package alias.
 const r = (p: string): string => resolve(__dirname, p);
 
 export default defineConfig({

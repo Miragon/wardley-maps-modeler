@@ -1,7 +1,7 @@
 {
   "name": "@wardley/transforms",
   "version": "0.0.0",
-  "description": "DOM-freie, reine WardleyMap->WardleyMap-Transformationen (evolve, method, inertia, pipeline). Kein Undo-Stack.",
+  "description": "DOM-free, pure WardleyMap->WardleyMap transforms (evolve, method, inertia, pipeline). No undo stack.",
   "license": "MIT",
   "type": "module",
   "sideEffects": false,

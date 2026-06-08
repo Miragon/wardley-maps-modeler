@@ -1,39 +1,36 @@
 /**
- * Nachrichten-Protokoll zwischen Extension-Host und Webview.
+ * Message protocol between the extension host and the webview.
  *
- * Datenfluss (klassisches CustomTextEditor-Muster):
- *  - Host -> Webview: `init`/`update` mit dem aktuellen Dokument-Text (OWM-DSL).
- *  - Webview -> Host: `edit` nach jeder grafischen Änderung (serialisierte DSL) -> WorkspaceEdit.
- *  - Webview -> Host: `export` (SVG-Text bzw. Base64-PNG) -> Save-Dialog + Datei schreiben.
+ * Data flow (classic CustomTextEditor pattern):
+ *  - Host -> webview: `init`/`update` with the current document text (OWM-DSL).
+ *  - Webview -> host: `edit` after every graphical change (serialized DSL) -> WorkspaceEdit.
+ *  - Webview -> host: `export` (SVG text or Base64 PNG) -> save dialog + write file.
  *
- * Nur für den PNG-Editor (`*.wmap.png`/`*.owm.png`, binäre CustomDocument-Datei):
- *  - Host -> Webview: `requestPng` (mit Korrelations-`id`), wenn der Host zum Speichern/Backup das
- *    fertig gerasterte PNG (Raster + eingebettete DSL) braucht — Rasterung geht nur im Browser.
- *  - Webview -> Host: `pngResponse` (`id` + Base64-PNG ODER `error`).
+ * Only for the PNG editor (`*.wmap.png`/`*.owm.png`, binary CustomDocument file):
+ *  - Host -> webview: `requestPng` (with a correlation `id`) when the host needs the fully
+ *    rasterized PNG (raster + embedded DSL) for saving/backup — rasterization only works in the browser.
+ *  - Webview -> host: `pngResponse` (`id` + Base64 PNG OR `error`).
  *
- * Echo-Schutz: Der Host unterdrückt das Re-Import, wenn eine Dokumentänderung exakt der zuletzt
- * von der Webview geschickten DSL entspricht (sonst würde jede Eigen-Änderung die Leinwand
- * zurücksetzen). Die Webview ihrerseits schickt nur dann ein `edit`, wenn sich die DSL gegenüber
- * dem zuletzt bekannten Text wirklich unterscheidet.
+ * Echo protection: the host suppresses re-import when a document change exactly matches the DSL
+ * last sent by the webview (otherwise every own change would reset the canvas). The webview, in
+ * turn, only sends an `edit` when the DSL actually differs from the last known text.
  */
 
 export type HostToWebview =
-  /** Erstbefüllung nach `ready`. */
+  /** Initial population after `ready`. */
   | { type: 'init'; text: string }
-  /** Externe Dokumentänderung (Texteditor, Git, …) -> neu importieren. */
+  /** External document change (text editor, Git, …) -> re-import. */
   | { type: 'update'; text: string }
-  /** PNG-Editor: aktuelles, eingebettetes PNG für Save/Backup anfordern (Antwort: `pngResponse`). */
+  /** PNG editor: request the current embedded PNG for save/backup (reply: `pngResponse`). */
   | { type: 'requestPng'; id: number };
 
 export type WebviewToHost =
-  /** Webview ist geladen und bereit für `init`. */
   | { type: 'ready' }
-  /** Grafische Änderung -> als WorkspaceEdit ins Dokument übernehmen. */
+  /** Graphical change -> apply to the document as a WorkspaceEdit. */
   | { type: 'edit'; text: string }
-  /** Bild-Export anstoßen (SVG = Text, PNG = Base64). */
+  /** Trigger an image export (SVG = text, PNG = Base64). */
   | { type: 'export'; format: 'svg' | 'png'; data: string }
-  /** Antwort auf `requestPng`: Base64-PNG (`data`) ODER `error`. `id` korreliert mit der Anfrage. */
+  /** Reply to `requestPng`: Base64 PNG (`data`) OR `error`. `id` correlates with the request. */
   | { type: 'pngResponse'; id: number; data?: string; error?: string }
-  /** Hinweis/Fehler an die VS-Code-Notifications durchreichen. */
   | { type: 'info'; message: string }
   | { type: 'error'; message: string };

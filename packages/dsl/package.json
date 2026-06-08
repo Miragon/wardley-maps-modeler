@@ -1,7 +1,7 @@
 {
   "name": "@wardley/dsl",
   "version": "0.0.0",
-  "description": "DOM-freie Brücke: Online-Wardley-Maps-Text-DSL <-> WardleyMap-Modell und JSON-Bridge.",
+  "description": "DOM-free bridge: Online-Wardley-Maps text DSL <-> WardleyMap model and JSON bridge.",
   "license": "MIT",
   "type": "module",
   "sideEffects": false,

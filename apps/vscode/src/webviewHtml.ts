@@ -2,9 +2,9 @@ import * as vscode from 'vscode';
 import { getNonce } from './util.js';
 
 /**
- * HTML-Gerüst der Wardley-Webview (identisch für Text- und PNG-Editor — beide laden dasselbe
- * Bundle `dist/webview.js` und sprechen dasselbe Protokoll). Strikte CSP: Skripte nur per Nonce,
- * keine externen Quellen (DSGVO-konform, Fonts als data:-URL inline im CSS).
+ * HTML scaffold of the Wardley webview (identical for the text and PNG editor — both load the same
+ * bundle `dist/webview.js` and speak the same protocol). Strict CSP: scripts only via nonce, no
+ * external sources (GDPR-compliant, fonts inlined as data: URLs in the CSS).
  */
 export function getWebviewHtml(webview: vscode.Webview, extensionUri: vscode.Uri): string {
   const nonce = getNonce();

@@ -1,7 +1,7 @@
 /**
- * JSON-Bruecke. Das kanonische JSON-Format selbst lebt in @wardley/schema-model;
- * hier nur sprechende Re-Exports, damit Konsumenten alle (De-)Serialisierer aus @wardley/dsl
- * beziehen koennen.
+ * JSON bridge. The canonical JSON format itself lives in @wardley/schema-model;
+ * these are just descriptive re-exports so consumers can obtain all (de)serializers from
+ * @wardley/dsl.
  */
 export {
   serializeMap as mapToJSON,

@@ -1,21 +1,19 @@
 /**
- * Datei-IO der Webapp: Wardley-Maps oeffnen (.wmap/.json/.svg/.png) und exportieren (SVG/PNG)
- * — mit in die Bild-Datei EINGEBETTETER Scene (DSL), sodass exportierte PNG/SVG wieder per
- * Drag&Drop geoeffnet werden koennen (Idee aus Excalidraw).
+ * File IO for the webapp: open Wardley maps (.wmap/.json/.svg/.png) and export them (SVG/PNG)
+ * — with the scene (DSL) EMBEDDED in the image file, so that exported PNG/SVG can be reopened
+ * via drag & drop (idea borrowed from Excalidraw).
  */
 import { loadMap } from '@wardley/schema-model';
 import type { Modeler } from '@wardley/renderer';
 import { encodeMap, decodeMap } from './share.js';
 
-/** PNG-tEXt-Keyword / SVG-Attribut fuer die eingebettete Scene. */
 const EMBED_KEYWORD = 'wardley-map';
 const SVG_ATTR = 'data-wardley-map';
 
 // ---------------------------------------------------------------------------
-// Oeffnen
+// Open
 // ---------------------------------------------------------------------------
 
-/** Liest eine Datei und importiert sie in den Modeler. Wirft mit sprechender Meldung bei Fehlern. */
 export async function openFile(file: File, viewer: Modeler): Promise<void> {
   const name = file.name.toLowerCase();
   if (name.endsWith('.png')) {
@@ -29,16 +27,15 @@ export async function openFile(file: File, viewer: Modeler): Promise<void> {
   } else if (name.endsWith('.json')) {
     await viewer.importMap(loadMap(JSON.parse(await file.text())));
   } else {
-    // .wmap / .owm / .txt / unbekannt -> als OWM-DSL behandeln
+    // .wmap / .owm / .txt / unknown -> treat as OWM-DSL
     await viewer.importDSL(await file.text());
   }
 }
 
 // ---------------------------------------------------------------------------
-// SVG-Export (mit eingebetteter DSL)
+// SVG export (with embedded DSL)
 // ---------------------------------------------------------------------------
 
-/** Bettet die DSL als Attribut in das Wurzel-<svg> ein. */
 export function embedSvg(svg: string, dsl: string): string {
   return svg.replace(/<svg\b/, `<svg ${SVG_ATTR}="${encodeMap(dsl)}"`);
 }
@@ -49,10 +46,9 @@ function extractSvgDsl(svg: string): string | null {
 }
 
 // ---------------------------------------------------------------------------
-// PNG-Export (Rasterung + eingebettete DSL via tEXt-Chunk)
+// PNG export (rasterize + embed DSL via a tEXt chunk)
 // ---------------------------------------------------------------------------
 
-/** Rastert das SVG zu PNG (2x) und bettet die DSL als tEXt-Chunk ein. */
 export async function svgToEmbeddedPng(svg: string, dsl: string, scale = 2): Promise<Blob> {
   const { width, height } = svgSize(svg);
   const png = await rasterize(svg, width, height, scale);
@@ -98,7 +94,7 @@ async function rasterize(
   }
 }
 
-// --- PNG-Chunk-Helfer (tEXt) ---
+// --- PNG chunk helpers (tEXt) ---
 
 const CRC_TABLE = (() => {
   const t = new Uint32Array(256);
@@ -122,7 +118,7 @@ function latin1(str: string): Uint8Array {
   return out;
 }
 
-/** Fuegt einen tEXt-Chunk (keyword\0text) vor IEND ein. */
+/** Inserts a tEXt chunk (keyword\0text) before IEND. */
 function pngInsertText(png: Uint8Array, keyword: string, text: string): Uint8Array {
   const data = new Uint8Array([...latin1(keyword), 0, ...latin1(text)]);
   const type = latin1('tEXt');
@@ -141,10 +137,10 @@ function pngInsertText(png: Uint8Array, keyword: string, text: string): Uint8Arr
   return out;
 }
 
-/** Liest den Text eines tEXt-Chunks mit gegebenem Keyword (oder null). */
+/** Reads the text of a tEXt chunk with the given keyword (or null). */
 function pngExtractText(png: Uint8Array, keyword: string): string | null {
   const view = new DataView(png.buffer, png.byteOffset, png.byteLength);
-  let off = 8; // PNG-Signatur
+  let off = 8; // PNG signature
   while (off + 8 <= png.length) {
     const len = view.getUint32(off);
     const type = String.fromCharCode(png[off + 4]!, png[off + 5]!, png[off + 6]!, png[off + 7]!);

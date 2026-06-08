@@ -20,13 +20,12 @@ interface PaletteSpec {
   extra?: CreateNewExtra;
 }
 
-// Gruppen-IDs mit Praefix-Nummer -> stabile, sichtbare Reihenfolge der Palette-Gruppen.
+// Group IDs with a prefix number -> stable, visible ordering of the palette groups.
 const GROUP_BLOCKS = 'wardley-1-blocks';
 const GROUP_STRATEGY = 'wardley-2-strategy';
 const GROUP_NOTES = 'wardley-3-notes';
 
 const SPECS: readonly PaletteSpec[] = [
-  // --- Bausteine (Wertschöpfungskette) ---
   {
     key: 'component',
     type: 'component',
@@ -78,7 +77,6 @@ const SPECS: readonly PaletteSpec[] = [
     group: GROUP_BLOCKS,
   },
 
-  // --- Strategie & Klima ---
   {
     key: 'pioneers',
     type: 'attitude',
@@ -125,7 +123,6 @@ const SPECS: readonly PaletteSpec[] = [
     extra: { acceleratorDirection: 'deaccelerate' },
   },
 
-  // --- Anmerkungen ---
   {
     key: 'note',
     type: 'note',
@@ -145,7 +142,6 @@ const SPECS: readonly PaletteSpec[] = [
   },
 ];
 
-/** Werkzeug-Palette: erzeugt alle Wardley-Element-Typen per Drag-to-create; Icons = Canvas-Vorschau. */
 export default class WardleyPaletteProvider implements PaletteProvider {
   static $inject = ['palette', 'create', 'wardleyElementFactory'];
 

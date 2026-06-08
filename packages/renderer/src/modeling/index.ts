@@ -1,7 +1,7 @@
 import type { ModuleDeclaration } from 'didi';
 import WardleyModeling from './WardleyModeling.js';
 
-/** High-Level-Wardley-Mutationen + Registrierung der eigenen CommandHandler. */
+/** High-level Wardley mutations + registration of the custom command handlers. */
 export const wardleyModelingModule: ModuleDeclaration = {
   __init__: ['wardleyModeling'],
   wardleyModeling: ['type', WardleyModeling],

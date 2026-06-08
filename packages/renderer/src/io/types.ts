@@ -1,6 +1,6 @@
 import type { MapConfig } from '@wardley/schema-model';
 
-/** ID des diagram-js-Root-Elements der Wardley-Map. */
+/** ID of the diagram-js root element of the Wardley map. */
 export const ROOT_ID = 'wardley-root';
 
 export interface ImportWarning {
@@ -8,7 +8,7 @@ export interface ImportWarning {
   readonly elementId?: string;
 }
 
-/** Auf dem Root-Element hinterlegte Map-Metadaten (Konfig + verlustfreier Passthrough). */
+/** Map metadata stored on the root element (config + lossless passthrough). */
 export interface RootBusinessObject {
   readonly config: MapConfig;
   readonly rawPassthrough?: readonly string[];

@@ -1,10 +1,10 @@
-// Zwei Bundles aus einem Lauf:
-//   1. Extension-Host  (Node/CJS, `vscode` extern)  -> dist/extension.cjs
-//   2. Webview          (Browser/IIFE, Modeler+CSS)  -> dist/webview.js (+ dist/webview.css)
+// Two bundles from one run:
+//   1. Extension host  (Node/CJS, `vscode` external)  -> dist/extension.cjs
+//   2. Webview          (Browser/IIFE, Modeler+CSS)    -> dist/webview.js (+ dist/webview.css)
 //
-// Wie die Demo-Webapp bündeln wir die @wardley/*-Pakete direkt aus dem SOURCE (Alias auf
-// src/index.ts). Das macht den Build selbst-enthaltend: kein vorheriger Lib-Build nötig, und die
-// diagram-js-Imports werden relativ zum Renderer-Source aufgelöst (packages/renderer/node_modules).
+// Like the demo webapp, we bundle the @wardley/* packages straight from SOURCE (aliased to
+// src/index.ts). That makes the build self-contained: no prior lib build needed, and the
+// diagram-js imports resolve relative to the renderer source (packages/renderer/node_modules).
 import * as esbuild from 'esbuild';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
@@ -16,7 +16,7 @@ const production = process.argv.includes('--production');
 
 const r = (p) => resolve(root, p);
 
-/** Paket-Alias auf den TS-Source (analog apps/webapp/vite.config.ts). */
+/** Package aliases pointing at the TS source (mirrors apps/webapp/vite.config.ts). */
 const alias = {
   '@wardley/renderer': r('packages/renderer/src/index.ts'),
   '@wardley/schema-model': r('packages/schema-model/src/index.ts'),
@@ -40,7 +40,7 @@ const host = {
   platform: 'node',
   format: 'cjs',
   target: 'node18',
-  // `vscode` ist nur zur Laufzeit (vom Host) verfügbar und darf nicht gebündelt werden.
+  // `vscode` is only available at runtime (from the host) and must not be bundled.
   external: ['vscode'],
 };
 
@@ -53,7 +53,7 @@ const web = {
   format: 'iife',
   target: 'es2022',
   alias,
-  // Fonts (woff2) als data:-URL in die CSS inlinen -> keine extra Assets, einfachere CSP.
+  // Inline fonts (woff2) into the CSS as data: URLs -> no extra assets, simpler CSP.
   loader: { '.woff2': 'dataurl', '.woff': 'dataurl', '.ttf': 'dataurl' },
 };
 

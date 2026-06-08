@@ -1,7 +1,7 @@
 import type { ModuleDeclaration } from 'didi';
 import WardleyElementSettingsProvider from './WardleyElementSettingsProvider.js';
 
-/** Popup-Untermenue fuer Element-Einstellungen (Typ/Beschaffung/Inertia). */
+/** Popup submenu for element settings (type/sourcing/inertia). */
 export const wardleyPopupModule: ModuleDeclaration = {
   __init__: ['wardleyElementSettings'],
   wardleyElementSettings: ['type', WardleyElementSettingsProvider],

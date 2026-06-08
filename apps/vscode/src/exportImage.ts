@@ -1,9 +1,9 @@
 import * as vscode from 'vscode';
 
 /**
- * Bild-Export (SVG/PNG) über einen Save-Dialog auf die Platte — die Szene (OWM-DSL) ist in der
- * Datei eingebettet, sodass exportierte Bilder später wieder als Map geöffnet werden können.
- * Geteilt von Text- und PNG-Editor (deshalb generisch über die Quell-URI statt einem Dokument-Typ).
+ * Image export (SVG/PNG) to disk via a save dialog — the scene (OWM-DSL) is embedded in the file,
+ * so exported images can later be reopened as a map. Shared by the text and PNG editor (hence
+ * generic over the source URI rather than a document type).
  */
 export async function exportImageToFile(
   sourceUri: vscode.Uri | undefined,
@@ -29,13 +29,13 @@ export async function exportImageToFile(
   if (action === 'Reveal') void vscode.commands.executeCommand('revealFileInOS', target);
 }
 
-/** `<mapname>.<format>` neben der Quelldatei (bei fehlender Datei: im ersten Workspace-Ordner). */
+/** `<mapname>.<format>` next to the source file (if no file: in the first workspace folder). */
 function exportDefaultUri(
   sourceUri: vscode.Uri | undefined,
   format: 'svg' | 'png',
 ): vscode.Uri | undefined {
   if (sourceUri && sourceUri.scheme === 'file') {
-    // Doppelendungen wie `.wmap.png` mit abräumen, damit `map.wmap.png` -> `map.svg` wird.
+    // Strip double extensions like `.wmap.png` too, so `map.wmap.png` -> `map.svg`.
     const path = sourceUri.path.replace(/(\.(wmap|owm))?\.[^./]+$/i, '');
     return sourceUri.with({ path: `${path}.${format}` });
   }

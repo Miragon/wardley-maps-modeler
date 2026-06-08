@@ -12,11 +12,11 @@ import type EvolutionGrid from './evolution-grid/EvolutionGrid.js';
 import { ROOT_ID, type ImportWarning, type RootBusinessObject } from './io/types.js';
 
 export interface WardleyViewerOptions {
-  /** Host-Element. Fehlt es, wird ein detached <div> erzeugt (spaeter via attachTo einhaengbar). */
+  /** Host element. If missing, a detached <div> is created (can be attached later via attachTo). */
   container?: HTMLElement;
   width?: number | string;
   height?: number | string;
-  /** Werden ans Ende der Modulliste konkateniert (Erweiterungspunkt, §12). */
+  /** Concatenated to the end of the module list (extension point, §12). */
   additionalModules?: ModuleDeclaration[];
 }
 
@@ -27,10 +27,10 @@ function sizeToCss(value: number | string): string {
 }
 
 /**
- * Gemeinsamer Lebenszyklus & DI-Bootstrap fuer alle Wardley-Viewer (analog bpmn-js BaseViewer,
- * jedoch EIGENER Code — kein bpmn-js als Dependency, §3.3). Subklassen ueberschreiben nur
- * `_getModules()` (Methode statt Feld, um die Konstruktor-/Feld-Initialisierungsreihenfolge zu
- * umgehen). `attachTo`/`detach` sind Eigenimplementierungen (kein diagram-js-Primitiv, §6.1).
+ * Shared lifecycle & DI bootstrap for all Wardley viewers (analogous to bpmn-js BaseViewer, but OUR
+ * OWN code — no bpmn-js as a dependency, §3.3). Subclasses only override `_getModules()` (a method
+ * rather than a field, to sidestep the constructor/field initialization order). `attachTo`/`detach`
+ * are own implementations (not a diagram-js primitive, §6.1).
  */
 export abstract class WardleyBaseViewer {
   protected abstract _getModules(): ModuleDeclaration[];
@@ -60,7 +60,6 @@ export abstract class WardleyBaseViewer {
     return this._diagram;
   }
 
-  /** Aufloesen eines diagram-js-Service (didi-Injector). */
   get<T>(name: string): T {
     return this._ensureDiagram().get<T>(name);
   }
@@ -73,7 +72,7 @@ export abstract class WardleyBaseViewer {
     this.get<EventBus>('eventBus').off(event, callback);
   }
 
-  /** Modell in den Canvas laden (ersetzt bestehenden Inhalt). */
+  /** Load a model into the canvas (replaces existing content). */
   async importMap(map: WardleyMap): Promise<{ warnings: ImportWarning[] }> {
     const diagram = this._ensureDiagram();
     const eventBus = diagram.get<EventBus>('eventBus');
@@ -84,7 +83,6 @@ export abstract class WardleyBaseViewer {
     return { warnings };
   }
 
-  /** OWM-DSL-Text laden (intern parse -> importMap). */
   async importDSL(text: string): Promise<{ warnings: ImportWarning[] }> {
     const eventBus = this._ensureDiagram().get<EventBus>('eventBus');
     eventBus.fire('import.parse.start', { text });
@@ -93,14 +91,14 @@ export abstract class WardleyBaseViewer {
     return this.importMap(map);
   }
 
-  /** Aktuellen Zustand als kanonisches Modell (aus den DI-Properties). */
+  /** Current state as the canonical model (from the DI properties). */
   exportMap(): WardleyMap {
     return this.get<WardleyExporter>('wardleyExporter').export();
   }
 
   /**
-   * Aendert die logische Plotgroesse der Map (in diagram-px) und projiziert alle Elemente neu.
-   * Setzt `config.size` und importiert den aktuellen Stand neu (normierte Koordinaten bleiben Wahrheit).
+   * Changes the map's logical plot size (in diagram-px) and re-projects all elements.
+   * Sets `config.size` and re-imports the current state (normalized coordinates stay the truth).
    */
   async setMapSize(width: number, height: number): Promise<{ warnings: ImportWarning[] }> {
     const map = this.exportMap();
@@ -108,10 +106,10 @@ export abstract class WardleyBaseViewer {
   }
 
   /**
-   * Setzt die vier X-Achsen-Stage-Labels (`undefined` = Default Genesis/Custom/Product/Commodity).
-   * Aendert nur die Beschriftung, nicht die Geometrie: aktualisiert die Map-Config in-place und
-   * re-rendert ausschliesslich den Achsen-Hintergrund (kein Re-Import -> kein View-Sprung, keine
-   * Auswahl-Aufloesung). Feuert `wardley.config.changed` fuer URL-/Persistenz-Sync der Konsumenten.
+   * Sets the four X-axis stage labels (`undefined` = default Genesis/Custom/Product/Commodity).
+   * Changes only the labeling, not the geometry: updates the map config in-place and re-renders only
+   * the axis background (no re-import -> no view jump, no selection loss). Fires
+   * `wardley.config.changed` for consumers' URL/persistence sync.
    */
   setEvolutionLabels(labels: readonly [string, string, string, string] | undefined): void {
     const canvas = this.get<Canvas>('canvas');
@@ -119,7 +117,7 @@ export abstract class WardleyBaseViewer {
     try {
       root = canvas.getRootElement() as Root & { businessObject?: RootBusinessObject };
     } catch {
-      return; // noch nichts importiert -> nichts zu konfigurieren
+      return; // nothing imported yet -> nothing to configure
     }
     if (!root || root.id !== ROOT_ID) return;
 
@@ -134,23 +132,22 @@ export abstract class WardleyBaseViewer {
     this.get<EventBus>('eventBus').fire('wardley.config.changed', { config });
   }
 
-  /** Als OWM-DSL serialisieren. */
   exportDSL(): string {
     return serializeDSL(this.exportMap());
   }
 
-  /** Statisches, eigenstaendiges SVG. */
+  /** Static, standalone SVG. */
   async saveSVG(): Promise<{ svg: string }> {
     return saveSVG(this.get<Canvas>('canvas'));
   }
 
-  /** Eigenimplementierung (kein diagram-js-Primitiv): Container in `target` einhaengen. */
+  /** Own implementation (not a diagram-js primitive): attach the container to `target`. */
   attachTo(target: HTMLElement): void {
     target.appendChild(this._container);
     this.get<Canvas>('canvas').resized();
   }
 
-  /** Eigenimplementierung: Container aus dem DOM loesen, Zustand erhalten. */
+  /** Own implementation: detach the container from the DOM, keeping state. */
   detach(): void {
     this._container.remove();
   }

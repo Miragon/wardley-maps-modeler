@@ -1,28 +1,28 @@
 /**
- * DOM-Boundary-Enforcement auf Modulgraph-Ebene (Konzept §9.1, P1).
- * Ergaenzt die ESLint-Regel: verbietet, dass DOM-freie Pakete von diagram-js /
- * DOM-Bibliotheken oder vom DOM-abhaengigen @wardley/renderer abhaengen.
+ * DOM-boundary enforcement at the module-graph level (concept doc §9.1, P1).
+ * Complements the ESLint rule: forbids DOM-free packages from depending on diagram-js /
+ * DOM libraries or on the DOM-dependent @wardley/renderer.
  */
 /** @type {import('dependency-cruiser').IConfiguration} */
 module.exports = {
   forbidden: [
     {
       name: 'dom-free-no-diagram-js',
-      comment: 'DOM-freie Pakete duerfen diagram-js / DOM-Libs nicht importieren (P1).',
+      comment: 'DOM-free packages must not import diagram-js / DOM libraries (P1).',
       severity: 'error',
       from: { path: '^packages/(schema-model|dsl|transforms)/src' },
       to: { path: 'node_modules/(diagram-js|tiny-svg|min-dom)' },
     },
     {
       name: 'dom-free-no-renderer',
-      comment: 'DOM-freie Pakete duerfen nicht vom DOM-abhaengigen renderer abhaengen.',
+      comment: 'DOM-free packages must not depend on the DOM-dependent renderer.',
       severity: 'error',
       from: { path: '^packages/(schema-model|dsl|transforms)/src' },
       to: { path: '^packages/renderer/src' },
     },
     {
       name: 'no-circular',
-      comment: 'Keine zyklischen Abhaengigkeiten.',
+      comment: 'No circular dependencies.',
       severity: 'error',
       from: {},
       to: { circular: true },

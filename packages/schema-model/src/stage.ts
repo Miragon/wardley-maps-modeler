@@ -1,11 +1,10 @@
-/** Evolution-Stage-Ableitung (reine Funktion, keine Persistenz; Konzept §2.2 / P2). */
+/** Evolution stage derivation (pure function, no persistence; concept doc §2.2 / P2). */
 
 export type EvolutionStage = 0 | 1 | 2 | 3;
 
-/** Default-Stage-Grenzen (Genesis|Custom, Custom|Product, Product|Commodity). */
+/** Default stage boundaries (Genesis|Custom, Custom|Product, Product|Commodity). */
 export const DEFAULT_STAGE_BOUNDARIES: readonly [number, number, number] = [0.17, 0.4, 0.7];
 
-/** Default-Achsenbeschriftung der vier Evolution-Stages. */
 export const DEFAULT_EVOLUTION_LABELS: readonly [string, string, string, string] = [
   'Genesis',
   'Custom-Built',
@@ -13,20 +12,18 @@ export const DEFAULT_EVOLUTION_LABELS: readonly [string, string, string, string]
   'Commodity / Utility',
 ];
 
-/** Eine benannte X-Achsen-Beschriftungsvariante (vier Stage-Labels). */
 export interface EvolutionPreset {
-  /** Stabile Kennung (Persistenz/UI-Auswahl). */
+  /** Stable identifier (persistence/UI selection). */
   readonly id: string;
-  /** Menschlich lesbarer Name. */
   readonly name: string;
-  /** Die vier Stage-Labels (links -> rechts). */
+  /** The four stage labels (left -> right). */
   readonly labels: readonly [string, string, string, string];
 }
 
 /**
- * Vordefinierte X-Achsen-Beschriftungen nach Simon Wardleys "Landscape"-Cheat-Sheet
- * (learnwardleymapping.com/landscape). Je nach Art des Kartierten (Aktivität, Praxis, Daten,
- * Wissen) evolviert die X-Achse unter anderen Begriffen. `activities` entspricht dem Default.
+ * Predefined X-axis labels from Simon Wardley's "Landscape" cheat sheet
+ * (learnwardleymapping.com/landscape). Depending on what is being mapped (activity, practice,
+ * data, knowledge), the X-axis evolves under different terms. `activities` matches the default.
  */
 export const EVOLUTION_PRESETS: readonly EvolutionPreset[] = [
   { id: 'activities', name: 'Activities', labels: DEFAULT_EVOLUTION_LABELS },
@@ -36,10 +33,8 @@ export const EVOLUTION_PRESETS: readonly EvolutionPreset[] = [
 ];
 
 /**
- * Leitet die diskrete Evolution-Stage (0..3) aus dem kontinuierlichen Evolution-Wert ab.
- *
- * @param evolution normiert in [0, 1]
- * @param boundaries aufsteigende Schwellen [g, c, p]
+ * @param evolution normalized in [0, 1]
+ * @param boundaries ascending thresholds [g, c, p]
  */
 export function evolutionStage(
   evolution: number,

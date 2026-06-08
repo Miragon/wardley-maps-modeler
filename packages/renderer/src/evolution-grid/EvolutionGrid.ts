@@ -23,9 +23,9 @@ function clamp01(n: number): number {
 }
 
 /**
- * Haelt die EINZIGE Pixel<->normiert-Transformation (Leitprinzip P7) und rendert den
- * nicht-interaktiven Achsen-/Grid-Hintergrund in einen eigenen diagram-js-Layer (z unter den
- * Elementen). Die Plotgroesse ist zur Laufzeit ueber `config.size` veraenderbar ("Map skalieren").
+ * Holds the SINGLE pixel<->normalized transform (guiding principle P7) and renders the
+ * non-interactive axis/grid background into its own diagram-js layer (z below the
+ * elements). The plot size is changeable at runtime via `config.size` ("scale map").
  */
 export default class EvolutionGrid {
   static $inject = ['canvas'];
@@ -38,7 +38,6 @@ export default class EvolutionGrid {
 
   constructor(private readonly canvas: Canvas) {}
 
-  /** Uebernimmt Stage-Grenzen/Labels und (optional) die Plotgroesse aus der Map-Konfiguration. */
   configure(config: MapConfig): void {
     this.boundaries = config.stageBoundaries ?? DEFAULT_STAGE_BOUNDARIES;
     this.labels = config.evolutionLabels ?? DEFAULT_EVOLUTION_LABELS;
@@ -47,7 +46,7 @@ export default class EvolutionGrid {
     this.plotHeight = Math.max(config.size?.height ?? PLOT.height, PLOT_MIN.height);
   }
 
-  /** Normiert -> diagram-px (Mittelpunkt des Knotens). */
+  /** Normalized -> diagram px (center of the node). */
   toCanvas(coord: Coordinate): Point {
     return {
       x: PLOT.marginLeft + coord.evolution * this.plotWidth,
@@ -55,7 +54,7 @@ export default class EvolutionGrid {
     };
   }
 
-  /** diagram-px -> normiert, geklemmt auf [0,1]. */
+  /** diagram px -> normalized, clamped to [0,1]. */
   fromCanvas(point: Point): Coordinate {
     return {
       evolution: clamp01((point.x - PLOT.marginLeft) / this.plotWidth),
@@ -67,17 +66,16 @@ export default class EvolutionGrid {
     return evolutionStage(evolution, this.boundaries);
   }
 
-  /** Die drei Stage-Grenzen (Evolution-Werte) — fuer Snapping. */
+  /** The three stage boundaries (evolution values) — for snapping. */
   getBoundaries(): readonly [number, number, number] {
     return this.boundaries;
   }
 
-  /** Aktuelle Plotgroesse (Innenraum). */
   getPlotSize(): { width: number; height: number } {
     return { width: this.plotWidth, height: this.plotHeight };
   }
 
-  /** Aeussere Begrenzung inkl. Raender (fuer die initiale Viewbox). */
+  /** Outer bounds including margins (for the initial viewbox). */
   outerBounds(): { x: number; y: number; width: number; height: number } {
     return {
       x: 0,
@@ -87,7 +85,6 @@ export default class EvolutionGrid {
     };
   }
 
-  /** Zeichnet (bzw. neu) den Achsenhintergrund. */
   render(): void {
     const layer = this.canvas.getLayer(AXES_LAYER, -1);
     svgClear(layer);
@@ -97,13 +94,11 @@ export default class EvolutionGrid {
     const right = left + this.plotWidth;
     const bottom = top + this.plotHeight;
 
-    // Plot-Hintergrund (Papier)
     svgAppend(
       layer,
       rect(left, top, this.plotWidth, this.plotHeight, { fill: '#ffffff', stroke: COLORS.grid }),
     );
 
-    // Dezent getoente Stage-Baender (abwechselnd) + Trennlinien
     const edges = [0, ...this.boundaries, 1];
     for (let i = 0; i < 4; i++) {
       const x0 = left + edges[i]! * this.plotWidth;
@@ -120,7 +115,6 @@ export default class EvolutionGrid {
           line(x0, top, x0, bottom, { stroke: COLORS.grid, 'stroke-dasharray': '3 5' }),
         );
       }
-      // Stage-Label (zentriert im Band, gesperrt + gedaempft)
       const midX = (x0 + x1) / 2;
       svgAppend(
         layer,
@@ -133,7 +127,6 @@ export default class EvolutionGrid {
       );
     }
 
-    // X-Achse (Evolution) mit Pfeil
     svgAppend(layer, line(left, bottom, right + 10, bottom, { stroke: COLORS.axis }));
     svgAppend(layer, arrowHead(right + 10, bottom, 'right'));
     svgAppend(
@@ -146,7 +139,6 @@ export default class EvolutionGrid {
       }),
     );
 
-    // Y-Achse (Value Chain) mit Pfeil nach oben
     svgAppend(layer, line(left, bottom, left, top - 10, { stroke: COLORS.axis }));
     svgAppend(layer, arrowHead(left, top - 10, 'up'));
     const yLabel = text(this.yAxisLabel, 0, 0, {
@@ -158,7 +150,6 @@ export default class EvolutionGrid {
     svgAttr(yLabel, { transform: `translate(${left - 46}, ${(top + bottom) / 2}) rotate(-90)` });
     svgAppend(layer, yLabel);
 
-    // Visibility-Marker
     svgAppend(
       layer,
       text('visible', left - 10, top + 11, {

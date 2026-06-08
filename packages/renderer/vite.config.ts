@@ -2,8 +2,8 @@ import { resolve } from 'node:path';
 import { defineConfig } from 'vite';
 import dts from 'vite-plugin-dts';
 
-// diagram-js & dessen Abhaengigkeitsbaum werden externalisiert (peer/external),
-// damit sie nicht doppelt im Konsumenten-Bundle landen (Konzept §10.3).
+// diagram-js & its dependency tree are externalized (peer/external),
+// so they don't end up duplicated in the consumer bundle (concept doc §10.3).
 const EXTERNAL = [
   'diagram-js',
   /^diagram-js\//,

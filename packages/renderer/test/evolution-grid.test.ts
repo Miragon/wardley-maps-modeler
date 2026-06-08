@@ -3,21 +3,21 @@ import { describe, it, expect } from 'vitest';
 import type Canvas from 'diagram-js/lib/core/Canvas';
 import EvolutionGrid from '../src/evolution-grid/EvolutionGrid.js';
 
-/** Reine Mathematik-Tests (P7): kein Canvas/Rendering noetig. */
+/** Pure math tests (P7): no canvas/rendering needed. */
 function grid(): EvolutionGrid {
   return new EvolutionGrid(undefined as unknown as Canvas);
 }
 
-describe('EvolutionGrid (einzige Mathematik-Quelle)', () => {
-  it('toCanvas: evolution -> x, visibility -> y (oben = sichtbar)', () => {
+describe('EvolutionGrid (single source of math)', () => {
+  it('toCanvas: evolution -> x, visibility -> y (top = visible)', () => {
     const g = grid();
     const p0 = g.toCanvas({ visibility: 1, evolution: 0 });
     const p1 = g.toCanvas({ visibility: 0, evolution: 1 });
-    expect(p1.x).toBeGreaterThan(p0.x); // evolution waechst nach rechts
-    expect(p1.y).toBeGreaterThan(p0.y); // visibility 0 ist weiter unten
+    expect(p1.x).toBeGreaterThan(p0.x); // evolution grows to the right
+    expect(p1.y).toBeGreaterThan(p0.y); // visibility 0 is further down
   });
 
-  it('Invariante: toCanvas(fromCanvas(p)) ~= p (innerhalb der Plotflaeche)', () => {
+  it('invariant: toCanvas(fromCanvas(p)) ~= p (within the plot area)', () => {
     const g = grid();
     for (const coord of [
       { visibility: 0.43, evolution: 0.35 },
@@ -30,14 +30,14 @@ describe('EvolutionGrid (einzige Mathematik-Quelle)', () => {
     }
   });
 
-  it('fromCanvas klemmt auf [0,1]', () => {
+  it('fromCanvas clamps to [0,1]', () => {
     const g = grid();
     const c = g.fromCanvas({ x: -9999, y: 9999 });
     expect(c.evolution).toBe(0);
     expect(c.visibility).toBe(0);
   });
 
-  it('stageOf folgt den (konfigurierbaren) Grenzen', () => {
+  it('stageOf follows the (configurable) boundaries', () => {
     const g = grid();
     expect(g.stageOf(0.05)).toBe(0);
     expect(g.stageOf(0.5)).toBe(2);

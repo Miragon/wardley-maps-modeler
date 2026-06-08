@@ -32,8 +32,8 @@ import {
 const DEP_RE = /^(.+?)\s*->\s*(.+)$/;
 // Flow: A +> B, A +<> B, A +< B (reverse), A +'120ms'> B, A +'120ms'<> B
 const FLOW_RE = /^(.+?)\s*\+(?:'([^']*)')?(<>|>|<)\s*(.+)$/;
-// Config-/Sonder-Keywords, die NICHT als Kante (vor)erkannt werden dürfen — `evolution`/`evolve`/
-// `y-axis`/`title` können selbst `->` enthalten und haben eigene Behandlung im Switch.
+// Config/special keywords that must NOT be (pre-)detected as an edge — `evolution`/`evolve`/
+// `y-axis`/`title` can themselves contain `->` and have their own handling in the switch.
 const NON_LINK_KEYWORDS: ReadonlySet<string> = new Set([
   'title',
   'style',
@@ -51,10 +51,10 @@ interface PendingLink {
   readonly right: string;
   readonly kind: 'dependency' | 'flow';
   readonly bidirectional?: boolean;
-  /** `+<` — Flussrichtung umgekehrt (right -> left). */
+  /** `+<` — flow direction reversed (right -> left). */
   readonly reverse?: boolean;
   readonly flowValue?: string;
-  /** Annotationstext nach `;`. */
+  /** Annotation text after `;`. */
   readonly label?: string;
   readonly raw: string;
 }
@@ -91,9 +91,8 @@ class IdAllocator {
 }
 
 /**
- * Parst Online-Wardley-Maps-Text in ein validiertes WardleyMap.
- * Keyword-differenzierte Koordinaten (component/anchor/note = [visibility, maturity];
- * pipeline = [maturityStart, maturityEnd]). Unbekannte Zeilen landen in `rawPassthrough`.
+ * Keyword-differentiated coordinates (component/anchor/note = [visibility, maturity];
+ * pipeline = [maturityStart, maturityEnd]). Unknown lines land in `rawPassthrough`.
  */
 export function parseDSL(text: string): WardleyMap {
   const ids = new IdAllocator();
@@ -111,7 +110,7 @@ export function parseDSL(text: string): WardleyMap {
     if (!nameToId.has(name)) nameToId.set(name, id);
   };
 
-  /** Versucht, eine Zeile als Dependency/Flow zu erfassen. Liefert true, wenn konsumiert. */
+  /** Tries to capture a line as a dependency/flow. Returns true when consumed. */
   const pushLink = (line: string, raw: string): boolean => {
     const semi = line.indexOf(';');
     const core = semi >= 0 ? line.slice(0, semi).trim() : line;
@@ -151,11 +150,11 @@ export function parseDSL(text: string): WardleyMap {
     const kw = keywordOf(line);
     const after = line.slice(kw.length).trim();
 
-    // Kanten/Flows ZUERST: Element-NAMEN dürfen mit einem Keyword-Wort beginnen (die Default-
-    // Komponente heißt "Component" -> Kante `Component -> X`). Deklarationen tragen IMMER
-    // Koordinaten `[...]`, Kanten nie. Ohne diese Vorab-Erkennung würde `Component -> X` als
-    // (kaputte) `component`-Deklaration fehlgedeutet und beim Re-Import verschwinden. Config-/
-    // Sonder-Keywords (title/evolution/y-axis/evolve …) sind ausgenommen — sie nutzen `->` selbst.
+    // Edges/flows FIRST: element NAMES may begin with a keyword word (the default
+    // component is named "Component" -> edge `Component -> X`). Declarations ALWAYS carry
+    // coordinates `[...]`, edges never do. Without this pre-detection `Component -> X` would be
+    // misread as a (broken) `component` declaration and vanish on re-import. Config/
+    // special keywords (title/evolution/y-axis/evolve …) are exempt — they use `->` themselves.
     if (!NON_LINK_KEYWORDS.has(kw) && !parseCoords(line) && pushLink(line, raw)) {
       continue;
     }
@@ -210,7 +209,7 @@ export function parseDSL(text: string): WardleyMap {
       case 'note': {
         const { color, rest } = parseColor(after);
         const coords = parseCoords(rest);
-        // Literales `\n` zurueck in echte Zeilenumbrueche (mehrzeilige Notizen).
+        // Literal `\n` back into real line breaks (multi-line notes).
         const textPart = stripCoords(rest).trim().replace(/\\n/g, '\n');
         if (!coords) {
           rawPassthrough.push(raw);
@@ -264,9 +263,9 @@ export function parseDSL(text: string): WardleyMap {
       }
 
       case 'evolution': {
-        // Genau vier Positionen (der Serializer schreibt immer vier). Leere Segmente NICHT
-        // herausfiltern, sonst geht ein leeres Stage-Label verlustbehaftet verloren (die ganze
-        // Zeile fiele aus dem 4er-Raster und landete im rawPassthrough -> Achse springt auf Default).
+        // Exactly four positions (the serializer always writes four). Do NOT filter out
+        // empty segments, otherwise an empty stage label is lost (the whole line would fall
+        // out of the 4-slot grid and land in rawPassthrough -> axis snaps back to default).
         const parts = after.split('->').map((s) => s.trim());
         if (parts.length === 4) {
           config = { ...config, evolutionLabels: [parts[0]!, parts[1]!, parts[2]!, parts[3]!] };
@@ -382,13 +381,12 @@ export function parseDSL(text: string): WardleyMap {
       }
 
       default: {
-        // Unbekanntes Keyword: als Link versuchen (z.B. `A -> B; limited by`), sonst roh erhalten.
+        // Unknown keyword: try as a link (e.g. `A -> B; limited by`), otherwise keep raw.
         if (!pushLink(line, raw)) rawPassthrough.push(raw);
       }
     }
   }
 
-  // --- evolve aufloesen ---
   for (const ev of pendingEvolve) {
     const id = nameToId.get(ev.name);
     const idx = elements.findIndex((e) => e.id === id);
@@ -404,7 +402,7 @@ export function parseDSL(text: string): WardleyMap {
     elements[idx] = { ...(elements[idx] as ComponentElement), movement };
   }
 
-  // --- pipeline aufloesen (annotation form: bezieht visibility aus gleichnamiger Komponente) ---
+  // Derives visibility from the component of the same name.
   for (const p of pendingPipeline) {
     const refId = nameToId.get(p.name);
     const ref = elements.find((e) => e.id === refId);
@@ -422,7 +420,6 @@ export function parseDSL(text: string): WardleyMap {
     elements.push(pipeline);
   }
 
-  // --- links aufloesen ---
   let depN = 0;
   let flowN = 0;
   const edges: MapEdge[] = [];
@@ -444,7 +441,7 @@ export function parseDSL(text: string): WardleyMap {
         }) as MapEdge,
       );
     } else {
-      // `+<` kehrt die Flussrichtung um (right -> left).
+      // `+<` reverses the flow direction (right -> left).
       const [f, t] = link.reverse ? [toId, fromId] : [fromId, toId];
       edges.push(
         compact({
@@ -478,7 +475,7 @@ interface ParsedNode {
   readonly labelOffset?: { dx: number; dy: number };
 }
 
-/** Parst `<name> [a, b] <decorators> [label [dx,dy]]` (Reihenfolge der Bereinigung beachtet). */
+/** Parses `<name> [a, b] <decorators> [label [dx,dy]]` (the stripping order matters). */
 function parseNode(after: string): ParsedNode | null {
   const lo = parseLabelOffset(after);
   const dec = parseDecorators(lo.rest);

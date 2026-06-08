@@ -23,10 +23,10 @@ function compact<T extends Record<string, unknown>>(obj: T): T {
 }
 
 /**
- * Rekonstruiert ein WardleyMap aus dem diagram-js-Laufzeitmodell. Positions-Wahrheit sind die
- * DI-Properties `evolution`/`visibility`; editierbare Felder (Label, Decorators, Movement,
- * Pipeline-Range) werden ebenfalls aus den DI-Properties gelesen (Konzept §5.6). Das
- * `businessObject` dient nur als Fallback fuer (noch) nicht editierbare typ-spezifische Felder.
+ * Reconstructs a WardleyMap from the diagram-js runtime model. The source of truth for positions are
+ * the DI properties `evolution`/`visibility`; editable fields (label, decorators, movement,
+ * pipeline range) are likewise read from the DI properties (concept doc §5.6). The
+ * `businessObject` serves only as a fallback for type-specific fields that are not (yet) editable.
  */
 export default class WardleyExporter {
   static $inject = ['elementRegistry', 'canvas'];
@@ -74,7 +74,7 @@ export default class WardleyExporter {
     return validateMap(map);
   }
 
-  /** Baut ein MapElement aus den DI-Properties (gaengige Typen) bzw. dem businessObject (Rest). */
+  /** Builds a MapElement from the DI properties (common types) or the businessObject (the rest). */
   private buildElement(el: WardleyShape): MapElement | undefined {
     const position = { visibility: el.visibility, evolution: el.evolution };
     const bo = el.businessObject;

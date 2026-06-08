@@ -1,7 +1,7 @@
 import type { ModuleDeclaration } from 'didi';
 import WardleyColorPicker from './WardleyColorPicker.js';
 
-/** Notiz-Farb-Picker (3x3-Swatch-Popover). */
+/** Note color picker (3x3 swatch popover). */
 export const wardleyColorPickerModule: ModuleDeclaration = {
   __init__: ['wardleyColorPicker'],
   wardleyColorPicker: ['type', WardleyColorPicker],

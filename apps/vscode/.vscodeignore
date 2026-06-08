@@ -1,4 +1,4 @@
-# Quelle & Build-Tooling gehören nicht ins .vsix — nur dist/ + Manifest.
+# Source & build tooling don't belong in the .vsix — only dist/ + manifest.
 src/**
 node_modules/**
 esbuild.config.mjs

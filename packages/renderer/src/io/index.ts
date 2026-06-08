@@ -2,7 +2,6 @@ import type { ModuleDeclaration } from 'didi';
 import WardleyImporter from './WardleyImporter.js';
 import WardleyExporter from './WardleyExporter.js';
 
-/** Bruecke Modell <-> diagram-js (Import/Export). */
 export const ioModule: ModuleDeclaration = {
   wardleyImporter: ['type', WardleyImporter],
   wardleyExporter: ['type', WardleyExporter],

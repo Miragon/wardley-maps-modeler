@@ -1,7 +1,7 @@
 import type { ModuleDeclaration } from 'didi';
 import WardleyKeyboard from './WardleyKeyboard.js';
 
-/** Undo/Redo/Delete per Tastatur am Canvas-Container. */
+/** Undo/redo/delete via keyboard on the canvas container. */
 export const wardleyKeyboardModule: ModuleDeclaration = {
   __init__: ['wardleyKeyboard'],
   wardleyKeyboard: ['type', WardleyKeyboard],

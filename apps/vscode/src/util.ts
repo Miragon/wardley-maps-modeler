@@ -1,4 +1,4 @@
-/** Zufalls-Nonce für die CSP der Webview (script-src 'nonce-…'). */
+/** Random nonce for the webview's CSP (script-src 'nonce-…'). */
 export function getNonce(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let text = '';

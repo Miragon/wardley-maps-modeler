@@ -1,13 +1,11 @@
 import './assets/wardley.css';
 
-// Viewer-Schichtung
 export { Viewer } from './Viewer.js';
 export { NavigatedViewer } from './NavigatedViewer.js';
 export { Modeler } from './Modeler.js';
 export { WardleyBaseViewer } from './WardleyBaseViewer.js';
 export type { WardleyViewerOptions, EventCallback } from './WardleyBaseViewer.js';
 
-// Module (additionalModules / Erweiterung)
 export { wardleyModelModule, WardleyElementFactory } from './model/index.js';
 export {
   evolutionGridModule,
@@ -33,10 +31,9 @@ export {
 export { wardleyAppendModule, WardleyAppendBehavior } from './append/index.js';
 export { wardleyColorPickerModule, WardleyColorPicker } from './color-picker/index.js';
 
-// Notiz-Farbpalette (kanonische Quelle fuer Konsumenten / den Wardley-Mapping-Skill).
+// Note color palette (canonical source for consumers / the Wardley-mapping skill).
 export { NOTE_COLORS } from './draw/styles.js';
 
-// Laufzeit-Typen & Guards
 export { isWardleyShape, isWardleyConnection, isComponent, isPipeline } from './model/di-types.js';
 export type {
   WardleyShape,
@@ -46,7 +43,7 @@ export type {
 } from './model/di-types.js';
 export type { ImportWarning, RootBusinessObject } from './io/index.js';
 
-// Icons (Material Icons, Apache-2.0) – fuer Buttons/Chrome der Konsumenten wiederverwendbar.
+// Icons (Material Icons, Apache-2.0) – reusable for consumers' buttons/chrome.
 export {
   iconMarkup,
   ICON_UNDO,

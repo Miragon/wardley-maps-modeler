@@ -21,7 +21,7 @@ import {
 } from '../model/di-types.js';
 import type EvolutionGrid from '../evolution-grid/EvolutionGrid.js';
 
-/** BaseRenderer-Default ist 1000; 1500 gewinnt das render.shape/render.connection-Event. */
+/** BaseRenderer default is 1000; 1500 wins the render.shape/render.connection event. */
 const WARDLEY_RENDER_PRIORITY = 1500;
 
 type Attrs = Record<string, string | number>;
@@ -78,7 +78,7 @@ export default class WardleyRenderer extends BaseRenderer {
     });
     svgAppend(visuals, path);
 
-    // BPMN-Stil-Pfeilspitze am Ziel (beide Linientypen); bei bidirektionalem Flow auch an der Quelle.
+    // BPMN-style arrowhead at the target (both line types); for bidirectional flow also at the source.
     svgAppend(visuals, connectionArrow(start, end, color, isFlow ? 11 : 9, isFlow ? 5 : 4));
     if (isFlow && conn.bidirectional) {
       svgAppend(visuals, connectionArrow(end, start, color, 11, 5));
@@ -95,7 +95,7 @@ export default class WardleyRenderer extends BaseRenderer {
         }),
       );
     }
-    // Link-Annotation (`; …`) am Mittelpunkt (etwas tiefer, falls auch ein Flow-Wert da ist).
+    // Link annotation (`; …`) at the midpoint (a bit lower if a flow value is also present).
     if (conn.linkLabel) {
       svgAppend(
         visuals,
@@ -121,15 +121,13 @@ export default class WardleyRenderer extends BaseRenderer {
     return `M${first.x},${first.y}` + rest.map((p: Point) => `L${p.x},${p.y}`).join('');
   }
 
-  // --- Knoten ---
-
   private drawComponent(visuals: SVGElement, shape: WardleyShape): SVGElement {
     const cx = shape.width / 2;
     const cy = shape.height / 2;
     const evolving = !!shape.movement;
     const dec = shape.decorators;
 
-    // Geplante Evolution: roter Pfeil zum Ziel-Event-Kreis (Pixel-Delta ueber die einzige Mathematik-Quelle).
+    // Planned evolution: red arrow to the target event circle (pixel delta via the single source of math).
     if (shape.movement) {
       const here = this.grid.toCanvas({ visibility: shape.visibility, evolution: shape.evolution });
       const there = this.grid.toCanvas({
@@ -142,8 +140,8 @@ export default class WardleyRenderer extends BaseRenderer {
         line(cx, cy, cx + dx, cy, { stroke: COLORS.movement, 'stroke-width': 1.5 }),
       );
       svgAppend(visuals, connectionArrow({ x: cx, y: cy }, { x: cx + dx, y: cy }, COLORS.movement));
-      // Ziel-Kreis = direkter Drag-Griff: per Klasse markiert, damit das Evolve-Modul ein
-      // mousedown darauf abfängt und das Ziel per Drag verschieben lässt (siehe WardleyEvolveDragging).
+      // Target circle = direct drag handle: marked by class so the evolve module can intercept a
+      // mousedown on it and let the target be moved by dragging (see WardleyEvolveDragging).
       svgAppend(
         visuals,
         circle(cx + dx, cy, COMPONENT_RADIUS, {
@@ -167,7 +165,6 @@ export default class WardleyRenderer extends BaseRenderer {
       );
     }
 
-    // Komponente im BPMN-Event-Stil: sauberer Kreis, weisse Fuellung, duenner Rand.
     const ring = circle(cx, cy, COMPONENT_RADIUS, {
       fill: COLORS.componentFill,
       stroke: COLORS.stroke,
@@ -175,7 +172,7 @@ export default class WardleyRenderer extends BaseRenderer {
     });
     svgAppend(visuals, ring);
 
-    // "evolving" = Doppelring (Anlehnung an das BPMN-Intermediate-Event).
+    // "evolving" = double ring (echoing the BPMN intermediate event).
     if (evolving) {
       svgAppend(
         visuals,
@@ -187,7 +184,7 @@ export default class WardleyRenderer extends BaseRenderer {
       );
     }
 
-    // Market/Ecosystem als inneres Symbol (Event-Icon-Idiom).
+    // Market/ecosystem as an inner symbol (event-icon idiom).
     if (dec?.ecosystem) {
       svgAppend(
         visuals,
@@ -249,13 +246,13 @@ export default class WardleyRenderer extends BaseRenderer {
     const color = shape.color;
     const lines = (shape.wardleyLabel ?? '').split('\n');
     const cx = shape.width / 2;
-    // Zeilenblock vertikal in der Box zentrieren (+4 ~ Baseline-Offset fuer 13px).
+    // Center the block of lines vertically in the box (+4 ~ baseline offset for 13px).
     const y0 = shape.height / 2 - ((lines.length - 1) * NOTE_LINE_HEIGHT) / 2 + 4;
     const attrs = {
       'text-anchor': 'middle',
       fill: color ?? COLORS.noteText,
       'font-style': 'italic',
-      // Eingefärbte Notizen leicht fetter -> Feedback (gut/schlecht) sticht hervor.
+      // Colored notes are slightly bolder -> feedback (good/bad) stands out.
       ...(color ? { 'font-weight': '600' } : {}),
     };
     let first: SVGElement | undefined;
@@ -344,7 +341,6 @@ export default class WardleyRenderer extends BaseRenderer {
     const cx = shape.width / 2;
     const cy = shape.height / 2;
     const r = COMPONENT_RADIUS + 1;
-    // Distinkt: abgerundetes Quadrat mit innerem Quadrat (verschachtelte Karte).
     const outer = svgAttr(svgCreate('rect'), {
       x: cx - r,
       y: cy - r,
@@ -374,8 +370,6 @@ export default class WardleyRenderer extends BaseRenderer {
   }
 }
 
-// --- SVG-Helfer ---
-
 function circle(cx: number, cy: number, r: number, attrs: Attrs): SVGElement {
   return svgAttr(svgCreate('circle'), { cx, cy, r, 'stroke-width': 1, ...attrs });
 }
@@ -385,8 +379,8 @@ function line(x1: number, y1: number, x2: number, y2: number, attrs: Attrs): SVG
 }
 
 /**
- * Text-Label mit Papier-Halo (paint-order: stroke) fuer Lesbarkeit ueber Linien/Baendern.
- * `halo=false` deaktiviert den Halo (z.B. fuer Annotationsnummern auf gefuelltem Marker).
+ * Text label with a paper halo (paint-order: stroke) for legibility over lines/bands.
+ * `halo=false` disables the halo (e.g. for annotation numbers on a filled marker).
  */
 function label(content: string, x: number, y: number, attrs: Attrs = {}, halo = true): SVGElement {
   const haloAttrs: Attrs = halo
@@ -410,7 +404,6 @@ function label(content: string, x: number, y: number, attrs: Attrs = {}, halo = 
   return el;
 }
 
-/** Gefuellte BPMN-Stil-Pfeilspitze am Punkt `to`, ausgerichtet entlang from->to. */
 function connectionArrow(from: Point, to: Point, color: string, len = 10, w = 5): SVGElement {
   const angle = Math.atan2(to.y - from.y, to.x - from.x);
   const bx = to.x - len * Math.cos(angle);
@@ -422,7 +415,7 @@ function connectionArrow(from: Point, to: Point, color: string, len = 10, w = 5)
   return svgAttr(svgCreate('polygon'), { points, fill: color });
 }
 
-/** Effektiver Radius eines Knotens fuer das Cropping der Verbindung an seiner Boundary. */
+/** Effective radius of a node for cropping the connection at its boundary. */
 function radiusOf(s: WardleyShape): number {
   if (s.wardleyType === 'component') return COMPONENT_RADIUS + 2;
   if (s.wardleyType === 'anchor') return ANCHOR_ICON_SIZE / 2 + 1;
@@ -430,9 +423,9 @@ function radiusOf(s: WardleyShape): number {
 }
 
 /**
- * Verbindungs-Endpunkte aus den AKTUELLEN Knoten-Mittelpunkten, gecroppt an deren Boundary
- * (BPMN-Look: Linie endet am Rand, Pfeilspitze sichtbar — unabhaengig von der Z-Order, und
- * korrekt nach Verschieben, da bei jedem Render neu berechnet).
+ * Connection endpoints from the CURRENT node centers, cropped at their boundary
+ * (BPMN look: line ends at the edge, arrowhead visible — independent of z-order, and
+ * correct after moving, since recomputed on every render).
  */
 function endpoints(conn: WardleyConnection): [Point, Point] {
   const s = conn.source as unknown as WardleyShape | undefined;

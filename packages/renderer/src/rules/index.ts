@@ -1,7 +1,7 @@
 import type { ModuleDeclaration } from 'didi';
 import WardleyRules from './WardleyRules.js';
 
-/** Erlaubte Wardley-Operationen (RuleProvider). */
+/** Allowed Wardley operations (RuleProvider). */
 export const wardleyRulesModule: ModuleDeclaration = {
   __init__: ['wardleyRules'],
   wardleyRules: ['type', WardleyRules],

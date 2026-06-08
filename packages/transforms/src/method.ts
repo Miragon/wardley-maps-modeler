@@ -1,7 +1,7 @@
 import type { ComponentDecorators, Method, WardleyMap } from '@wardley/schema-model';
 import { updateElement, compact } from './util.js';
 
-/** Setzt (oder entfernt mit `undefined`) die Beschaffungsmethode build/buy/outsource. */
+/** Sets (or clears with `undefined`) the sourcing method build/buy/outsource. */
 export function setMethod(
   map: WardleyMap,
   componentId: string,
@@ -9,7 +9,9 @@ export function setMethod(
 ): WardleyMap {
   return updateElement(map, componentId, (el) => {
     if (el.elementType !== 'component') {
-      throw new Error(`setMethod nur fuer Komponenten, "${componentId}" ist ${el.elementType}.`);
+      throw new Error(
+        `setMethod only applies to components; "${componentId}" is ${el.elementType}.`,
+      );
     }
     const decorators = compact({ ...el.decorators, method }) as ComponentDecorators;
     return Object.keys(decorators).length > 0 ? { ...el, decorators } : stripDecorators(el);

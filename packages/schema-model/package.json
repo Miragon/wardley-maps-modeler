@@ -1,7 +1,7 @@
 {
   "name": "@wardley/schema-model",
   "version": "0.0.0",
-  "description": "DOM-freies Wardley-Metamodell: Typen, Zod-Schema, Stage-Ableitung, Migrationen, deterministische JSON-Serialisierung.",
+  "description": "DOM-free Wardley metamodel: types, Zod schema, stage derivation, migrations, deterministic JSON serialization.",
   "license": "MIT",
   "type": "module",
   "sideEffects": false,

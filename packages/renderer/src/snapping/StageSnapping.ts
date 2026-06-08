@@ -10,9 +10,9 @@ interface DragMoveEvent {
 }
 
 /**
- * Rastet die X-Position (Evolution) waehrend Move/Create/Resize an die Stage-Grenzen ein.
- * Mit gedrueckter Shift-Taste deaktiviert. Bewusst leichtgewichtig (kein Ersatz fuer das volle
- * diagram-js Snapping); ergaenzt das Snapping um die Wardley-spezifischen Bandgrenzen.
+ * Snaps the X position (evolution) during move/create/resize to the stage boundaries.
+ * Disabled while the Shift key is held. Deliberately lightweight (no replacement for the full
+ * diagram-js snapping); it adds the Wardley-specific band boundaries to the snapping.
  */
 export default class StageSnapping {
   static $inject = ['eventBus', 'evolutionGrid'];

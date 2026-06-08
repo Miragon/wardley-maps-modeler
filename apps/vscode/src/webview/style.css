@@ -1,6 +1,6 @@
-/* Chrome der Webview. Die Leinwand selbst trägt ihr eigenes „Strategic Blueprint"-Aussehen
-   (Renderer-CSS); die schwebende Toolbar/Dialoge übernehmen das VS-Code-Theme (--vscode-*),
-   damit sich der Editor nativ in die IDE einfügt. */
+/* Chrome of the webview. The canvas itself carries its own "Strategic Blueprint" look
+   (renderer CSS); the floating toolbar/dialogs adopt the VS Code theme (--vscode-*),
+   so the editor blends natively into the IDE. */
 
 html,
 body {
@@ -21,7 +21,6 @@ body {
   inset: 0;
 }
 
-/* --- Eingeklapptes Menü (Hamburger oben rechts, Excalidraw-Stil) --- */
 .toolbar {
   position: absolute;
   top: 12px;
@@ -125,7 +124,6 @@ body {
   cursor: pointer;
 }
 
-/* --- Modal-Dialog (X-Achsen-Beschriftung) --- */
 .overlay {
   position: absolute;
   inset: 0;

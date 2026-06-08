@@ -1,6 +1,6 @@
 /**
- * Kleine, zeilenorientierte Helfer fuer die OWM-DSL (Konzept §7.4).
- * Die DSL ist zeilenbasiert; ein vollwertiger Tokenizer/Generator ist nicht noetig.
+ * Small, line-oriented helpers for the OWM DSL (concept doc §7.4).
+ * The DSL is line-based; a full tokenizer/generator is not needed.
  */
 
 import type { Method } from '@wardley/schema-model';
@@ -12,7 +12,7 @@ export interface ParsedCoords {
 
 const COORDS_RE = /\[\s*([-\d.]+)\s*,\s*([-\d.]+)\s*\]/;
 
-/** Extrahiert das erste `[a, b]`-Tupel einer Zeile (oder null). Reihenfolge bleibt roh (a,b). */
+/** Order stays raw (a, b). */
 export function parseCoords(line: string): ParsedCoords | null {
   const m = COORDS_RE.exec(line);
   if (!m) return null;
@@ -22,7 +22,6 @@ export function parseCoords(line: string): ParsedCoords | null {
   return { a, b };
 }
 
-/** Entfernt das erste `[...]`-Tupel aus der Zeile. */
 export function stripCoords(line: string): string {
   return line.replace(COORDS_RE, ' ');
 }
@@ -38,10 +37,10 @@ const PAREN_RE = /\(([^)]*)\)/g;
 const METHODS: ReadonlySet<string> = new Set(['build', 'buy', 'outsource']);
 
 /**
- * Liest Inline-Decorators einer Komponentenzeile:
- * - geklammert: `(market)`, `(ecosystem)`, `(build|buy|outsource)`, kombiniert `(market, outsource)`
+ * Reads the inline decorators of a component line:
+ * - parenthesized: `(market)`, `(ecosystem)`, `(build|buy|outsource)`, combined `(market, outsource)`
  * - trailing keyword: `inertia`
- * Gibt die gefundenen Decorators und die um sie bereinigte Zeile zurueck.
+ * Returns the decorators found and the line stripped of them.
  */
 export function parseDecorators(line: string): { decorators: InlineDecorators; rest: string } {
   const dec: {
@@ -63,7 +62,7 @@ export function parseDecorators(line: string): { decorators: InlineDecorators; r
     return ' ';
   });
 
-  // trailing keyword `inertia` (ungeklammert)
+  // trailing keyword `inertia` (unparenthesized)
   rest = rest.replace(/\binertia\b/i, () => {
     dec.inertia = true;
     return ' ';
@@ -72,12 +71,11 @@ export function parseDecorators(line: string): { decorators: InlineDecorators; r
   return { decorators: dec, rest };
 }
 
-// Notiz-Farbe als (OWM-rückwärtskompatible) Erweiterung: `(color #rrggbb)` ODER `(color green)`.
-// Bewusst nach den Koordinaten platziert -> der OWM-Parser ignoriert den Rest, statt ihn in den
-// Notiztext zu ziehen. Akzeptiert Hex oder CSS-Farbnamen.
+// Note color as an (OWM-backwards-compatible) extension: `(color #rrggbb)` OR `(color green)`.
+// Deliberately placed after the coordinates -> the OWM parser ignores the rest instead of pulling
+// it into the note text. Accepts hex or CSS color names.
 const COLOR_RE = /\(\s*color\s+(#[0-9a-fA-F]{3,8}|[a-zA-Z][\w-]*)\s*\)/i;
 
-/** Liest ein optionales `(color …)` und gibt die Farbe + um sie bereinigte Zeile zurueck. */
 export function parseColor(line: string): { color?: string; rest: string } {
   const m = COLOR_RE.exec(line);
   if (!m || !m[1]) return { rest: line };
@@ -91,7 +89,7 @@ export interface LabelOffsetToken {
 
 const LABEL_OFFSET_RE = /\blabel\s*\[\s*([-\d.]+)\s*,\s*([-\d.]+)\s*\]/i;
 
-/** Liest ein optionales `label [dx, dy]` (Pixel-Offset) und gibt es + bereinigte Zeile zurueck. */
+/** Reads an optional `label [dx, dy]` (pixel offset) and returns it plus the stripped line. */
 export function parseLabelOffset(line: string): {
   labelOffset: LabelOffsetToken | null;
   rest: string;
@@ -105,13 +103,12 @@ export function parseLabelOffset(line: string): {
   return { labelOffset: { dx, dy }, rest };
 }
 
-/** Erstes Wort (Keyword) einer Zeile in Kleinbuchstaben. */
+/** First word (keyword) of a line, lowercased. */
 export function keywordOf(line: string): string {
   const m = /^\s*([A-Za-z][\w-]*)/.exec(line);
   return m ? m[1]!.toLowerCase() : '';
 }
 
-/** Slugifiziert ein Label zu einem ID-Fragment. */
 export function slug(label: string): string {
   return (
     label

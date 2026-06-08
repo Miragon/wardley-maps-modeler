@@ -4,26 +4,24 @@ import { exportImageToFile } from './exportImage.js';
 import { EMBED_KEYWORD, decodeMap, pngExtractText } from './png.js';
 import type { HostToWebview, WebviewToHost } from './protocol.js';
 
-/** Default-Inhalt für eine frisch angelegte (leere) PNG-Map. */
 const EMPTY_MAP = 'title New map\n';
 
 /**
- * Wie lange auf das gerasterte PNG der Webview gewartet wird, bevor der Save abbricht. Großzügig
- * bemessen: Rasterung großer Maps auf langsamen Rechnern darf nicht fälschlich abbrechen (ein
- * Timeout lässt das Dokument „dirty" zurück -> der Nutzer kann erneut speichern, nichts geht verloren).
+ * How long to wait for the webview's rasterized PNG before the save aborts. Generously sized:
+ * rasterizing large maps on slow machines must not abort falsely (a timeout leaves the document
+ * "dirty" -> the user can save again, nothing is lost).
  */
 const PNG_TIMEOUT_MS = 60_000;
 
 /**
- * In-Memory-Modell einer `.wmap.png`/`.owm.png`-Datei. Quelle der Wahrheit ist die OWM-DSL
- * (`dsl`); auf der Platte liegt ein gerendertes PNG mit der DSL als eingebettetem tEXt-Chunk.
+ * In-memory model of a `.wmap.png`/`.owm.png` file. The source of truth is the OWM-DSL (`dsl`);
+ * on disk lives a rendered PNG with the DSL embedded as a tEXt chunk.
  */
 class WardleyPngDocument implements vscode.CustomDocument {
-  /** Aktuelle, im Editor sichtbare DSL. */
   dsl: string;
-  /** Aus leerer/neuer Datei entstanden -> beim ersten `ready` einmalig „dirty" markieren. */
+  /** Originated from an empty/new file -> mark "dirty" once on the first `ready`. */
   isNew: boolean;
-  /** Verhindert mehrfaches Seeden des Dirty-States über Reloads der Webview hinweg. */
+  /** Prevents seeding the dirty state more than once across webview reloads. */
   seededDirty = false;
 
   private readonly _onDidDispose = new vscode.EventEmitter<void>();
@@ -44,7 +42,7 @@ class WardleyPngDocument implements vscode.CustomDocument {
   }
 }
 
-/** Verbindung Dokument <-> aktive Webview (genau eine, da supportsMultipleEditorsPerDocument=false). */
+/** Link between document <-> active webview (exactly one, since supportsMultipleEditorsPerDocument=false). */
 interface PanelBinding {
   readonly webview: vscode.Webview;
   readonly pending: Map<number, PendingPng>;
@@ -52,19 +50,19 @@ interface PanelBinding {
 }
 
 interface PendingPng {
-  /** Auflösen/Ablehnen räumen intern auf (Timer, Cancellation-Sub, Map-Eintrag). */
+  /** Resolve/reject clean up internally (timer, cancellation subscription, map entry). */
   resolve: (data: string) => void;
   reject: (err: Error) => void;
 }
 
 /**
- * Binärer CustomEditor für `*.wmap.png` / `*.owm.png` (eingebettete Wardley-Map, Excalidraw-Idee).
+ * Binary CustomEditor for `*.wmap.png` / `*.owm.png` (embedded Wardley map, Excalidraw idea).
  *
- * Während der Text-Editor (`.wmap`/`.owm`) das TextDocument als Quelle der Wahrheit nutzt, ist die
- * PNG-Datei binär — daher ein eigenes CustomDocument mit selbst verwaltetem Dirty-/Undo-/Save-/
- * Backup-Lebenszyklus. Gerendert/serialisiert wird in DERSELBEN Webview wie der Text-Editor; nur
- * fürs Speichern holt der Host das gerasterte PNG per `requestPng`-Roundtrip ab (Canvas gibt's nur
- * im Browser, nicht im Node-Host).
+ * While the text editor (`.wmap`/`.owm`) uses the TextDocument as its source of truth, the PNG file
+ * is binary — hence a dedicated CustomDocument with a self-managed dirty/undo/save/backup lifecycle.
+ * Rendering/serialization happens in the SAME webview as the text editor; only for saving does the
+ * host fetch the rasterized PNG via a `requestPng` roundtrip (a canvas only exists in the browser,
+ * not in the Node host).
  */
 export class WardleyPngEditorProvider implements vscode.CustomEditorProvider<WardleyPngDocument> {
   public static readonly viewType = 'wardley.pngMapEditor';
@@ -74,8 +72,8 @@ export class WardleyPngEditorProvider implements vscode.CustomEditorProvider<War
       WardleyPngEditorProvider.viewType,
       new WardleyPngEditorProvider(context),
       {
-        // Modeler im Speicher halten, solange der Tab existiert: nötig, damit `saveCustomDocument`
-        // auch bei verstecktem Editor die Map rastern kann (sonst kein Canvas -> kein Save).
+        // Keep the modeler in memory for as long as the tab exists: needed so `saveCustomDocument`
+        // can rasterize the map even with a hidden editor (otherwise no canvas -> no save).
         webviewOptions: { retainContextWhenHidden: true },
         supportsMultipleEditorsPerDocument: false,
       },
@@ -84,7 +82,6 @@ export class WardleyPngEditorProvider implements vscode.CustomEditorProvider<War
 
   private constructor(private readonly context: vscode.ExtensionContext) {}
 
-  /** Aktive Webview je Dokument (für den Save-/Backup-Roundtrip und `update`-Pushes). */
   private readonly bindings = new Map<WardleyPngDocument, PanelBinding>();
 
   private readonly _onDidChange = new vscode.EventEmitter<
@@ -93,7 +90,7 @@ export class WardleyPngEditorProvider implements vscode.CustomEditorProvider<War
   public readonly onDidChangeCustomDocument = this._onDidChange.event;
 
   // -------------------------------------------------------------------------
-  // Öffnen / Auflösen
+  // Open / Resolve
   // -------------------------------------------------------------------------
 
   public async openCustomDocument(
@@ -106,17 +103,17 @@ export class WardleyPngEditorProvider implements vscode.CustomEditorProvider<War
     return new WardleyPngDocument(uri, dsl, isNew);
   }
 
-  /** Bytes der Quelle lesen: bevorzugt das Backup (Hot-Exit), sonst die Datei selbst. */
+  /** Read the source bytes: prefer the backup (hot-exit), otherwise the file itself. */
   private async readSource(uri: vscode.Uri, backupId: string | undefined): Promise<Uint8Array> {
     const candidates = backupId ? [vscode.Uri.parse(backupId), uri] : [uri];
     for (const candidate of candidates) {
       try {
         return await vscode.workspace.fs.readFile(candidate);
       } catch {
-        /* nächste Quelle versuchen */
+        /* try the next source */
       }
     }
-    return new Uint8Array(); // existiert (noch) nicht -> als leere/neue Map behandeln
+    return new Uint8Array(); // does not exist (yet) -> treat as empty/new map
   }
 
   public async resolveCustomEditor(
@@ -140,8 +137,8 @@ export class WardleyPngEditorProvider implements vscode.CustomEditorProvider<War
       switch (msg.type) {
         case 'ready':
           await post({ type: 'init', text: document.dsl });
-          // Neue (leere) Datei: einmalig „dirty" setzen, damit der erste Cmd+S ein echtes PNG
-          // materialisiert (eine 0-Byte-Platzhalterdatei liegt sonst bis zum ersten Edit dort).
+          // New (empty) file: set "dirty" once so the first Cmd+S materializes a real PNG
+          // (otherwise a 0-byte placeholder file sits there until the first edit).
           if (document.isNew && !document.seededDirty) {
             document.seededDirty = true;
             this.markCreated(document);
@@ -168,8 +165,8 @@ export class WardleyPngEditorProvider implements vscode.CustomEditorProvider<War
     webviewPanel.onDidDispose(() => {
       messageSub.dispose();
       if (this.bindings.get(document) === binding) this.bindings.delete(document);
-      // Hängende Save-/Backup-Roundtrips dieser (jetzt toten) Webview sauber abbrechen. Snapshot,
-      // weil reject() jeweils aus binding.pending löscht (Iterator nicht während der Iteration ändern).
+      // Cleanly abort pending save/backup roundtrips of this (now dead) webview. Snapshot first,
+      // because reject() deletes from binding.pending (don't mutate the iterator during iteration).
       const closeErr = new Error(
         'The Wardley map editor was closed before the PNG could be rendered.',
       );
@@ -178,20 +175,19 @@ export class WardleyPngEditorProvider implements vscode.CustomEditorProvider<War
   }
 
   // -------------------------------------------------------------------------
-  // Edits / Undo-Redo (Dirty-State über den Edit-Stack)
+  // Edits / Undo-Redo (dirty state via the edit stack)
   // -------------------------------------------------------------------------
 
-  /** Grafische Änderung aus der Webview -> Edit auf den Stack legen (markiert das Dokument dirty). */
   private onWebviewEdit(document: WardleyPngDocument, text: string): void {
     if (text === document.dsl) return;
     const before = document.dsl;
     const after = text;
     document.dsl = after;
     document.isNew = false;
-    // Undo/Redo posten an die AKTUELLE Webview (über `bindings`), nicht an eine beim Anlegen des
-    // Edits eingefangene: Wird der Editor in eine andere Gruppe verschoben, ist die ursprüngliche
-    // Webview disposed und durch eine neue ersetzt — ein eingefangener `post` liefe sonst ins Leere
-    // (sichtbare Map bliebe stehen, ein Save würde den veralteten Stand rastern). Vgl. revertCustomDocument.
+    // Undo/Redo post to the CURRENT webview (via `bindings`), not one captured when the edit was
+    // created: if the editor is moved to another group, the original webview is disposed and
+    // replaced by a new one — a captured `post` would otherwise go nowhere (the visible map would
+    // stay stale, and a save would rasterize the outdated state). Cf. revertCustomDocument.
     this._onDidChange.fire({
       document,
       label: 'Edit map',
@@ -207,9 +203,9 @@ export class WardleyPngEditorProvider implements vscode.CustomEditorProvider<War
   }
 
   /**
-   * Synthetischer „Create"-Edit für eine neue, leere Datei: kein Inhalts-Delta (der Editor zeigt
-   * bereits die leere Map), nur Dirty-State. Undo/Redo sind No-ops — der Stand ist überall EMPTY_MAP,
-   * VS Code verschiebt nur den Save-Zeiger.
+   * Synthetic "Create" edit for a new, empty file: no content delta (the editor already shows the
+   * empty map), only dirty state. Undo/Redo are no-ops — the state is EMPTY_MAP everywhere, VS Code
+   * merely moves the save pointer.
    */
   private markCreated(document: WardleyPngDocument): void {
     this._onDidChange.fire({
@@ -221,7 +217,7 @@ export class WardleyPngEditorProvider implements vscode.CustomEditorProvider<War
   }
 
   // -------------------------------------------------------------------------
-  // Speichern / Backup / Revert
+  // Save / Backup / Revert
   // -------------------------------------------------------------------------
 
   public async saveCustomDocument(
@@ -245,15 +241,15 @@ export class WardleyPngEditorProvider implements vscode.CustomEditorProvider<War
     context: vscode.CustomDocumentBackupContext,
     cancellation: vscode.CancellationToken,
   ): Promise<vscode.CustomDocumentBackup> {
-    // Der Elternordner des Backup-Ziels (i.d.R. unter storagePath) existiert evtl. noch nicht — die
-    // VS-Code-API verlangt, ihn vor dem Schreiben anzulegen, sonst schlägt der Backup (Hot-Exit) fehl.
+    // The parent folder of the backup target (usually under storagePath) may not exist yet — the
+    // VS Code API requires creating it before writing, otherwise the backup (hot-exit) fails.
     await vscode.workspace.fs.createDirectory(vscode.Uri.joinPath(context.destination, '..'));
     await this.writePng(document, context.destination, cancellation);
     return {
       id: context.destination.toString(),
       delete: () => {
         void vscode.workspace.fs.delete(context.destination).then(undefined, () => {
-          /* Backup evtl. schon weg -> ignorieren */
+          /* backup may already be gone -> ignore */
         });
       },
     };
@@ -271,7 +267,6 @@ export class WardleyPngEditorProvider implements vscode.CustomEditorProvider<War
     await this.bindings.get(document)?.webview.postMessage({ type: 'update', text: dsl });
   }
 
-  /** PNG bei der Webview anfordern (Raster + eingebettete DSL) und an `target` schreiben. */
   private async writePng(
     document: WardleyPngDocument,
     target: vscode.Uri,
@@ -283,10 +278,9 @@ export class WardleyPngEditorProvider implements vscode.CustomEditorProvider<War
   }
 
   // -------------------------------------------------------------------------
-  // PNG-Roundtrip mit der Webview
+  // PNG roundtrip with the webview
   // -------------------------------------------------------------------------
 
-  /** Fordert von der zugehörigen Webview das fertige Base64-PNG an (Timeout + Cancellation). */
   private requestPng(
     document: WardleyPngDocument,
     cancellation: vscode.CancellationToken,
@@ -311,8 +305,8 @@ export class WardleyPngEditorProvider implements vscode.CustomEditorProvider<War
         cleanup();
         reject(new Error('Timed out while rendering the PNG.'));
       }, PNG_TIMEOUT_MS);
-      // Abbruch (z.B. ein neuer Save überholt den alten) sofort durchreichen, statt bis zum Timeout
-      // zu blockieren. `cleanup` läuft auch hier, damit eine späte Antwort sauber verworfen wird.
+      // Propagate cancellation (e.g. a new save overtakes the old one) immediately, instead of
+      // blocking until the timeout. `cleanup` runs here too, so a late response is cleanly discarded.
       const cancelSub = cancellation.onCancellationRequested(() => {
         cleanup();
         reject(new vscode.CancellationError());
@@ -331,13 +325,12 @@ export class WardleyPngEditorProvider implements vscode.CustomEditorProvider<War
     });
   }
 
-  /** Antwort der Webview auf `requestPng` auflösen. */
   private resolvePng(
     binding: PanelBinding,
     msg: Extract<WebviewToHost, { type: 'pngResponse' }>,
   ): void {
     const pending = binding.pending.get(msg.id);
-    if (!pending) return; // unbekannte/zu späte id (Timeout/Abbruch/Dispose hat schon aufgeräumt)
+    if (!pending) return; // unknown/too-late id (timeout/cancellation/dispose already cleaned up)
     if (msg.error) pending.reject(new Error(msg.error));
     else if (typeof msg.data === 'string' && msg.data.length > 0) pending.resolve(msg.data);
     else pending.reject(new Error('The PNG render returned no data.'));
@@ -345,9 +338,9 @@ export class WardleyPngEditorProvider implements vscode.CustomEditorProvider<War
 }
 
 /**
- * Bytes -> DSL. Leere Datei = neue/leere Map (EMPTY_MAP). Nicht-leere Datei OHNE eingebettete Szene
- * ist kein editierbarer Wardley-PNG -> sprechender Fehler (sonst würde ein normales Bild beim
- * Speichern überschrieben).
+ * Bytes -> DSL. Empty file = new/empty map (EMPTY_MAP). A non-empty file WITHOUT an embedded scene
+ * is not an editable Wardley PNG -> a descriptive error (otherwise a normal image would be
+ * overwritten on save).
  */
 function loadDsl(bytes: Uint8Array): { dsl: string; isNew: boolean } {
   if (bytes.length === 0) return { dsl: EMPTY_MAP, isNew: true };

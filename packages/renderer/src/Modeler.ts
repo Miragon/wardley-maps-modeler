@@ -27,14 +27,13 @@ import { wardleyAppendModule } from './append/index.js';
 import { wardleyColorPickerModule } from './color-picker/index.js';
 
 /**
- * Voller Wardley-Editor: Palette/Create, Move mit EvolutionConstraint + Stage-Snapping,
- * Connect mit Rules, ContextPad, Inline-Label-Editing, Undo/Redo (Konzept §6.1, Roadmap M3).
+ * Full Wardley editor: palette/create, move with EvolutionConstraint + stage snapping, connect with
+ * rules, context pad, inline label editing, undo/redo (concept doc §6.1, roadmap M3).
  */
 export class Modeler extends NavigatedViewer {
   protected override _getModules(): ModuleDeclaration[] {
     return [
       ...super._getModules(),
-      // diagram-js Stock
       ModelingModule,
       RulesModule,
       MoveModule,
@@ -45,7 +44,6 @@ export class Modeler extends NavigatedViewer {
       OutlineModule,
       ResizeModule,
       PopupMenuModule,
-      // Wardley-Editor
       wardleyModelingModule,
       wardleyRulesModule,
       evolutionConstraintModule,
@@ -61,12 +59,10 @@ export class Modeler extends NavigatedViewer {
     ];
   }
 
-  /** Letzte Mutation rueckgaengig machen. */
   undo(): void {
     this.get<CommandStack>('commandStack').undo();
   }
 
-  /** Rueckgaengig gemachte Mutation wiederholen. */
   redo(): void {
     this.get<CommandStack>('commandStack').redo();
   }

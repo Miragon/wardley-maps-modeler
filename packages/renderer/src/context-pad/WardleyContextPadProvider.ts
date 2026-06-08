@@ -28,14 +28,14 @@ import {
 } from '../draw/icons.js';
 
 /**
- * ContextPad-Eintrag als HTML mit Material-Icon. `draggable=true` ist Pflicht fuer Eintraege mit
- * `dragstart`-Aktion — sonst feuert diagram-js den Drag nicht.
+ * ContextPad entry as HTML with a Material icon. `draggable=true` is mandatory for entries with a
+ * `dragstart` action — otherwise diagram-js does not fire the drag.
  */
 function cpHtml(icon: string, title: string, draggable = false): string {
   return `<div class="entry wardley-cp-entry"${draggable ? ' draggable="true"' : ''} title="${title}">${iconMarkup(icon)}</div>`;
 }
 
-/** Kontext-Aktionen je Element (Konzept §5.5). */
+/** Context actions per element (concept doc §5.5). */
 export default class WardleyContextPadProvider implements ContextPadProvider {
   static $inject = [
     'contextPad',
@@ -66,8 +66,8 @@ export default class WardleyContextPadProvider implements ContextPadProvider {
   }
 
   getContextPadEntries(element: Element): ContextPadEntries {
-    // Verbindungen (Dependency/Flow): eigenes Pad nur mit Löschen — sonst gäbe es keinen Weg,
-    // eine Linie wieder zu entfernen (Shapes erhalten ihr volles Pad weiter unten).
+    // Connections (dependency/flow): own pad with delete only — otherwise there would be no way to
+    // remove a line again (shapes get their full pad further below).
     if (isWardleyConnection(element)) {
       return {
         delete: {
@@ -84,8 +84,8 @@ export default class WardleyContextPadProvider implements ContextPadProvider {
 
     const connectable = shape.wardleyType === 'component' || shape.wardleyType === 'anchor';
     if (connectable) {
-      // Komponente anhängen: zieht eine neue (blanko) Komponente auf und legt den Pfeil
-      // automatisch an (diagram-js Create mit `source` -> modeling.appendShape). Per ⚙ konfigurierbar.
+      // Append component: drags out a new (blank) component and creates the arrow automatically
+      // (diagram-js Create with `source` -> modeling.appendShape). Configurable via ⚙.
       const startAppend = (event: Event) => {
         const next = this.factory.createNew('component', 'Component');
         this.create.start(event as MouseEvent, next as unknown as Element, {
@@ -112,8 +112,8 @@ export default class WardleyContextPadProvider implements ContextPadProvider {
 
     if (shape.wardleyType === 'component') {
       if (shape.movement) {
-        // Ziel ist gesetzt -> direkt am roten Ziel-Kreis ziehen, um es zu VERSCHIEBEN
-        // (siehe WardleyEvolveDragging). Hier nur noch das Entfernen anbieten.
+        // Target is set -> drag the red target circle directly to MOVE it
+        // (see WardleyEvolveDragging). Here we only offer removal.
         entries['evolve-clear'] = {
           group: 'wardley',
           title: 'Remove evolve',
@@ -121,8 +121,8 @@ export default class WardleyContextPadProvider implements ContextPadProvider {
           action: { click: () => this.wardleyModeling.clearMovement(shape) },
         };
       } else {
-        // Ziel per Drag entlang der Achse aufziehen (Live-Vorschau). Klick modelliert NICHT sofort
-        // (kein automatisches +0.2 mehr) — er startet nur die Platzierung.
+        // Drag the target out along the axis (live preview). The click does NOT model immediately
+        // (no automatic +0.2 anymore) — it only starts the placement.
         const startEvolve = (event: Event) => this.evolveDragging.start(event, shape);
         entries['evolve'] = {
           group: 'wardley',
@@ -132,7 +132,6 @@ export default class WardleyContextPadProvider implements ContextPadProvider {
         };
       }
 
-      // Einstellungs-Zahnrad -> Popup-Untermenue (Typ, Beschaffung, Inertia).
       entries['settings'] = {
         group: 'wardley',
         title: 'Settings (type, sourcing, inertia)',
@@ -149,7 +148,6 @@ export default class WardleyContextPadProvider implements ContextPadProvider {
       };
     }
 
-    // Notiz-Farbe: öffnet den 3x3-Swatch-Picker (bpmn.io-artig) an der Klickposition.
     if (shape.wardleyType === 'note') {
       entries['color'] = {
         group: 'wardley',

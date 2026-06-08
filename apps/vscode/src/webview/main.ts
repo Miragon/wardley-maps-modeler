@@ -1,6 +1,6 @@
-// Self-hosted Font (DSGVO-konform, offline) — die Leinwand-Schrift des Renderers.
+// Self-hosted font (GDPR-compliant, offline) — the renderer's canvas typeface.
 import '@fontsource-variable/spline-sans/index.css';
-// Bringt die Renderer-CSS (inkl. diagram-js.css) ins Bundle.
+// Pulls the renderer CSS (incl. diagram-js.css) into the bundle.
 import {
   Modeler,
   iconMarkup,
@@ -25,42 +25,41 @@ const vscode = acquireVsCodeApi();
 
 const container = document.getElementById('canvas');
 const toolbar = document.getElementById('toolbar');
-if (!container || !toolbar) throw new Error('Webview-Layout unvollständig (#canvas/#toolbar).');
+if (!container || !toolbar) throw new Error('Webview layout incomplete (#canvas/#toolbar).');
 
 const modeler = new Modeler({ container });
-// Debug-Handle (analog zur Webapp). Harmlos in der sandboxed Webview, hilfreich für Diagnose/Tests.
+// Debug handle (like the webapp). Harmless in the sandboxed webview, helpful for diagnostics/tests.
 (globalThis as Record<string, unknown>).__wardleyModeler = modeler;
 
 // ---------------------------------------------------------------------------
-// Zwei-Wege-Sync mit dem Dokument
+// Two-way sync with the document
 // ---------------------------------------------------------------------------
 
-let lastText = ''; // zuletzt mit dem Host abgeglichener Text
-let importing = false; // unterdrückt Edit-Echo während des Imports
-let importFailed = false; // letzter Import (z.B. extern getippter Text) war unparsbar
-let initialized = false; // erstes init erfolgt -> ab dann Zoom/Ausschnitt erhalten
+let lastText = ''; // text last reconciled with the host
+let importing = false; // suppresses the edit echo during import
+let importFailed = false; // the last import (e.g. externally typed text) was unparsable
+let initialized = false; // first init done -> preserve zoom/viewport from then on
 
-// Importe STRIKT serialisieren: init/update kommen als (nicht awaitete) Messages rein; ohne
-// Verkettung könnten zwei schnelle Updates (z.B. mehrere Undos) gleichzeitig importieren und in
-// falscher Reihenfolge fertig werden. Zudem hängt sich der PNG-Save (respondPng) an diese Kette,
-// damit nie ein halb-importierter Stand gerastert wird.
+// Serialize imports STRICTLY: init/update arrive as (un-awaited) messages; without chaining, two
+// quick updates (e.g. several undos) could import concurrently and finish in the wrong order. The
+// PNG save (respondPng) also hooks onto this chain, so a half-imported state is never rasterized.
 let importChain: Promise<void> = Promise.resolve();
 function enqueueImport(text: string, fit: boolean): Promise<void> {
   importChain = importChain.then(() => importText(text, fit)).catch(() => {});
   return importChain;
 }
 
-/** Vergleicht zwei DSL-Texte modulo Zeilenenden/Trailing-Whitespace (= Save-Transforms). */
+/** Compares two DSL texts modulo line endings/trailing whitespace (= save transforms). */
 function sameMapText(a: string, b: string): boolean {
   return a.replace(/\r\n/g, '\n').trim() === b.replace(/\r\n/g, '\n').trim();
 }
 
 /**
- * Lädt `text` in den Modeler. `fit=true` (Erst-Laden) passt die Map ein; `fit=false` (externe oder
- * echo-verfehlte Änderung) ERHÄLT den aktuellen Zoom/Ausschnitt — sonst würde jede vom Host
- * zurückgespiegelte Änderung (z.B. das beim Speichern angehängte `insertFinalNewline`) den Zoom auf
- * Standard zurücksetzen. Beschreibt das eingehende `update` dieselbe Map wie der aktuelle Stand (nur
- * Whitespace/EOL-Differenz), wird gar nicht neu importiert (kein Flicker, keine Zoom-/Selektionsverluste).
+ * Loads `text` into the modeler. `fit=true` (first load) fits the map; `fit=false` (external or
+ * echo-missed change) PRESERVES the current zoom/viewport — otherwise every change mirrored back by
+ * the host (e.g. the `insertFinalNewline` appended on save) would reset the zoom to default. If the
+ * incoming `update` describes the same map as the current state (only whitespace/EOL difference),
+ * it is not re-imported at all (no flicker, no zoom/selection loss).
  */
 async function importText(text: string, fit: boolean): Promise<void> {
   if (!fit && initialized && sameMapText(text, modeler.exportDSL())) {
@@ -76,9 +75,9 @@ async function importText(text: string, fit: boolean): Promise<void> {
     if (fit) fitView();
     else if (prevView) restoreViewbox(prevView);
   } catch (err) {
-    // Parse-Fehler: die Leinwand zeigt weiter die letzte gute Map. pushEdit blockieren, damit
-    // eine grafische Aktion nicht den (gerade extern getippten) unparsbaren Text überschreibt —
-    // bis ein erfolgreicher Re-Import (gültiges 'update') wieder einen bekannten Stand herstellt.
+    // Parse error: the canvas keeps showing the last good map. Block pushEdit so a graphical action
+    // doesn't overwrite the (just externally typed) unparsable text — until a successful re-import
+    // (valid 'update') restores a known state.
     importFailed = true;
     vscode.postMessage({
       type: 'error',
@@ -90,7 +89,7 @@ async function importText(text: string, fit: boolean): Promise<void> {
   }
 }
 
-/** Grafische Änderung -> DSL serialisieren und (nur bei echter Differenz) an den Host melden. */
+/** Graphical change -> serialize DSL and (only on a real difference) report it to the host. */
 function pushEdit(): void {
   if (importing || importFailed) return;
   const dsl = modeler.exportDSL();
@@ -100,8 +99,8 @@ function pushEdit(): void {
 }
 
 modeler.on('commandStack.changed', pushEdit);
-// fitView NICHT global an import.done hängen — sonst setzt jedes zurückgespiegelte 'update' den
-// Zoom zurück. Eingepasst wird gezielt: beim Erst-Laden (importText fit=true) und bei Größenänderung.
+// Do NOT hook fitView globally onto import.done — otherwise every mirrored-back 'update' resets the
+// zoom. Fit happens deliberately: on first load (importText fit=true) and on resize.
 
 window.addEventListener('message', (event: MessageEvent<HostToWebview>) => {
   const msg = event.data;
@@ -111,12 +110,12 @@ window.addEventListener('message', (event: MessageEvent<HostToWebview>) => {
 });
 
 /**
- * PNG-Editor: Host bittet ums fertige, eingebettete PNG (Save/Backup). Wir rastern den aktuellen
- * Stand und schicken Base64 zurück — Fehler werden als `error` gemeldet, damit der Host den Save
- * sauber abbrechen kann statt eine kaputte Datei zu schreiben.
+ * PNG editor: the host requests the finished, embedded PNG (save/backup). We rasterize the current
+ * state and send back Base64 — errors are reported as `error` so the host can cleanly abort the
+ * save instead of writing a corrupt file.
  *
- * Zuerst auf alle bis hierher eingereihten Importe warten (`importChain`), damit nicht ein gerade
- * laufendes init/update einen halb-importierten Zustand in das PNG rastert (sonst Datenverlust).
+ * First wait for all imports queued up to this point (`importChain`), so a currently running
+ * init/update doesn't rasterize a half-imported state into the PNG (otherwise data loss).
  */
 async function respondPng(id: number): Promise<void> {
   try {
@@ -131,7 +130,7 @@ async function respondPng(id: number): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
-// Viewport: Map einpassen, oben Platz für die schwebende Toolbar lassen
+// Viewport: fit the map, leaving room at the top for the floating toolbar
 // ---------------------------------------------------------------------------
 
 const VIEW_INSET = { top: 72, side: 28, bottom: 28 };
@@ -160,7 +159,7 @@ function fitView(): void {
 
 type ViewBox = { x: number; y: number; width: number; height: number };
 
-/** Aktuellen Zoom/Ausschnitt auslesen (oder undefined, falls noch kein Canvas). */
+/** Read the current zoom/viewport (or undefined if there is no canvas yet). */
 function currentViewbox(): ViewBox | undefined {
   try {
     const vb = modeler.get<{ viewbox(): ViewBox }>('canvas').viewbox();
@@ -170,12 +169,11 @@ function currentViewbox(): ViewBox | undefined {
   }
 }
 
-/** Zoom/Ausschnitt wiederherstellen (nach einem erhaltenden Re-Import). */
 function restoreViewbox(box: ViewBox): void {
   try {
     modeler.get<{ viewbox(box: ViewBox): void }>('canvas').viewbox(box);
   } catch {
-    /* noch kein Canvas -> ignorieren */
+    /* no canvas yet -> ignore */
   }
 }
 
@@ -184,9 +182,9 @@ function deselect(): void {
 }
 
 // ---------------------------------------------------------------------------
-// Menü (eingeklappter Hamburger oben rechts, Excalidraw-Stil; Chrome im VS-Code-Theme, Leinwand
-// bleibt „Strategic Blueprint"). KEIN Undo/Redo — das erledigt VS Code via Ctrl/Cmd+Z out-of-the-box
-// (der Modeler-Keyboard-Service ist im Webview-Canvas gebunden).
+// Menu (collapsed hamburger top right, Excalidraw style; chrome in the VS Code theme, canvas stays
+// "Strategic Blueprint"). NO undo/redo — VS Code handles that via Ctrl/Cmd+Z out of the box
+// (the modeler's keyboard service is bound within the webview canvas).
 // ---------------------------------------------------------------------------
 
 function setMenuOpen(open: boolean): void {
@@ -228,7 +226,6 @@ dropdown.className = 'menu-dropdown';
 dropdown.setAttribute('role', 'menu');
 dropdown.hidden = true;
 
-// Map-Größe als Menü-Feld (Label + Select).
 const sizeSelect = document.createElement('select');
 sizeSelect.className = 'menu-select';
 sizeSelect.title = 'Map size';
@@ -246,12 +243,12 @@ for (const [label, value] of [
 }
 sizeSelect.addEventListener('change', () => {
   const [w, h] = sizeSelect.value.split('x').map(Number);
-  // setMapSize re-importiert intern (feuert import.done, NICHT commandStack.changed) -> pushEdit
-  // selbst anstoßen, sonst geht die Größenänderung beim Speichern verloren. Erst nach Auflösung
-  // der Promise (dann spiegelt exportDSL die neue Größe).
+  // setMapSize re-imports internally (fires import.done, NOT commandStack.changed) -> trigger
+  // pushEdit ourselves, otherwise the size change is lost on save. Only after the promise resolves
+  // (then exportDSL reflects the new size).
   if (w && h)
     void modeler.setMapSize(w, h).then(() => {
-      fitView(); // Plotfläche hat sich geändert -> neu einpassen
+      fitView(); // the plot area changed -> re-fit
       pushEdit();
     });
   setMenuOpen(false);
@@ -276,15 +273,14 @@ toolbar.append(menuBtn, dropdown);
 
 menuBtn.addEventListener('click', (e) => {
   e.stopPropagation();
-  setMenuOpen(dropdown.hidden === true); // toggeln: ist es eingeklappt -> aufklappen
+  setMenuOpen(dropdown.hidden === true);
 });
-// Klick außerhalb des Menüs schließt es.
 document.addEventListener('click', (e) => {
   if (!(e.target as Element | null)?.closest('#toolbar')) setMenuOpen(false);
 });
 
 // ---------------------------------------------------------------------------
-// Export (Webview rastert/serialisiert; der Host zeigt den Save-Dialog)
+// Export (the webview rasterizes/serializes; the host shows the save dialog)
 // ---------------------------------------------------------------------------
 
 async function exportSvg(): Promise<void> {
@@ -309,7 +305,7 @@ async function exportPng(): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
-// X-Achsen-Beschriftung (Preset wählen ODER Stages frei beschriften) — wie in der Webapp
+// X-axis labels (choose a preset OR label stages freely) — like the webapp
 // ---------------------------------------------------------------------------
 
 const CUSTOM_PRESET = 'custom';
@@ -334,9 +330,9 @@ function applyAxisLabels(persist = true): void {
     return v || DEFAULT_EVOLUTION_LABELS[i]!;
   }) as [string, string, string, string];
   const isDefault = DEFAULT_EVOLUTION_LABELS.every((v, i) => v === labels[i]);
-  modeler.setEvolutionLabels(isDefault ? undefined : labels); // Live-Update des Rasters (sofort)
+  modeler.setEvolutionLabels(isDefault ? undefined : labels); // live update of the grid (immediate)
   if (axisPreset) axisPreset.value = presetIdFor(labels);
-  // Achsen-Änderung feuert kein commandStack.changed -> selbst synchronisieren.
+  // An axis change fires no commandStack.changed -> synchronize ourselves.
   if (persist) pushEdit();
 }
 
@@ -388,8 +384,8 @@ function buildAxisDialog(): void {
       applyAxisLabels();
     });
   }
-  // Live-Tippen: Raster sofort aktualisieren, aber die Persistenz (1 WorkspaceEdit = 1 Undo-Schritt)
-  // entprellen — sonst ein Undo-Eintrag pro Tastendruck (wie die Webapp es bewusst vermeidet).
+  // Live typing: update the grid immediately, but debounce persistence (1 WorkspaceEdit = 1 undo
+  // step) — otherwise one undo entry per keystroke (which the webapp deliberately avoids).
   let axisTimer: ReturnType<typeof setTimeout> | undefined;
   for (const el of axisInputs)
     el.addEventListener('input', () => {
