@@ -4,6 +4,7 @@ updates:
     directory: '/'
     schedule:
       interval: 'weekly'
+    rebase-strategy: 'disabled'
     labels:
       - 'dependencies'
     open-pull-requests-limit: 5
@@ -22,6 +23,7 @@ updates:
     directory: '/'
     schedule:
       interval: 'monthly'
+    rebase-strategy: 'disabled'
     labels:
       - 'dependencies'
     open-pull-requests-limit: 5
