@@ -3,6 +3,13 @@
   "version": "0.0.0",
   "description": "diagram-js-based Wardley renderer: Viewer / NavigatedViewer / (Modeler). DOM-dependent.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Miragon/wardley-maps-modeler.git",
+    "directory": "packages/renderer"
+  },
+  "homepage": "https://github.com/Miragon/wardley-maps-modeler/tree/main/packages/renderer#readme",
+  "bugs": "https://github.com/Miragon/wardley-maps-modeler/issues",
   "type": "module",
   "sideEffects": [
     "**/*.css"
@@ -20,6 +27,9 @@
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "vite build",
     "test": "npm --prefix ../.. run test",
