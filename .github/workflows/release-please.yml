@@ -51,7 +51,6 @@ jobs:
           registry-url: https://registry.npmjs.org
       - run: npm ci
       - run: npm run build
-      - run: npm publish -w packages/schema-model -w packages/dsl -w packages/transforms -w packages/renderer --access public --dry-run
       - if: needs.release-please.outputs.schema_model == 'true'
         run: npm publish -w packages/schema-model --provenance --access public
       - if: needs.release-please.outputs.dsl == 'true'
