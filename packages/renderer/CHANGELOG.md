@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.1.1](https://github.com/Miragon/wardley-maps-modeler/compare/renderer-v0.1.0...renderer-v0.1.1) (2026-06-09)
+
+
+### Miscellaneous Chores
+
+* **renderer:** Synchronize wardley versions
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @miragon/wardley-dsl bumped from 0.1.0 to 0.1.1
+    * @miragon/wardley-schema-model bumped from 0.1.0 to 0.1.1
+
 ## 0.1.0 (2026-06-09)
 
 

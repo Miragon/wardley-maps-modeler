@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.1.1](https://github.com/Miragon/wardley-maps-modeler/compare/vscode-v0.1.0...vscode-v0.1.1) (2026-06-09)
+
+
+### Bug Fixes
+
+* repair release publishing (vscode packaging + npm dry-run footgun) ([#30](https://github.com/Miragon/wardley-maps-modeler/issues/30)) ([7865c15](https://github.com/Miragon/wardley-maps-modeler/commit/7865c1575f8cb0376cc92c8309696152c49a0597))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @miragon/wardley-dsl bumped from 0.1.0 to 0.1.1
+    * @miragon/wardley-renderer bumped from 0.1.0 to 0.1.1
+    * @miragon/wardley-schema-model bumped from 0.1.0 to 0.1.1
+
 ## 0.1.0 (2026-06-09)
 
 
