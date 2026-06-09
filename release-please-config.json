@@ -2,6 +2,7 @@
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
   "release-type": "node",
   "separate-pull-requests": false,
+  "bump-minor-pre-major": true,
   "packages": {
     "packages/schema-model": { "component": "schema-model" },
     "packages/dsl": { "component": "dsl" },
@@ -10,5 +11,12 @@
     "apps/vscode": { "component": "vscode" },
     "apps/webapp": { "component": "webapp" }
   },
-  "plugins": ["node-workspace"]
+  "plugins": [
+    "node-workspace",
+    {
+      "type": "linked-versions",
+      "groupName": "wardley",
+      "components": ["schema-model", "dsl", "transforms", "renderer", "vscode", "webapp"]
+    }
+  ]
 }
