@@ -1,6 +1,6 @@
 {
   "name": "@miragon/wardley-webapp",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -11,9 +11,9 @@
   "dependencies": {
     "@fontsource-variable/fraunces": "5.2.9",
     "@fontsource-variable/spline-sans": "5.2.8",
-    "@miragon/wardley-dsl": "0.0.0",
-    "@miragon/wardley-renderer": "0.0.0",
-    "@miragon/wardley-schema-model": "0.0.0"
+    "@miragon/wardley-dsl": "0.1.0",
+    "@miragon/wardley-renderer": "0.1.0",
+    "@miragon/wardley-schema-model": "0.1.0"
   },
   "devDependencies": {
     "typescript": "6.0.3",

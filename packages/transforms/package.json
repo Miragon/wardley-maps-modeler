@@ -1,6 +1,6 @@
 {
   "name": "@miragon/wardley-transforms",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "DOM-free, pure WardleyMap->WardleyMap transforms (evolve, method, inertia, pipeline). No undo stack.",
   "license": "MIT",
   "repository": {
@@ -33,7 +33,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@miragon/wardley-schema-model": "0.0.0"
+    "@miragon/wardley-schema-model": "0.1.0"
   },
   "devDependencies": {
     "tsup": "8.5.1",
