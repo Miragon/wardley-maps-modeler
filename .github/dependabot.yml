@@ -7,6 +7,9 @@ updates:
     rebase-strategy: 'disabled'
     labels:
       - 'dependencies'
+    reviewers:
+      - 'emaarco'
+      - 'dominikhorn'
     open-pull-requests-limit: 5
     cooldown:
       default-days: 3
@@ -26,6 +29,9 @@ updates:
     rebase-strategy: 'disabled'
     labels:
       - 'dependencies'
+    reviewers:
+      - 'emaarco'
+      - 'dominikhorn'
     open-pull-requests-limit: 5
     cooldown:
       default-days: 3
