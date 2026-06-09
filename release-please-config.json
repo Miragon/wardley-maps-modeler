@@ -3,6 +3,7 @@
   "release-type": "node",
   "separate-pull-requests": false,
   "bump-minor-pre-major": true,
+  "initial-version": "0.1.0",
   "packages": {
     "packages/schema-model": { "component": "schema-model" },
     "packages/dsl": { "component": "dsl" },
