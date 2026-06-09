@@ -1,7 +1,7 @@
 {
   "name": "@miragon/wardley-dsl",
   "version": "0.1.0",
-  "description": "DOM-free bridge: Online-Wardley-Maps text DSL <-> WardleyMap model and JSON bridge.",
+  "description": "Convert between the Online Wardley Maps text format and the Wardley map model, with lossless round-trips.",
   "license": "MIT",
   "repository": {
     "type": "git",

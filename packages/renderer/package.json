@@ -1,7 +1,7 @@
 {
   "name": "@miragon/wardley-renderer",
   "version": "0.1.0",
-  "description": "diagram-js-based Wardley renderer: Viewer / NavigatedViewer / (Modeler). DOM-dependent.",
+  "description": "Render and display Wardley maps in the browser, with a viewer and modeler built on diagram-js.",
   "license": "MIT",
   "repository": {
     "type": "git",

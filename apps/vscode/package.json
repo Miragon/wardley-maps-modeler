@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "displayName": "Wardley Maps",
-  "description": "View and edit Wardley Maps (.wmap / .owm) directly in VS Code — a diagram-js editor for the OWM-DSL.",
+  "description": "View and edit Wardley Maps directly in VS Code, including .wmap and .owm files.",
   "publisher": "miragon-gmbh",
   "icon": "icon.png",
   "repository": {
@@ -123,7 +123,7 @@
   },
   "devDependencies": {
     "@types/node": "25.9.2",
-    "@types/vscode": "1.96.0",
+    "@types/vscode": "1.120.0",
     "@vscode/vsce": "3.9.2",
     "esbuild": "0.28.0",
     "typescript": "6.0.3"

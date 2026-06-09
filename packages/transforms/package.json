@@ -1,7 +1,7 @@
 {
   "name": "@miragon/wardley-transforms",
   "version": "0.1.0",
-  "description": "DOM-free, pure WardleyMap->WardleyMap transforms (evolve, method, inertia, pipeline). No undo stack.",
+  "description": "Pure functions that turn a Wardley map into a new one, such as evolve, method, inertia and pipeline.",
   "license": "MIT",
   "repository": {
     "type": "git",
