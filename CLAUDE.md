@@ -53,8 +53,7 @@ Everything is managed via **Conventional Commits** — primarily `feat`, `fix`, 
   [`.claude/rules/package-json-fixed-versions.md`](.claude/rules/package-json-fixed-versions.md).
 - For Wardley-map domain work, use the skill in
   [`.claude/skills/wardley-mapping/`](.claude/skills/wardley-mapping/).
-- Architecture details in [`docs/KONZEPT.md`](docs/KONZEPT.md);
-  contributor onboarding in [`CONTRIBUTING.md`](CONTRIBUTING.md).
+- Contributor onboarding in [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ## Code Style
 

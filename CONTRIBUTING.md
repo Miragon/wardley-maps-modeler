@@ -1,8 +1,7 @@
 # Contributing
 
 Thanks for helping improve the Wardley Maps Modeler. This is an npm-workspaces monorepo
-(Node ≥ 22.13, npm, TypeScript ESM). Architecture lives in [`docs/KONZEPT.md`](docs/KONZEPT.md);
-agent-oriented notes live in [`CLAUDE.md`](CLAUDE.md).
+(Node ≥ 22.13, npm, TypeScript ESM). Agent-oriented notes live in [`CLAUDE.md`](CLAUDE.md).
 
 ## Setup & inner loop
 
