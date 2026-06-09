@@ -3,6 +3,13 @@
   "version": "0.0.0",
   "description": "DOM-free bridge: Online-Wardley-Maps text DSL <-> WardleyMap model and JSON bridge.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Miragon/wardley-maps-modeler.git",
+    "directory": "packages/dsl"
+  },
+  "homepage": "https://github.com/Miragon/wardley-maps-modeler/tree/main/packages/dsl#readme",
+  "bugs": "https://github.com/Miragon/wardley-maps-modeler/issues",
   "type": "module",
   "sideEffects": false,
   "exports": {
@@ -18,6 +25,9 @@
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsup",
     "test": "vitest run"

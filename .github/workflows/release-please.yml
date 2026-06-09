@@ -1,0 +1,102 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Validate packaging/publish without releasing'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    if: github.event_name != 'workflow_dispatch' || !inputs.dry_run
+    runs-on: ubuntu-latest
+    outputs:
+      schema_model: ${{ steps.release_please.outputs['packages/schema-model--release_created'] }}
+      dsl: ${{ steps.release_please.outputs['packages/dsl--release_created'] }}
+      transforms: ${{ steps.release_please.outputs['packages/transforms--release_created'] }}
+      renderer: ${{ steps.release_please.outputs['packages/renderer--release_created'] }}
+      vscode: ${{ steps.release_please.outputs['apps/vscode--release_created'] }}
+    steps:
+      - id: release_please
+        uses: googleapis/release-please-action@v5
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  publish-npm:
+    needs: release-please
+    if: >
+      needs.release-please.outputs.schema_model == 'true' ||
+      needs.release-please.outputs.dsl == 'true' ||
+      needs.release-please.outputs.transforms == 'true' ||
+      needs.release-please.outputs.renderer == 'true'
+    runs-on: ubuntu-latest
+    environment: npm
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - run: npm ci
+      - run: npm run build
+      - run: npm publish -w packages/schema-model -w packages/dsl -w packages/transforms -w packages/renderer --access public --dry-run
+      - if: needs.release-please.outputs.schema_model == 'true'
+        run: npm publish -w packages/schema-model --provenance --access public
+      - if: needs.release-please.outputs.dsl == 'true'
+        run: npm publish -w packages/dsl --provenance --access public
+      - if: needs.release-please.outputs.transforms == 'true'
+        run: npm publish -w packages/transforms --provenance --access public
+      - if: needs.release-please.outputs.renderer == 'true'
+        run: npm publish -w packages/renderer --provenance --access public
+
+  publish-vscode:
+    needs: release-please
+    if: needs.release-please.outputs.vscode == 'true'
+    runs-on: ubuntu-latest
+    environment: vscode-marketplace
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+      - run: npm ci
+      - run: npm run build:vscode
+      - name: Package extension
+        working-directory: apps/vscode
+        run: npx vsce package --no-dependencies -o wardley-mapping-modeler.vsix
+      - name: Publish to VS Code Marketplace
+        working-directory: apps/vscode
+        run: npx vsce publish --packagePath wardley-mapping-modeler.vsix
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PUBLISH }}
+
+  dry-run:
+    if: github.event_name == 'workflow_dispatch' && inputs.dry_run
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - run: npm ci
+      - run: npm run build
+      - run: npm publish -w packages/schema-model -w packages/dsl -w packages/transforms -w packages/renderer --access public --dry-run
+      - run: npm run build:vscode
+      - name: Package extension
+        working-directory: apps/vscode
+        run: npx vsce package --no-dependencies -o wardley-mapping-modeler.vsix
