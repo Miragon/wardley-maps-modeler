@@ -13,6 +13,12 @@ updates:
     open-pull-requests-limit: 5
     cooldown:
       default-days: 3
+    # @types/vscode must stay <= engines.vscode (^1.96.0) or `vsce package` fails.
+    ignore:
+      - dependency-name: '@types/vscode'
+        update-types:
+          - 'version-update:semver-minor'
+          - 'version-update:semver-major'
     groups:
       npm-dependencies:
         patterns:
