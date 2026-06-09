@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.1.0 (2026-06-09)
+
+
+### Miscellaneous Chores
+
+* **vscode:** Synchronize wardley versions
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @miragon/wardley-dsl bumped from 0.0.0 to 0.1.0
+    * @miragon/wardley-renderer bumped from 0.0.0 to 0.1.0
+    * @miragon/wardley-schema-model bumped from 0.0.0 to 0.1.0
+
 ## 0.0.0 — Unreleased
 
 Initial VS Code extension.
