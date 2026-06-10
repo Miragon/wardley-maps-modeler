@@ -42,6 +42,9 @@ function createStrokeHit(shape: WardleyShape, gfx: SVGElement): void {
     fill: 'none',
     stroke: 'white',
     'stroke-width': 15,
+    // diagram-js makes hits invisible via this INLINE attribute (its "no-border" trait),
+    // not via CSS — without it the 15px white band is visible.
+    'stroke-opacity': 0,
   });
   svgAppend(gfx, hit);
 }
