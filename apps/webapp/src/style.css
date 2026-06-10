@@ -226,6 +226,11 @@ body {
 .empty-state[hidden] {
   display: none;
 }
+/* While the draw tool is active, every click belongs to the canvas — hide the card
+   (drawing on an empty map would otherwise be blocked by it). */
+.app-canvas.wardley-draw-mode + .empty-state {
+  display: none;
+}
 .empty-state {
   position: absolute;
   inset: 0;

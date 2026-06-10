@@ -48,21 +48,21 @@ const { svg } = await viewer.saveSVG();
 
 ### Editor interactions
 
-| Action                          | How                                                                                                                |
-| ------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| Multi-select (lasso)            | Palette tool, `L`, or `Shift` + drag on the empty canvas                                                           |
-| Draw lines/shapes               | Palette tool — click point by point; double-click/`Enter` finishes, clicking the start point closes, `Esc` cancels |
-| Quick create at the cursor      | `C` component, `U` user/anchor                                                                                     |
-| Add to selection                | `Shift` + click on elements                                                                                        |
-| Copy / paste                    | `Ctrl/Cmd+C`, `Ctrl/Cmd+V` — paste attaches to the cursor; click places, `Esc` cancels                             |
-| Duplicate (in place)            | `Ctrl/Cmd+D`                                                                                                       |
-| Nudge selection                 | Arrow keys (`Shift` = coarse)                                                                                      |
-| Undo / redo                     | `Ctrl/Cmd+Z` / `Ctrl/Cmd+Shift+Z`                                                                                  |
-| Zoom                            | `Ctrl/Cmd` + `+` / `-` / `0` (fit), controls bottom-right                                                          |
-| Edit label / note               | Double-click (notes: `Cmd/Ctrl+Enter` saves)                                                                       |
-| Edit link annotation/flow value | Double-click the connection (or pencil in the pad)                                                                 |
-| Evolve                          | Drag from the context pad; drag the red target circle                                                              |
-| Pipeline membership             | Drop a component into/out of the pipeline box                                                                      |
+| Action                          | How                                                                                                                                                                                              |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Multi-select (lasso)            | Palette tool, `L`, or `Shift` + drag on the empty canvas                                                                                                                                         |
+| Draw lines/shapes               | Palette tool — click point by point; click the last point again (or double-click/`Enter`/`Esc`) to finish, click the start point to close; drag the handles of a selected drawing to move points |
+| Quick create at the cursor      | `C` component, `U` user/anchor                                                                                                                                                                   |
+| Add to selection                | `Shift` + click on elements                                                                                                                                                                      |
+| Copy / paste                    | `Ctrl/Cmd+C`, `Ctrl/Cmd+V` — paste attaches to the cursor; click places, `Esc` cancels                                                                                                           |
+| Duplicate (in place)            | `Ctrl/Cmd+D`                                                                                                                                                                                     |
+| Nudge selection                 | Arrow keys (`Shift` = coarse)                                                                                                                                                                    |
+| Undo / redo                     | `Ctrl/Cmd+Z` / `Ctrl/Cmd+Shift+Z`                                                                                                                                                                |
+| Zoom                            | `Ctrl/Cmd` + `+` / `-` / `0` (fit), controls bottom-right                                                                                                                                        |
+| Edit label / note               | Double-click (notes: `Cmd/Ctrl+Enter` saves)                                                                                                                                                     |
+| Edit link annotation/flow value | Double-click the connection (or pencil in the pad)                                                                                                                                               |
+| Evolve                          | Drag from the context pad; drag the red target circle                                                                                                                                            |
+| Pipeline membership             | Drop a component into/out of the pipeline box                                                                                                                                                    |
 
 ## Packages
 

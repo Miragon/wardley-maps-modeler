@@ -17,15 +17,14 @@ interface Point {
   y: number;
 }
 
-/** Clicking this close (px, canvas coords) to the FIRST point closes the shape. */
+/** Clicking this close (px, canvas coords) to the FIRST/LAST point finishes/closes. */
 const CLOSE_RADIUS = 12;
-/** Double-click fires two clicks — drop the duplicate point closer than this. */
-const DUPLICATE_RADIUS = 3;
 
 /**
- * Excalidraw-style polyline tool: activate, click point by point (rubber-band preview),
- * double-click or Enter finishes, clicking the first point closes the shape, Escape cancels.
- * The result is ONE undoable `drawing` shape that moves as a whole.
+ * Excalidraw-style polyline tool: activate, click point by point (rubber-band preview).
+ * Finishing (like Excalidraw): click the LAST point again, double-click, Enter or Escape
+ * commits the open line; clicking the FIRST point closes the shape. Escape with fewer than
+ * two points cancels. The result is ONE undoable `drawing` shape that moves as a whole.
  */
 export default class WardleyDrawTool {
   static $inject = ['canvas', 'eventBus', 'modeling', 'selection', 'wardleyElementFactory'];
@@ -54,13 +53,20 @@ export default class WardleyDrawTool {
     else this.activate();
   }
 
+  /** The OUTER viewer container — getContainer() returns the inner .djs-container, but the
+   *  mode class must sit on .wardley-container for the crosshair/empty-state CSS to match. */
+  private outerContainer(): HTMLElement {
+    const container = this.canvas.getContainer();
+    return (container.closest('.wardley-container') as HTMLElement | null) ?? container;
+  }
+
   activate(): void {
     if (this.active) return;
     this.active = true;
     this.points = [];
     this.cursor = null;
     const container = this.canvas.getContainer();
-    container.classList.add('wardley-draw-mode');
+    this.outerContainer().classList.add('wardley-draw-mode');
     // Capture phase: while drawing, clicks must NOT select/move elements underneath.
     container.addEventListener('mousedown', this.onMouseDown, true);
     container.addEventListener('dblclick', this.onDblClick, true);
@@ -106,7 +112,7 @@ export default class WardleyDrawTool {
     if (!this.active) return;
     this.active = false;
     const container = this.canvas.getContainer();
-    container.classList.remove('wardley-draw-mode');
+    this.outerContainer().classList.remove('wardley-draw-mode');
     container.removeEventListener('mousedown', this.onMouseDown, true);
     container.removeEventListener('dblclick', this.onDblClick, true);
     container.removeEventListener('mousemove', this.onMouseMove, true);
@@ -143,8 +149,13 @@ export default class WardleyDrawTool {
       this.finishClosed();
       return;
     }
+    // Clicking the LAST point again finishes the open line (Excalidraw behavior) — this is
+    // the discoverable way out; double-click/Enter/Escape work as well.
     const last = this.points[this.points.length - 1];
-    if (last && distance(p, last) <= DUPLICATE_RADIUS) return;
+    if (last && distance(p, last) <= CLOSE_RADIUS) {
+      if (this.points.length >= 2) this.finish();
+      return;
+    }
     this.points.push(p);
     this.renderPreview();
   };
@@ -166,7 +177,10 @@ export default class WardleyDrawTool {
     if (e.key === 'Escape') {
       e.preventDefault();
       e.stopPropagation();
-      this.cancel();
+      // Excalidraw semantics: Escape COMMITS what is there (undo removes it); it only
+      // cancels while no line exists yet.
+      if (this.points.length >= 2) this.finish();
+      else this.cancel();
     } else if (e.key === 'Enter') {
       e.preventDefault();
       e.stopPropagation();
@@ -192,7 +206,7 @@ export default class WardleyDrawTool {
         'stroke-dasharray': '5 4',
       }),
     );
-    // The first point is the "close here" handle once a shape is possible.
+    // First point = "close the shape here", last point = "finish the line here".
     const first = this.points[0]!;
     svgAppend(
       group,
@@ -205,6 +219,20 @@ export default class WardleyDrawTool {
         'stroke-width': 1.5,
       }),
     );
+    if (this.points.length >= 2) {
+      const last = this.points[this.points.length - 1]!;
+      svgAppend(
+        group,
+        svgAttr(svgCreate('circle'), {
+          cx: last.x,
+          cy: last.y,
+          r: 5,
+          fill: COLORS.paper,
+          stroke: COLORS.ink,
+          'stroke-width': 1.5,
+        }),
+      );
+    }
     svgAppend(layer, group);
     this.layer = group;
   }

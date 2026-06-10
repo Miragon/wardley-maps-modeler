@@ -111,6 +111,12 @@
   cursor: crosshair !important;
 }
 
+/* Vertex handles of a selected drawing (drag to move single points). */
+.wardley-container .wardley-drawing-handle {
+  cursor: grab;
+  pointer-events: all;
+}
+
 /* Active tool (e.g. the lasso): neutral, just a bit darker than hover — no color. */
 .djs-palette .entry.highlighted-entry {
   background: rgba(0, 0, 0, 0.1);
