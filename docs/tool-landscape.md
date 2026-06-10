@@ -5,9 +5,9 @@ This map explains — in the tool's own language — which needs the tool serves
 play that matters. It is written for people who own business topics and understand technology,
 not for IT architects.
 
-![Wardley Map of the tool](tool-landscape.svg)
+![Wardley Map of the tool](tool-landscape.png)
 
-**Open it live:** [in the web app](https://wardley-maps.netlify.app/#mz=dVVda9tKEH3XrzhQCAlExpYdf9wHg28T2kJKCwk3D8EPE2kiLVnvit21XVMK_RH9hf0ll11Jtmwrb7bnzJkzM2fWTjjJeCKTSd7hK5WlUDketZb4-_sPXMGQpDKbUsl44UKoDMJFpNJCGzw4Q45zYR2e-73Z5Br9XjJdNuFHphUu8ODojQstMzb2gBsnyyjVq1IrVg4Pwq3JCa1IYrElw4ptBQ6c4zZ2IUWuVv7TBW45FVZoFbDTaSBuY5uOfCP3-0ae-71JIB4eiyjIePAFboVN19b6Lx5bCR61sfdi46NfqQylxwEyOqL7T9g1SQ_BXSacNh54kzTAUpQsheJuXDJqav6MgBbpAz7qjHH3w7HynXvwcHmE-dforWWDRVmGkuNl9Ks9vy9Y5KxcED4cBj2jZcQbLTfcivZ7k-RkOox7od583mjg8ybTk2FbkMUj_3CHHm7GS1xyqu3OOl5dtfC3gnJDK9yp3M_hud8bjEPXRyv8JCqysNzpUagZhs8MfUyT92o98ct-Lh4e5M-GR-t35ESKz9q6evH9m0A6W-JSr53Va5PyVdRyfTzvdm7UZf143m3dqNv88bzbvVG3_72UDv9G3RcQz89t9z60Zfao80jiedt0UduAta7KOaeR1lbOko62EbXvzYs_PYNTwN7G0fnFHPK7g5-Ei86PstrH3uDdiGNLR4djOs1uXdNpSGnH-FayAkF6gFAgtcNLPaAYSkMo60jKa4iMSeJVG2y1ebOFrh-kcEjTJS5TLbXBh0E24mx6VbGHelJs2HP7dRsuNWJs2PghcAZSGQxvBG85gxRvjLS-tMA8eIe4vo0drBQZW-QaXicjhvOvwsoXto52oFDev67hFJMD4cvoZtif1YT1-DJDr-66VhTErcuMHFeEZOEKoXKLtCCVB9pkdjqBCSeJv9_Ae9c8Eigl7f4JQwgKX7VZkYOw4afF9y-Iw_Sd_0_UBuQFISUFw1TNaWtEo8Q_LaHwYPxO4cZxwoIU9m8VYnDjQRtYqeqcpK-zq7ZVsAnN9cPfzeS8xP8)
+**Open it live:** [in the web app](https://wardley-maps.netlify.app/#mz=dZPPjpswEMbvfoo5rXalgoAQEy5I2T-VKm1PVLuHiIMXRsFax0a2o21UVepD9An7JJVNmpiE3oD5zXxjfx-WW4HwynQn8ABf2TBwuYVvSgn48-s32B5BMNmZlg0Ib9hz2QG3ZOADCi5x0mFgk8SLxfITJDFNywZuD5DEyyy_Iz8IQKt2g5IoLbzU8KA6hKfvFqXhSvrGIm8m1L1WHwY1rIfB1Ze0IT_JuVxzu2eWK8kErD-YRonGb7DyC2SUNgG9Fnwrd-7pBh6x5U71SKd-3yQN8X_Hcud_Pp1_k8QF9fgim-B1z7TDb-CRm3ZvjHtxdD4Ozyf0Czd7JpwGPHXcKu1QSqlD82yy9RdYb1Ha8WZzBywTeqmM8Mzlu0NGuWI1UTte9iaJ05XXKBa0gVtslTkYi7u7AH7Ft9O9b5I4K73mKs3DiZ-5QKh9r586Ol4mWUOYbHulobaaWdxyYx1QZuXoSBEA7B17JTrUZkSKMTW0IUFzVM3bTCb9UTVvL5mPSFTN20vmM-J2mLGXzEckqq7tJWGSj-NGzy4rwfWT65_EzR4_ktnARVX4z_x_wVOqThpRFZpKzrG7KFwn97zTeVHyFw)
 · or drag [`tool-landscape.wmap`](tool-landscape.wmap) onto the canvas of any running instance.
 
 ## How to read it (30 seconds)
@@ -27,15 +27,15 @@ Two kinds of users anchor the map:
 - The **team and stakeholders** need **alignment**: looking at the same picture, challenging
   it, and deciding — that is _sharing and discussing_.
 
-Both needs rest on one quiet but decisive capability in the middle of the map: **living maps**.
-A map that is drawn once and pasted into a slide deck dies the day after the workshop (the
-amber note). A map that lives as a versioned text file next to the everyday work stays current.
+Both needs only stay served if the maps stay **alive**: a map that is drawn once and pasted
+into a slide deck dies the day after the workshop. A map that lives as a plain file next to
+the everyday work — openable, diffable, editable — stays current.
 
 ## Browser vs. VS Code — one tool, two variants (the pipeline)
 
-On the map the modelling tool is drawn as a **pipeline**: one capability ("Visual Map Editor",
-the square anchor) with two concrete variants inside the box — the **VS Code extension**
-further left, the **browser app** further right. Both share the same editor engine; they
+On the map the tooling is drawn as a **pipeline**: one capability ("Mapping Tools", the
+square anchor) with two concrete variants inside the box — the **VS Code extension** further
+left, the **browser app** further right. Both share the same editor engine; they
 differ in **who they serve and when**:
 
 |               | **Browser app**                                       | **VS Code extension**                              |
@@ -52,10 +52,9 @@ variants over time — the format underneath stays the same.
 
 ## Why text + agents — the ecosystem play
 
-The most important component sits low on the map: **maps as text** (the
-[OWM format](https://onlinewardleymaps.com), marked with the dotted ecosystem ring). Every map
-is a few lines of readable text — the share link, the `.wmap` file and the VS Code editor all
-speak the same format.
+Underneath everything on this map sits one quiet design decision: **every map is plain
+text** (the [OWM format](https://onlinewardleymaps.com)). The share link, the `.wmap` file on
+the file system and the VS Code editor all speak the same few lines of readable text.
 
 Text is the API. Because of it:
 
@@ -64,8 +63,7 @@ Text is the API. Because of it:
   red arrow shows where this is heading: agents are racing to the right and become routine.
 - Any other tool can produce or consume maps — no exporter, no lock-in, no screenshot graveyard.
 
-And there is a second ecosystem on the map: **VS Code itself** (also marked with the dotted
-ring). Millions of developers, their extensions and — increasingly — their AI agents already
+And the map marks one component with the dotted ecosystem ring: **VS Code itself**. Millions of developers, their extensions and — increasingly — their AI agents already
 live there. Shipping a plugin into that ecosystem is far cheaper than building another app and
 puts the maps exactly where the agents are.
 
@@ -75,7 +73,7 @@ every consumer of the format, not just with its own feature list.
 
 ## The boring foundation (and why that is good)
 
-Browser, VS Code, Git, static hosting and the diagram engine all sit bottom-right: commodities
-and proven products. The tool deliberately builds **nothing novel** there — custom effort goes
-only into the parts that differentiate it (the editor experience and the mapping semantics).
-That, too, is Wardley doctrine: use appropriate methods per evolution stage.
+Web browser, VS Code and the file system sit bottom-right: commodities everyone already has.
+The tool deliberately builds **nothing novel** there — custom effort goes only into the parts
+that differentiate it (the editor experience and the mapping semantics). That, too, is Wardley
+doctrine: use appropriate methods per evolution stage.

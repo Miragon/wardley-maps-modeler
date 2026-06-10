@@ -1,47 +1,31 @@
 title Wardley Mapping Tool — the landscape behind it
-anchor Strategist [0.97, 0.28]
-anchor Team & Stakeholders [0.97, 0.62]
-component Situational Awareness [0.9, 0.26]
-component Alignment & Decisions [0.88, 0.6]
-component Mapping the Landscape [0.79, 0.32]
-component Sharing & Discussing [0.77, 0.64]
-component Living Maps [0.67, 0.42]
-component Visual Map Editor [0.52, 0.42]
-pipeline Visual Map Editor [0.24, 0.64]
+pipeline Mapping Tools [0.335, 0.619] (y 0.524)
 {
-  component VS Code Extension [0.3]
+  component VS Code Extension [0.374]
   component Browser App [0.56]
 }
-component AI Agents [0.33, 0.44]
-evolve AI Agents 0.72
+component Situational Awareness [0.85, 0.266]
+component Alignment & Decisions [0.851, 0.601]
+component Mapping the Landscape [0.761, 0.321]
+component Sharing & Discussing [0.741, 0.641]
+component Visual Map Editor [0.666, 0.42]
+component AI Agents [0.34, 0.506]
 component Share Link [0.41, 0.78]
-component Maps as Text [0.24, 0.56] (ecosystem)
-component Diagram Engine [0.16, 0.66]
-component Git [0.28, 0.86]
-component VS Code [0.13, 0.82] (ecosystem)
-component Web Browser [0.11, 0.93]
-component Static Hosting [0.05, 0.89] (outsource)
+component VS Code [0.186, 0.736] (ecosystem)
+component Web Browser [0.294, 0.814]
+component File System [0.135, 0.902]
+anchor Strategist [0.929, 0.267]
+anchor Stakeholders [0.927, 0.616]
 Strategist -> Situational Awareness
-Team & Stakeholders -> Alignment & Decisions
+Stakeholders -> Alignment & Decisions
 Situational Awareness -> Mapping the Landscape
 Alignment & Decisions -> Sharing & Discussing
 Mapping the Landscape -> Visual Map Editor
-Mapping the Landscape -> Living Maps
-Sharing & Discussing -> Browser App
 Browser App -> Share Link
 Browser App -> Web Browser
-Browser App -> Static Hosting
-Living Maps -> VS Code Extension
-Living Maps -> AI Agents
 VS Code Extension -> VS Code
-VS Code Extension -> Git
-Visual Map Editor -> Maps as Text
-Visual Map Editor -> Diagram Engine
-AI Agents -> Maps as Text
-Share Link -> Maps as Text
-note Open a link in any browser - no install, ideal for workshops [0.6, 0.68] (color #1d4ed8)
-note Maps live in the repo - versioned and reviewed like code [0.6, 0.1] (color #1d4ed8)
-note Strategy slides go stale - text maps stay alive [0.71, 0.2] (color #b45309)
-note Agents draft, review and update maps as things change [0.29, 0.68] (color #7e22ce)
-note Ecosystem play: the text format is the API - any tool or agent can read and write maps [0.19, 0.16] (color #7e22ce)
-note VS Code is an ecosystem - extensions and agents already live here [0.07, 0.7] (color #7e22ce)
+Sharing & Discussing -> Browser App
+Mapping the Landscape -> AI Agents
+VS Code -> File System
+AI Agents -> File System
+Visual Map Editor -> VS Code Extension
