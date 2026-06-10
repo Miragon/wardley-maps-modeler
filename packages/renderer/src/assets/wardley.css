@@ -41,21 +41,30 @@
   pointer-events: all;
 }
 
-/* Hover / selection: accent color — but NOT on pure text visuals (e.g. notes), otherwise the
-   text gets a distracting outline on mouseover. */
+/* Hover / selection: NEUTRAL feedback — slightly darker, never a color change (elements keep
+   their own (possibly user-picked) color); not on pure text visuals (e.g. notes). */
 .wardley-container .djs-element.hover .djs-visual > :first-child:not(text),
 .wardley-container .djs-element.selected .djs-visual > :first-child:not(text) {
-  stroke: var(--wardley-accent) !important;
+  filter: brightness(0.78);
 }
 
 .wardley-container .djs-outline {
-  stroke: var(--wardley-accent);
+  stroke: rgba(0, 0, 0, 0.45);
   stroke-dasharray: 3 3;
+}
+/* diagram-js drives selection/lasso outlines via CSS variables (default: blue), scoped on
+   `.djs-parent` — override there to keep them neutral too. */
+.wardley-container .djs-parent {
+  --element-hover-outline-fill-color: rgba(0, 0, 0, 0.45);
+  --element-selected-outline-stroke-color: rgba(0, 0, 0, 0.45);
+  --element-selected-outline-secondary-stroke-color: rgba(0, 0, 0, 0.3);
+  --lasso-fill-color: rgba(0, 0, 0, 0.04);
+  --lasso-stroke-color: rgba(0, 0, 0, 0.45);
 }
 
 .wardley-container .djs-resizer-visual {
   fill: #fff;
-  stroke: var(--wardley-accent);
+  stroke: rgba(0, 0, 0, 0.55);
 }
 .wardley-container .djs-resizer-hit {
   fill: none;
@@ -93,7 +102,12 @@
   transition: background 120ms ease;
 }
 .djs-palette .entry:hover {
-  background: rgba(14, 124, 116, 0.1);
+  background: rgba(0, 0, 0, 0.05);
+}
+/* Active tool (e.g. the lasso): neutral, just a bit darker than hover — no color. */
+.djs-palette .entry.highlighted-entry {
+  background: rgba(0, 0, 0, 0.1);
+  color: var(--wardley-ink);
 }
 
 /* Subtle vertical separator between the groups (diagram-js does not separate groups on its own). */
@@ -149,7 +163,7 @@
   transition: background 120ms ease;
 }
 .wardley-container .djs-context-pad .entry:hover {
-  background: rgba(14, 124, 116, 0.12);
+  background: rgba(0, 0, 0, 0.06);
 }
 
 .wardley-container .wardley-label-input {
