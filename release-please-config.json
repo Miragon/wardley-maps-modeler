@@ -1,23 +1,20 @@
 {
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
   "release-type": "node",
-  "separate-pull-requests": false,
   "bump-minor-pre-major": true,
   "initial-version": "0.1.0",
+  "include-component-in-tag": false,
   "packages": {
-    "packages/schema-model": { "component": "schema-model" },
-    "packages/dsl": { "component": "dsl" },
-    "packages/transforms": { "component": "transforms" },
-    "packages/renderer": { "component": "renderer" },
-    "apps/vscode": { "component": "vscode" },
-    "apps/webapp": { "component": "webapp" }
-  },
-  "plugins": [
-    "node-workspace",
-    {
-      "type": "linked-versions",
-      "groupName": "wardley",
-      "components": ["schema-model", "dsl", "transforms", "renderer", "vscode", "webapp"]
+    ".": {
+      "component": "wardley-maps-modeler",
+      "extra-files": [
+        { "type": "json", "path": "packages/schema-model/package.json", "jsonpath": "$.version" },
+        { "type": "json", "path": "packages/dsl/package.json", "jsonpath": "$.version" },
+        { "type": "json", "path": "packages/transforms/package.json", "jsonpath": "$.version" },
+        { "type": "json", "path": "packages/renderer/package.json", "jsonpath": "$.version" },
+        { "type": "json", "path": "apps/vscode/package.json", "jsonpath": "$.version" },
+        { "type": "json", "path": "apps/webapp/package.json", "jsonpath": "$.version" }
+      ]
     }
-  ]
+  }
 }
