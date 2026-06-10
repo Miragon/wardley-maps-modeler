@@ -42,10 +42,11 @@
 }
 
 /* Hover / selection: NEUTRAL feedback — slightly darker, never a color change (elements keep
-   their own (possibly user-picked) color); not on pure text visuals (e.g. notes). */
-.wardley-container .djs-element.hover .djs-visual > :first-child:not(text),
-.wardley-container .djs-element.selected .djs-visual > :first-child:not(text) {
-  filter: brightness(0.78);
+   their own (possibly user-picked) color). Dims the WHOLE visual group: targeting only the
+   first child misses evolving components (movement line first) and fill-less frames. */
+.wardley-container .djs-element.hover > .djs-visual,
+.wardley-container .djs-element.selected > .djs-visual {
+  filter: brightness(0.72) saturate(1.15);
 }
 
 .wardley-container .djs-outline {
