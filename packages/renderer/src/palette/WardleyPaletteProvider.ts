@@ -1,5 +1,6 @@
 import type Palette from 'diagram-js/lib/features/palette/Palette';
 import type Create from 'diagram-js/lib/features/create/Create';
+import type LassoTool from 'diagram-js/lib/features/lasso-tool/LassoTool';
 import type {
   PaletteEntries,
   PaletteEntry,
@@ -136,18 +137,31 @@ const SPECS: readonly PaletteSpec[] = [
 ];
 
 export default class WardleyPaletteProvider implements PaletteProvider {
-  static $inject = ['palette', 'create', 'wardleyElementFactory'];
+  static $inject = ['palette', 'create', 'wardleyElementFactory', 'lassoTool'];
 
   constructor(
     palette: Palette,
     private readonly create: Create,
     private readonly factory: WardleyElementFactory,
+    private readonly lassoTool: LassoTool,
   ) {
     palette.registerProvider(this);
   }
 
   getPaletteEntries(): PaletteEntries {
     const entries: Record<string, PaletteEntry> = {};
+
+    // Selection tool first. Group MUST be called "tools" and the key end in "-tool" — that is
+    // what diagram-js' palette uses to highlight the active tool (tool-manager.update).
+    entries['lasso-tool'] = {
+      group: 'tools',
+      title: 'Selection tool (or Shift+drag on the canvas)',
+      html: `<div class="entry wardley-palette-entry" title="Selection tool (or Shift+drag on the canvas)">${PALETTE_ICONS.lasso}</div>`,
+      action: {
+        click: (event: Event) => this.lassoTool.activateSelection(event as MouseEvent),
+      },
+    };
+
     for (const spec of SPECS) {
       const start = (event: Event) => {
         const shape = this.factory.createNew(spec.type, spec.label, spec.extra ?? {});

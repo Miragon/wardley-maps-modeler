@@ -48,18 +48,19 @@ const { svg } = await viewer.saveSVG();
 
 ### Editor interactions
 
-| Action                          | How                                                       |
-| ------------------------------- | --------------------------------------------------------- |
-| Multi-select (lasso)            | `Shift` + drag on the empty canvas (plain drag pans)      |
-| Add to selection                | `Shift` + click on elements                               |
-| Copy / paste / duplicate        | `Ctrl/Cmd+C` / `Ctrl/Cmd+V` / `Ctrl/Cmd+D`                |
-| Nudge selection                 | Arrow keys (`Shift` = coarse)                             |
-| Undo / redo                     | `Ctrl/Cmd+Z` / `Ctrl/Cmd+Shift+Z`                         |
-| Zoom                            | `Ctrl/Cmd` + `+` / `-` / `0` (fit), controls bottom-right |
-| Edit label / note               | Double-click (notes: `Cmd/Ctrl+Enter` saves)              |
-| Edit link annotation/flow value | Double-click the connection (or pencil in the pad)        |
-| Evolve                          | Drag from the context pad; drag the red target circle     |
-| Pipeline membership             | Drop a component into/out of the pipeline box             |
+| Action                          | How                                                                                    |
+| ------------------------------- | -------------------------------------------------------------------------------------- |
+| Multi-select (lasso)            | Palette tool, or `Shift` + drag on the empty canvas                                    |
+| Add to selection                | `Shift` + click on elements                                                            |
+| Copy / paste                    | `Ctrl/Cmd+C`, `Ctrl/Cmd+V` — paste attaches to the cursor; click places, `Esc` cancels |
+| Duplicate (in place)            | `Ctrl/Cmd+D`                                                                           |
+| Nudge selection                 | Arrow keys (`Shift` = coarse)                                                          |
+| Undo / redo                     | `Ctrl/Cmd+Z` / `Ctrl/Cmd+Shift+Z`                                                      |
+| Zoom                            | `Ctrl/Cmd` + `+` / `-` / `0` (fit), controls bottom-right                              |
+| Edit label / note               | Double-click (notes: `Cmd/Ctrl+Enter` saves)                                           |
+| Edit link annotation/flow value | Double-click the connection (or pencil in the pad)                                     |
+| Evolve                          | Drag from the context pad; drag the red target circle                                  |
+| Pipeline membership             | Drop a component into/out of the pipeline box                                          |
 
 ## Packages
 

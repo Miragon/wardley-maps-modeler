@@ -16,6 +16,11 @@ const text = (content: string, attrs: string): string =>
   `<text x="12" text-anchor="middle" font-family="${FONT.family}" ${attrs}>${content}</text>`;
 
 export const PALETTE_ICONS: Record<string, string> = {
+  // Selection tool: dashed lasso rectangle with a cursor arrow.
+  lasso: wrap(
+    `<rect x="3" y="3" width="13" height="13" rx="2" fill="none" stroke="${COLORS.ink}" stroke-width="1.5" stroke-dasharray="3 2.5"/>` +
+      `<path d="M13.5 13.5l7 2.7-3 1.3-1.3 3z" fill="${COLORS.ink}"/>`,
+  ),
   component: wrap(eventCircle()),
   // Canon: market = three dots in a triangle (like drawComponent).
   market: wrap(

@@ -46,6 +46,8 @@ export default class WardleyRules extends RuleProvider {
 
     this.addRule(['shape.move', 'elements.move'], () => true);
     this.addRule('shape.create', () => true);
+    // Group create (paste preview): diagram-js Create checks this rule for element arrays.
+    this.addRule('elements.create', () => true);
     this.addRule(
       'shape.resize',
       (context: { shape?: unknown }) => isPipeline(context.shape) || isAttitude(context.shape),

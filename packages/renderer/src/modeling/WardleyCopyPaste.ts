@@ -1,7 +1,9 @@
 import type ElementFactory from 'diagram-js/lib/core/ElementFactory';
 import type ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
 import type Canvas from 'diagram-js/lib/core/Canvas';
+import type Create from 'diagram-js/lib/features/create/Create';
 import type Modeling from 'diagram-js/lib/features/modeling/Modeling';
+import type Mouse from 'diagram-js/lib/features/mouse/Mouse';
 import type Selection from 'diagram-js/lib/features/selection/Selection';
 import type { Element, Shape } from 'diagram-js/lib/model/Types';
 import {
@@ -59,11 +61,21 @@ function snapshotProps(
 
 /**
  * Custom copy/paste for Wardley shapes: copies the selection including the connections BETWEEN
- * selected shapes, assigns unique labels (the DSL references by name!) and re-inserts everything
- * with an offset as ONE undoable `elements.create` command.
+ * selected shapes and assigns unique labels (the DSL references by name!).
+ * Paste attaches the clones to the cursor like palette create (live preview, click places,
+ * Escape cancels); duplicate inserts immediately with an offset. Either way the insert is ONE
+ * undoable `elements.create` command.
  */
 export default class WardleyCopyPaste {
-  static $inject = ['selection', 'modeling', 'elementFactory', 'elementRegistry', 'canvas'];
+  static $inject = [
+    'selection',
+    'modeling',
+    'elementFactory',
+    'elementRegistry',
+    'canvas',
+    'create',
+    'mouse',
+  ];
 
   private clipboard: { shapes: ShapeSnapshot[]; connections: ConnectionSnapshot[] } | null = null;
   private pasteCount = 0;
@@ -74,6 +86,8 @@ export default class WardleyCopyPaste {
     private readonly elementFactory: ElementFactory,
     private readonly elementRegistry: ElementRegistry,
     private readonly canvas: Canvas,
+    private readonly create: Create,
+    private readonly mouse: Mouse,
   ) {}
 
   /** Copies the current selection. Returns false if nothing copyable is selected. */
@@ -115,14 +129,33 @@ export default class WardleyCopyPaste {
     return true;
   }
 
-  /** Inserts the clipboard content with an offset (each further paste offsets further). */
+  /**
+   * Paste with placement preview: the clones attach to the cursor exactly like palette create —
+   * click places them, Escape cancels. Falls back to an offset insert when the mouse position
+   * is unknown (e.g. paste before the pointer ever entered the canvas).
+   */
   paste(): boolean {
     if (!this.clipboard?.shapes.length) return false;
-    this.pasteCount++;
-    const offset = PASTE_OFFSET * this.pasteCount;
+    const clones = this.buildClones();
+    const lastMove = this.mouse.getLastMoveEvent();
+    if (lastMove) {
+      this.create.start(lastMove, [...clones.shapes, ...clones.connections] as Element[]);
+      return true;
+    }
+    return this.insertWithOffset(clones);
+  }
 
-    const labels = this.uniqueLabels(this.clipboard.shapes.map((s) => s.label));
-    const newShapes = this.clipboard.shapes.map((snap, i) =>
+  /** Copy + immediate offset insert of the selection (Ctrl+D) — no placement step. */
+  duplicate(): boolean {
+    if (!this.copy()) return false;
+    return this.insertWithOffset(this.buildClones());
+  }
+
+  /** Builds fresh clone elements (unique labels, internal connections rewired). */
+  private buildClones(): { shapes: Shape[]; connections: Element[] } {
+    const clipboard = this.clipboard!;
+    const labels = this.uniqueLabels(clipboard.shapes.map((s) => s.label));
+    const shapes = clipboard.shapes.map((snap, i) =>
       this.elementFactory.createShape({
         ...structuredClone(snap.props),
         x: snap.x,
@@ -135,30 +168,29 @@ export default class WardleyCopyPaste {
           : {}),
       }),
     );
-    const newConnections = this.clipboard.connections.map((c) =>
+    const connections = clipboard.connections.map((c) =>
       this.elementFactory.createConnection({
         ...structuredClone(c.props),
-        source: newShapes[c.sourceIdx]!,
-        target: newShapes[c.targetIdx]!,
-        waypoints: [center(newShapes[c.sourceIdx]!), center(newShapes[c.targetIdx]!)],
+        source: shapes[c.sourceIdx]!,
+        target: shapes[c.targetIdx]!,
+        waypoints: [center(shapes[c.sourceIdx]!), center(shapes[c.targetIdx]!)],
       }),
     );
+    return { shapes, connections: connections as Element[] };
+  }
 
-    // One `elements.create` command = one undo step; position = group center + offset.
-    const all = [...newShapes, ...newConnections];
-    const bbox = groupBBox(newShapes);
+  /** One `elements.create` command = one undo step; position = group center + offset. */
+  private insertWithOffset(clones: { shapes: Shape[]; connections: Element[] }): boolean {
+    this.pasteCount++;
+    const offset = PASTE_OFFSET * this.pasteCount;
+    const bbox = groupBBox(clones.shapes);
     const created = this.modeling.createElements(
-      all as Element[],
+      [...clones.shapes, ...clones.connections] as Element[],
       { x: bbox.cx + offset, y: bbox.cy + offset },
       this.canvas.getRootElement() as Shape,
     );
     this.selection.select(created as Element[]);
     return true;
-  }
-
-  /** Copy + immediate paste of the selection (Ctrl+D). */
-  duplicate(): boolean {
-    return this.copy() && this.paste();
   }
 
   /** Labels unique against the registry AND within the paste batch. */
