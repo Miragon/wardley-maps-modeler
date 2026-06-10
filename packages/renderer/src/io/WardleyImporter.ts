@@ -120,6 +120,15 @@ export default class WardleyImporter {
       this.canvas.addConnection(conn, root, frameCount);
     }
 
+    // Frames render BEFORE the nodes exist, but pipeline visuals depend on whether a
+    // same-named anchor component exists — re-render them now that everything is in place.
+    for (const el of frames) {
+      const shape = shapeById.get(el.id);
+      if (shape && el.elementType === 'pipeline') {
+        this.eventBus.fire('element.changed', { element: shape });
+      }
+    }
+
     this.canvas.viewbox(this.grid.outerBounds());
     this.eventBus.fire('import.render.done', { warnings });
     return warnings;
