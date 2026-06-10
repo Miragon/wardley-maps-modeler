@@ -123,6 +123,8 @@ interface PendingPipeline {
   /** Explicit range; if absent (OWM v2 block form without coordinates), it is derived from the children. */
   readonly start?: number;
   readonly end?: number;
+  /** Explicit height — project extension `(y 0.x)`; otherwise derived from the anchor component. */
+  readonly visibility?: number;
   readonly color?: string;
   readonly raw: string;
   readonly children: PipelineChild[];
@@ -422,8 +424,12 @@ export function parseDSLWithDiagnostics(text: string): ParseResult {
           body = body.slice(0, -1).trim();
         }
         const col = parseColor(body);
-        const coords = parseCoords(col.rest);
-        const name = stripCoords(col.rest).trim();
+        // Project extension `(y 0.x)`: the OWM pipeline line has no slot for the height —
+        // without it a standalone pipeline snaps back to visibility 0.5 on every round trip.
+        const yMatch = /\(\s{0,8}y\s{1,8}([\d.]+)\s{0,8}\)/.exec(col.rest);
+        const bodyRest = yMatch ? col.rest.replace(yMatch[0], ' ') : col.rest;
+        const coords = parseCoords(bodyRest);
+        const name = stripCoords(bodyRest).trim();
         if (!name) {
           failed(line);
           break;
@@ -431,6 +437,7 @@ export function parseDSLWithDiagnostics(text: string): ParseResult {
         const pending: PendingPipeline = {
           name,
           ...(coords ? { start: coords.a, end: coords.b } : {}),
+          ...(yMatch ? { visibility: clamp01(Number(yMatch[1])) } : {}),
           ...(col.color ? { color: col.color } : {}),
           raw: line,
           children: [],
@@ -681,7 +688,7 @@ export function parseDSLWithDiagnostics(text: string): ParseResult {
   for (const p of pendingPipeline) {
     const refId = nameToId.get(p.name);
     const ref = elements.find((e) => e.id === refId);
-    const visibility = ref ? ref.position.visibility : 0.5;
+    const visibility = p.visibility ?? (ref ? ref.position.visibility : 0.5);
     const id = ids.alloc('pipeline', p.name);
     // Standalone pipelines (no same-named component) are edge endpoints themselves —
     // register() keeps the first entry, so an existing anchor component still wins.

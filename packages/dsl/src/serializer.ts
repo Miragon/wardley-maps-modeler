@@ -132,12 +132,29 @@ export function serializeDSL(map: WardleyMap): string {
 
   const evolveLines: string[] = [];
 
+  // The OWM pipeline line has no slot for the height — emit the project extension `(y 0.x)`
+  // whenever the visibility differs from what re-parsing would derive (anchor component or 0.5),
+  // so standalone pipelines do not snap back to mid-canvas on every round trip.
+  const componentVisByLabel = new Map<string, number>();
+  for (const el of map.elements) {
+    if (el.elementType === 'component' && !componentVisByLabel.has(el.label)) {
+      componentVisByLabel.set(el.label, el.position.visibility);
+    }
+  }
+  const pipelineYSuffix = (el: MapElement): string => {
+    if (el.elementType !== 'pipeline') return '';
+    const derived = componentVisByLabel.get(el.label) ?? 0.5;
+    return Math.abs(el.position.visibility - derived) > 0.0005
+      ? ` (y ${r(el.position.visibility)})`
+      : '';
+  };
+
   for (const el of map.elements) {
     if (el.elementType === 'component' && el.movement) {
       evolveLines.push(evolveLine(el, nameOf(el)));
     }
     if (isPipelineChild(el)) continue; // emitted inside the pipeline block
-    lines.push(elementLine(el, nameOf(el)) + urlSuffix(el));
+    lines.push(elementLine(el, nameOf(el)) + pipelineYSuffix(el) + urlSuffix(el));
     if (el.elementType === 'pipeline') {
       const kids = childrenByPipeline.get(el.id) ?? [];
       if (kids.length) {
