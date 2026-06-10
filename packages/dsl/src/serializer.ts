@@ -150,9 +150,12 @@ export function serializeDSL(map: WardleyMap): string {
 
   for (const line of evolveLines) lines.push(line);
 
+  // Edges may also end at a pipeline (its ■ anchor) — fall back to the element label for
+  // endpoint types that are not part of the unique-name pass.
+  const labelsById = new Map(map.elements.map((el) => [el.id, el.label]));
   for (const edge of map.edges) {
-    const from = names.get(edge.from) ?? edge.from;
-    const to = names.get(edge.to) ?? edge.to;
+    const from = names.get(edge.from) ?? labelsById.get(edge.from) ?? edge.from;
+    const to = names.get(edge.to) ?? labelsById.get(edge.to) ?? edge.to;
     const annotation = edge.label ? `; ${edge.label}` : '';
     if (edge.edgeType === 'dependency') {
       lines.push(`${from} -> ${to}${annotation}`);

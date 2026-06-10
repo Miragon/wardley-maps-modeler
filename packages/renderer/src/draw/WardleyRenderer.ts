@@ -505,7 +505,14 @@ function connectionArrow(from: Point, to: Point, color: string, len = 10, w = 5)
 function radiusOf(s: WardleyShape): number {
   if (s.wardleyType === 'component') return COMPONENT_RADIUS + 2;
   if (s.wardleyType === 'anchor') return ANCHOR_ICON_SIZE / 2 + 1;
+  if (s.wardleyType === 'pipeline') return PIPELINE_ANCHOR_SIZE / 2 + 2;
   return Math.min(s.width, s.height) / 2;
+}
+
+/** Docking point of a node: pipelines dock at their ■ anchor (top-edge center), not the box. */
+function connectionAnchorOf(s: WardleyShape): Point {
+  if (s.wardleyType === 'pipeline') return { x: s.x + s.width / 2, y: s.y };
+  return { x: s.x + s.width / 2, y: s.y + s.height / 2 };
 }
 
 /**
@@ -521,8 +528,8 @@ function endpoints(conn: WardleyConnection): [Point, Point] {
     const a = wp[0] ?? { x: 0, y: 0 };
     return [a, wp[wp.length - 1] ?? a];
   }
-  const sc = { x: s.x + s.width / 2, y: s.y + s.height / 2 };
-  const tc = { x: t.x + t.width / 2, y: t.y + t.height / 2 };
+  const sc = connectionAnchorOf(s);
+  const tc = connectionAnchorOf(t);
   const dx = tc.x - sc.x;
   const dy = tc.y - sc.y;
   const dist = Math.hypot(dx, dy) || 1;

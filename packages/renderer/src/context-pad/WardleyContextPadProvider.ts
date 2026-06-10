@@ -98,7 +98,8 @@ export default class WardleyContextPadProvider implements ContextPadProvider {
     const connectable =
       shape.wardleyType === 'component' ||
       shape.wardleyType === 'anchor' ||
-      shape.wardleyType === 'submap';
+      shape.wardleyType === 'submap' ||
+      shape.wardleyType === 'pipeline';
     if (connectable) {
       // Append component: drags out a new (blank) component and creates the arrow automatically
       // (diagram-js Create with `source` -> modeling.appendShape). Configurable via ⚙.

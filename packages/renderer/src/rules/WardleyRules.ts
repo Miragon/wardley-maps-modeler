@@ -2,8 +2,9 @@ import RuleProvider from 'diagram-js/lib/features/rules/RuleProvider';
 import type EventBus from 'diagram-js/lib/core/EventBus';
 import { isWardleyShape, isPipeline, isAttitude, type WardleyShape } from '../model/di-types.js';
 
-// Submaps are referenceable nodes on the parent map (OWM serializes their edges by name).
-const CONNECTABLE: ReadonlySet<string> = new Set(['component', 'anchor', 'submap']);
+// Submaps are referenceable nodes on the parent map (OWM serializes their edges by name);
+// pipelines connect via their ■ anchor.
+const CONNECTABLE: ReadonlySet<string> = new Set(['component', 'anchor', 'submap', 'pipeline']);
 
 function isConnectable(el: unknown): el is WardleyShape {
   return isWardleyShape(el) && CONNECTABLE.has(el.wardleyType);

@@ -435,6 +435,34 @@ Campfire Kettle -> Electric Kettle`;
     expect(once.match(/^component Campfire Kettle/m)).toBeNull();
     expect(serializeDSL(parseDSL(once))).toBe(once);
   });
+
+  it('a standalone pipeline (no anchor component) is an edge endpoint itself', () => {
+    const src = `title P
+anchor consumer [0.95, 0.5]
+pipeline GOOD [0.3, 0.7]
+{
+  component physical [0.4]
+}
+consumer -> GOOD`;
+    const map = parseDSL(src);
+    const pipe = map.elements.find((e) => e.elementType === 'pipeline');
+    const edge = map.edges[0];
+    expect(edge?.to).toBe(pipe!.id);
+    const once = serializeDSL(map);
+    expect(once).toContain('consumer -> GOOD');
+    expect(serializeDSL(parseDSL(once))).toBe(once);
+  });
+
+  it('with an anchor component the edge still binds to the component (OWM convention)', () => {
+    const src = `title P
+anchor consumer [0.95, 0.5]
+component GOOD [0.8, 0.5]
+pipeline GOOD [0.3, 0.7]
+consumer -> GOOD`;
+    const map = parseDSL(src);
+    const comp = map.elements.find((e) => e.elementType === 'component' && e.label === 'GOOD');
+    expect(map.edges[0]?.to).toBe(comp!.id);
+  });
 });
 
 describe('parseDSL – url keyword', () => {

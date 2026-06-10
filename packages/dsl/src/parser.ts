@@ -602,6 +602,9 @@ export function parseDSLWithDiagnostics(text: string): ParseResult {
     const ref = elements.find((e) => e.id === refId);
     const visibility = ref ? ref.position.visibility : 0.5;
     const id = ids.alloc('pipeline', p.name);
+    // Standalone pipelines (no same-named component) are edge endpoints themselves —
+    // register() keeps the first entry, so an existing anchor component still wins.
+    register(p.name, id);
 
     const childIds: string[] = [];
     const childElements: ComponentElement[] = [];

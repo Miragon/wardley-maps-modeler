@@ -323,5 +323,7 @@ export default class WardleyElementFactory {
 }
 
 function centerOf(shape: WardleyShape): { x: number; y: number } {
+  // Pipelines dock at their ■ anchor (top-edge center), not at the box center.
+  if (shape.wardleyType === 'pipeline') return { x: shape.x + shape.width / 2, y: shape.y };
   return { x: shape.x + shape.width / 2, y: shape.y + shape.height / 2 };
 }
