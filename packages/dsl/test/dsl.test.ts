@@ -436,6 +436,24 @@ Campfire Kettle -> Electric Kettle`;
     expect(serializeDSL(parseDSL(once))).toBe(once);
   });
 
+  it('keeps the height of a standalone pipeline via the `(y …)` extension', () => {
+    const src = 'title P\npipeline Options [0.2, 0.6] (y 0.75)';
+    const map = parseDSL(src);
+    const pipe = map.elements.find((e) => e.elementType === 'pipeline');
+    expect(pipe?.position.visibility).toBe(0.75);
+    const once = serializeDSL(map);
+    expect(once).toContain('pipeline Options [0.2, 0.6] (y 0.75)');
+    expect(serializeDSL(parseDSL(once))).toBe(once);
+  });
+
+  it('writes NO (y …) when the height matches the anchor component (canonical OWM stays clean)', () => {
+    const src = 'title P\ncomponent Kettle [0.43, 0.35]\npipeline Kettle [0.3, 0.65]';
+    const once = serializeDSL(parseDSL(src));
+    expect(once).toContain('pipeline Kettle [0.3, 0.65]');
+    expect(once).not.toContain('(y ');
+    expect(serializeDSL(parseDSL(once))).toBe(once);
+  });
+
   it('a standalone pipeline (no anchor component) is an edge endpoint itself', () => {
     const src = `title P
 anchor consumer [0.95, 0.5]
