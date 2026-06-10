@@ -1,6 +1,6 @@
 {
   "name": "@miragon/wardley-transforms",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Pure functions that turn a Wardley map into a new one, such as evolve, method, inertia and pipeline.",
   "license": "MIT",
   "repository": {
@@ -33,7 +33,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@miragon/wardley-schema-model": "0.1.1"
+    "@miragon/wardley-schema-model": "0.2.0"
   },
   "devDependencies": {
     "tsup": "8.5.1",
