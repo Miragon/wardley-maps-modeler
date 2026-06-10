@@ -17,6 +17,8 @@ export type {
   AttitudeKind,
   AttitudeElement,
   SubmapElement,
+  DrawingStrokeStyle,
+  DrawingElement,
   MapElement,
   EdgeType,
   DependencyLink,

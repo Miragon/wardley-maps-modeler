@@ -1,6 +1,7 @@
 import type Palette from 'diagram-js/lib/features/palette/Palette';
 import type Create from 'diagram-js/lib/features/create/Create';
 import type LassoTool from 'diagram-js/lib/features/lasso-tool/LassoTool';
+import type WardleyDrawTool from '../draw-tool/WardleyDrawTool.js';
 import type {
   PaletteEntries,
   PaletteEntry,
@@ -137,13 +138,14 @@ const SPECS: readonly PaletteSpec[] = [
 ];
 
 export default class WardleyPaletteProvider implements PaletteProvider {
-  static $inject = ['palette', 'create', 'wardleyElementFactory', 'lassoTool'];
+  static $inject = ['palette', 'create', 'wardleyElementFactory', 'lassoTool', 'wardleyDrawTool'];
 
   constructor(
     palette: Palette,
     private readonly create: Create,
     private readonly factory: WardleyElementFactory,
     private readonly lassoTool: LassoTool,
+    private readonly drawTool: WardleyDrawTool,
   ) {
     palette.registerProvider(this);
   }
@@ -159,6 +161,16 @@ export default class WardleyPaletteProvider implements PaletteProvider {
       html: `<div class="entry wardley-palette-entry" title="Selection tool — L (or Shift+drag)">${PALETTE_ICONS.lasso}</div>`,
       action: {
         click: (event: Event) => this.lassoTool.activateSelection(event as MouseEvent),
+      },
+    };
+
+    entries['draw-tool'] = {
+      group: 'tools',
+      title:
+        'Draw — click point by point, double-click/Enter finishes, click the start point to close',
+      html: `<div class="entry wardley-palette-entry" title="Draw — click point by point, double-click/Enter finishes, click the start point to close">${PALETTE_ICONS.draw}</div>`,
+      action: {
+        click: () => this.drawTool.toggle(),
       },
     };
 

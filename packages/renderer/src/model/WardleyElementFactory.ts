@@ -8,6 +8,7 @@ import type {
   AttitudeElement,
   AttitudeKind,
   ComponentElement,
+  DrawingElement,
   MapEdge,
   NoteElement,
   PipelineElement,
@@ -196,6 +197,55 @@ export default class WardleyElementFactory {
 
   createSubmap(el: SubmapElement): WardleyShape {
     return this.node('submap', el.id, el.label, el.position.visibility, el.position.evolution, el);
+  }
+
+  createDrawing(el: DrawingElement): WardleyShape {
+    const canvasPoints = el.points.map((p) => this.grid.toCanvas(p));
+    return this.drawingFromCanvasPoints(canvasPoints, {
+      id: el.id,
+      ...(el.closed ? { closed: true } : {}),
+      ...(el.strokeStyle ? { strokeStyle: el.strokeStyle } : {}),
+      ...(el.color ? { color: el.color } : {}),
+      businessObject: el,
+    });
+  }
+
+  /** Builds a drawing shape from ABSOLUTE canvas points (bbox shape + relative points). */
+  drawingFromCanvasPoints(
+    canvasPoints: ReadonlyArray<{ x: number; y: number }>,
+    extra: {
+      id?: string;
+      closed?: boolean;
+      strokeStyle?: DrawingElement['strokeStyle'];
+      color?: string;
+      businessObject?: DrawingElement;
+    } = {},
+  ): WardleyShape {
+    const xs = canvasPoints.map((p) => p.x);
+    const ys = canvasPoints.map((p) => p.y);
+    const x = Math.min(...xs);
+    const y = Math.min(...ys);
+    const width = Math.max(Math.max(...xs) - x, 4);
+    const height = Math.max(Math.max(...ys) - y, 4);
+    const first = canvasPoints[0]!;
+    const firstNorm = this.grid.fromCanvas(first);
+    const shape = this.elementFactory.createShape({
+      ...(extra.id ? { id: extra.id } : {}),
+      x,
+      y,
+      width,
+      height,
+      wardleyType: 'drawing',
+      wardleyLabel: '',
+      evolution: firstNorm.evolution,
+      visibility: firstNorm.visibility,
+      drawingPoints: canvasPoints.map((p) => ({ x: p.x - x, y: p.y - y })),
+      ...(extra.closed ? { closed: true } : {}),
+      ...(extra.strokeStyle ? { strokeStyle: extra.strokeStyle } : {}),
+      ...(extra.color ? { color: extra.color } : {}),
+      ...(extra.businessObject ? { businessObject: extra.businessObject } : {}),
+    });
+    return shape as unknown as WardleyShape;
   }
 
   createNew(

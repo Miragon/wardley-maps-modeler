@@ -3,6 +3,7 @@ import type {
   AcceleratorDirection,
   AttitudeKind,
   ComponentDecorators,
+  DrawingStrokeStyle,
   LabelOffset,
   MapEdge,
   MapElement,
@@ -25,7 +26,8 @@ export type WardleyShapeType =
   | 'annotation'
   | 'attitude'
   | 'submap'
-  | 'accelerator';
+  | 'accelerator'
+  | 'drawing';
 
 export type WardleyConnectionType = 'dependency' | 'flow';
 
@@ -54,6 +56,12 @@ export interface WardleyShape extends Shape {
   corner2?: { visibility: number; evolution: number };
   /** accelerator only. */
   acceleratorDirection?: AcceleratorDirection;
+  /** drawing only: points in px RELATIVE to the shape's x/y (moving the shape moves them all). */
+  drawingPoints?: Array<{ x: number; y: number }>;
+  /** drawing only: closed polygon vs. open polyline. */
+  closed?: boolean;
+  /** drawing only. */
+  strokeStyle?: DrawingStrokeStyle;
   /** Optional element color (CSS color/hex from the swatch palette) — any element type. */
   color?: string;
   businessObject?: MapElement;

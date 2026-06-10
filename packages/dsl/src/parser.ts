@@ -4,6 +4,8 @@ import {
   type AcceleratorElement,
   type AnchorElement,
   type AnnotationElement,
+  type DrawingElement,
+  type DrawingStrokeStyle,
   type AttitudeElement,
   type AttitudeKind,
   type ComponentDecorators,
@@ -51,6 +53,7 @@ const NON_LINK_KEYWORDS: ReadonlySet<string> = new Set([
   'annotations',
   'annotation',
   'evolve',
+  'line',
 ]);
 const KNOWN_STYLES: ReadonlySet<string> = new Set(['wardley', 'handwritten', 'colour', 'dark']);
 
@@ -504,6 +507,35 @@ export function parseDSLWithDiagnostics(text: string): ParseResult {
           ...(colA.color ? { color: colA.color } : {}),
         };
         elements.push(annotation);
+        break;
+      }
+
+      case 'line': {
+        // Project extension (freeform drawing): `line [[v,e], [v,e], …] (closed) (dashed) (color x)`.
+        const col = parseColor(after);
+        const multi = parseMultiCoords(col.rest);
+        if (!multi || multi.tuples.length < 2) {
+          failed(line);
+          break;
+        }
+        const flags = multi.rest.toLowerCase();
+        const strokeStyle: DrawingStrokeStyle | undefined = flags.includes('(dashed)')
+          ? 'dashed'
+          : flags.includes('(dotted)')
+            ? 'dotted'
+            : undefined;
+        const points = multi.tuples.map((t) => pos(t.a, t.b));
+        const drawing: DrawingElement = {
+          id: ids.alloc('draw', 'line'),
+          elementType: 'drawing',
+          label: '',
+          position: points[0]!,
+          points,
+          ...(flags.includes('(closed)') ? { closed: true } : {}),
+          ...(strokeStyle ? { strokeStyle } : {}),
+          ...(col.color ? { color: col.color } : {}),
+        };
+        elements.push(drawing);
         break;
       }
 

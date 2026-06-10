@@ -60,10 +60,30 @@ export default class WardleyRenderer extends BaseRenderer {
         return this.drawAccelerator(visuals, shape);
       case 'submap':
         return this.drawSubmap(visuals, shape);
+      case 'drawing':
+        return this.drawDrawing(visuals, shape);
       case 'component':
       default:
         return this.drawComponent(visuals, shape);
     }
+  }
+
+  /** Freeform drawing: polyline/polygon from relative points (see WardleyDrawTool). */
+  private drawDrawing(visuals: SVGElement, shape: WardleyShape): SVGElement {
+    const pts = shape.drawingPoints ?? [];
+    const dash =
+      shape.strokeStyle === 'dashed' ? '8 5' : shape.strokeStyle === 'dotted' ? '2 4' : undefined;
+    const path = svgAttr(svgCreate(shape.closed ? 'polygon' : 'polyline'), {
+      points: pts.map((p) => `${p.x},${p.y}`).join(' '),
+      fill: 'none',
+      stroke: shape.color ?? COLORS.ink,
+      'stroke-width': 2,
+      'stroke-linecap': 'round',
+      'stroke-linejoin': 'round',
+      ...(dash ? { 'stroke-dasharray': dash } : {}),
+    });
+    svgAppend(visuals, path);
+    return path;
   }
 
   override drawConnection(visuals: SVGElement, element: ConnectionLike): SVGElement {

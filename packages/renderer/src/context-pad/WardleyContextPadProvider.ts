@@ -31,6 +31,7 @@ import {
   ICON_EDIT,
   ICON_PALETTE,
   ICON_SETTINGS,
+  ICON_SWAP_HORIZ,
 } from '../draw/icons.js';
 
 /**
@@ -166,6 +167,25 @@ export default class WardleyContextPadProvider implements ContextPadProvider {
       };
     }
 
+    // Drawings: cycle the stroke style (solid -> dashed -> dotted).
+    if (shape.wardleyType === 'drawing') {
+      const next =
+        shape.strokeStyle === 'dashed'
+          ? 'dotted'
+          : shape.strokeStyle === 'dotted'
+            ? undefined
+            : 'dashed';
+      const title = `Line style: ${shape.strokeStyle ?? 'solid'} (click to change)`;
+      entries['stroke-style'] = {
+        group: 'wardley',
+        title,
+        html: cpHtml(ICON_SWAP_HORIZ, title),
+        action: {
+          click: () => this.wardleyModeling.updateProperties(shape, { strokeStyle: next }),
+        },
+      };
+    }
+
     // Color is available on EVERY element (model-wide `color`, DSL extension `(color ...)`).
     entries['color'] = {
       group: 'wardley',
@@ -192,12 +212,15 @@ export default class WardleyContextPadProvider implements ContextPadProvider {
       };
     }
 
-    entries['edit-label'] = {
-      group: 'edit',
-      title: 'Edit label',
-      html: cpHtml(ICON_EDIT, 'Edit label'),
-      action: { click: () => this.labelEditing.activate(shape) },
-    };
+    // Drawings have no label (pure geometry).
+    if (shape.wardleyType !== 'drawing') {
+      entries['edit-label'] = {
+        group: 'edit',
+        title: 'Edit label',
+        html: cpHtml(ICON_EDIT, 'Edit label'),
+        action: { click: () => this.labelEditing.activate(shape) },
+      };
+    }
 
     entries['delete'] = {
       group: 'edit',

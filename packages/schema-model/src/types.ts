@@ -25,7 +25,8 @@ export type ElementType =
   | 'annotation'
   | 'accelerator'
   | 'attitude'
-  | 'submap';
+  | 'submap'
+  | 'drawing';
 
 export type Method = 'build' | 'buy' | 'outsource';
 
@@ -127,6 +128,18 @@ export interface SubmapElement extends MapElementBase {
   readonly urlRef?: string;
 }
 
+export type DrawingStrokeStyle = 'solid' | 'dashed' | 'dotted';
+
+/** Freeform polyline/polygon (project extension, Excalidraw-style annotation drawing).
+ *  `position` mirrors the first point; `points` are absolute normalized coordinates. */
+export interface DrawingElement extends MapElementBase {
+  readonly elementType: 'drawing';
+  readonly points: readonly Coordinate[];
+  /** true = closed polygon, false/absent = open polyline. */
+  readonly closed?: boolean;
+  readonly strokeStyle?: DrawingStrokeStyle;
+}
+
 export type MapElement =
   | AnchorElement
   | ComponentElement
@@ -135,7 +148,8 @@ export type MapElement =
   | AnnotationElement
   | AcceleratorElement
   | AttitudeElement
-  | SubmapElement;
+  | SubmapElement
+  | DrawingElement;
 
 export type EdgeType = 'dependency' | 'flow';
 

@@ -105,6 +105,12 @@
 .djs-palette .entry:hover {
   background: rgba(0, 0, 0, 0.05);
 }
+/* Draw mode: crosshair over the whole canvas. */
+.wardley-container.wardley-draw-mode,
+.wardley-container.wardley-draw-mode * {
+  cursor: crosshair !important;
+}
+
 /* Active tool (e.g. the lasso): neutral, just a bit darker than hover — no color. */
 .djs-palette .entry.highlighted-entry {
   background: rgba(0, 0, 0, 0.1);

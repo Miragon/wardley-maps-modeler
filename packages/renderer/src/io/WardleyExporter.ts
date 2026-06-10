@@ -17,6 +17,7 @@ import {
   type WardleyMap,
 } from '@miragon/wardley-schema-model';
 import { isWardleyConnection, isWardleyShape, type WardleyShape } from '../model/di-types.js';
+import type EvolutionGrid from '../evolution-grid/EvolutionGrid.js';
 import { ROOT_ID, type RootBusinessObject } from './types.js';
 
 function compact<T extends Record<string, unknown>>(obj: T): T {
@@ -32,11 +33,12 @@ function compact<T extends Record<string, unknown>>(obj: T): T {
  * `businessObject` serves only as a fallback for type-specific fields that are not (yet) editable.
  */
 export default class WardleyExporter {
-  static $inject = ['elementRegistry', 'canvas'];
+  static $inject = ['elementRegistry', 'canvas', 'evolutionGrid'];
 
   constructor(
     private readonly elementRegistry: ElementRegistry,
     private readonly canvas: Canvas,
+    private readonly grid: EvolutionGrid,
   ) {}
 
   export(): WardleyMap {
@@ -196,6 +198,23 @@ export default class WardleyExporter {
           urlRef: (bo as SubmapElement | undefined)?.urlRef,
           color: el.color,
         }) as SubmapElement;
+      case 'drawing': {
+        // Points are stored relative to the shape in px — convert back per point.
+        const points = (el.drawingPoints ?? []).map((p) =>
+          this.grid.fromCanvas({ x: el.x + p.x, y: el.y + p.y }),
+        );
+        if (points.length < 2) return undefined;
+        return {
+          id: el.id,
+          elementType: 'drawing',
+          label: '',
+          position: points[0]!,
+          points,
+          ...(el.closed ? { closed: true } : {}),
+          ...(el.strokeStyle ? { strokeStyle: el.strokeStyle } : {}),
+          ...(el.color ? { color: el.color } : {}),
+        };
+      }
       default: {
         const exhaustive: never = el.wardleyType;
         void exhaustive;

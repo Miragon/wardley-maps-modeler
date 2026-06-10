@@ -621,6 +621,33 @@ pipeline Shop [0.3, 0.7] (color #1d4ed8)`;
     expect(serializeDSL(parseDSL(once))).toBe(once);
   });
 
+  it('round-trips freeform drawings (`line` project extension)', () => {
+    const src = `title T
+line [[0.8, 0.2], [0.6, 0.35], [0.7, 0.5]] (closed) (dashed) (color #b45309)
+line [[0.3, 0.1], [0.25, 0.4]]`;
+    const map = parseDSL(src);
+    const drawings = map.elements.filter((e) => e.elementType === 'drawing');
+    expect(drawings).toHaveLength(2);
+    const shape = drawings[0]!;
+    if (shape.elementType === 'drawing') {
+      expect(shape.points).toHaveLength(3);
+      expect(shape.closed).toBe(true);
+      expect(shape.strokeStyle).toBe('dashed');
+      expect(shape.color).toBe('#b45309');
+    }
+    const open = drawings[1]!;
+    if (open.elementType === 'drawing') {
+      expect(open.closed).toBeUndefined();
+      expect(open.strokeStyle).toBeUndefined();
+    }
+    const once = serializeDSL(map);
+    expect(once).toContain(
+      'line [[0.8, 0.2], [0.6, 0.35], [0.7, 0.5]] (closed) (dashed) (color #b45309)',
+    );
+    expect(once).toContain('line [[0.3, 0.1], [0.25, 0.4]]');
+    expect(serializeDSL(parseDSL(once))).toBe(once);
+  });
+
   it('keeps the color on pipeline block children', () => {
     const src = `title T
 pipeline GOOD [0.3, 0.7]

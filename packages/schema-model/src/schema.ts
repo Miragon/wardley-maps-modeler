@@ -109,6 +109,14 @@ const submapSchema = z.object({
   urlRef: z.string().optional(),
 });
 
+const drawingSchema = z.object({
+  ...baseFields,
+  elementType: z.literal('drawing'),
+  points: z.array(coordinateSchema).min(2),
+  closed: z.boolean().optional(),
+  strokeStyle: z.enum(['solid', 'dashed', 'dotted']).optional(),
+});
+
 export const mapElementSchema = z.discriminatedUnion('elementType', [
   anchorSchema,
   componentSchema,
@@ -118,6 +126,7 @@ export const mapElementSchema = z.discriminatedUnion('elementType', [
   acceleratorSchema,
   attitudeSchema,
   submapSchema,
+  drawingSchema,
 ]);
 
 const dependencySchema = z.object({

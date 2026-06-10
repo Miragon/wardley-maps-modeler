@@ -216,6 +216,13 @@ function elementLine(el: MapElement, name: string): string {
     case 'attitude':
       // OWM canon: two corners, normalized — `pioneers [vis1, mat1, vis2, mat2]`.
       return `${el.kind} [${r(p.visibility)}, ${r(p.evolution)}, ${r(el.corner2.visibility)}, ${r(el.corner2.evolution)}]${colorSuffix(el)}`;
+    case 'drawing': {
+      // Project extension (freeform drawing): tuple list + style flags.
+      const pts = el.points.map((q) => `[${r(q.visibility)}, ${r(q.evolution)}]`).join(', ');
+      const closed = el.closed ? ' (closed)' : '';
+      const stroke = el.strokeStyle && el.strokeStyle !== 'solid' ? ` (${el.strokeStyle})` : '';
+      return `line [${pts}]${closed}${stroke}${colorSuffix(el)}`;
+    }
   }
 }
 

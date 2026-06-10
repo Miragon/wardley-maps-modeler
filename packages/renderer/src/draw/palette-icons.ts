@@ -16,6 +16,11 @@ const text = (content: string, attrs: string): string =>
   `<text x="12" text-anchor="middle" font-family="${FONT.family}" ${attrs}>${content}</text>`;
 
 export const PALETTE_ICONS: Record<string, string> = {
+  // Draw tool: open zigzag polyline with the start point marked.
+  draw: wrap(
+    `<polyline points="3,18 8.5,7 14,14 21,4" fill="none" stroke="${COLORS.ink}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>` +
+      `<circle cx="3" cy="18" r="2.2" fill="${COLORS.componentFill}" stroke="${COLORS.ink}" stroke-width="1.4"/>`,
+  ),
   // Selection tool: dashed lasso rectangle with a cursor arrow.
   lasso: wrap(
     `<rect x="3" y="3" width="13" height="13" rx="2" fill="none" stroke="${COLORS.ink}" stroke-width="1.5" stroke-dasharray="3 2.5"/>` +
