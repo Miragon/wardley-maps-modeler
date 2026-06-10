@@ -7,7 +7,7 @@ not for IT architects.
 
 ![Wardley Map of the tool](tool-landscape.svg)
 
-**Open it live:** [in the web app](https://wardley-maps.netlify.app/#mz=dVXbattAEH3XVwwUQgKRke9yHwxuY9JASgsOyUPww1g7kRavd8Xu2o7f-hH9wn5J2ZUc65Y3W3N05szMmZHlVhC8oGaCTvAT85zLFJ6UEvDvz1-wGYFAyUyCOcGGMi4ZcBugTDKlYWU1Wkq5sfAa9WbTW4h6g3h9Dj8R7uAKVha3lCnBSJsLbjJYB4na5UqStLDido-WK4kCFkfUJMkU4MiTTqrgheCp3LlfV3BHCTdcSQ-OY88cVcHnmlwpjx-lvEa96cyBh3UZGWoHvoI7bpK9Me6PwxaSR1XsIz-46E_Mfe6Jh4xqdM_c7FE4CCwZt0o74LgA1kR-0-poSMMizx1kNGnX8byC74oRLN8tSVfxBTisARcPsEhJWq9q6AGj0TqggxIHqkSj3nTQKJ3gkcutJx6696Zxo5MG0MATvft5D3wh48karilR5mQs7W4q-DuOqcYdLGXKpW9537d8UhvmPS_I_OjiSVfJ7s2xD9cG8EKbj8Y5iJc8G9bmadHyBH4oY8tJRl50PFvDtdpbo_Y6oZugYuRw3m3GoMvN4bzbjEG3n8N5tx2Dbkc7KR2GDLotHc7bfvscWnFv0On6cF51ZVB1aKmrcEtQ3QOnoenTJuDDgUF7PRpJOwHtBA1tVZ82YxXPtEqqeSVo71uTuhNRPuwO3nMbXBawxddVbX2JgsqWNl-XyhL8ykkCgnAALgHlCTZlmSFIBVwai0LcAmeEAt6UhqPSW5Op4oqN-35D4zVcJ0ooDV_6bEQsvinofULBD-TInac05QpCOJB2NRIDlAw0HTgdiYHgW4KkXOGCOvqMulzBExjBGRlIFTipBCFYd3B2LrWxeAL0AtxV9oyD6MK4GY2H0axkLNvMNL7Z21KU17fPGVoqGNGAzbhMDSQZytTzDltNmNJg4O6E512ejx3kAk9ffR-8xDeld2iBG_9o8fsBQj8B6z6nSgM6QZCgBE1YtOqo-VmJO4L-Y9fvSPwf)
+**Open it live:** [in the web app](https://wardley-maps.netlify.app/#mz=dVVda9tKEH3XrzhQCAlExpYdf9wHg28T2kJKCwk3D8EPE2kiLVnvit21XVMK_RH9hf0ll11Jtmwrb7bnzJkzM2fWTjjJeCKTSd7hK5WlUDketZb4-_sPXMGQpDKbUsl44UKoDMJFpNJCGzw4Q45zYR2e-73Z5Br9XjJdNuFHphUu8ODojQstMzb2gBsnyyjVq1IrVg4Pwq3JCa1IYrElw4ptBQ6c4zZ2IUWuVv7TBW45FVZoFbDTaSBuY5uOfCP3-0ae-71JIB4eiyjIePAFboVN19b6Lx5bCR61sfdi46NfqQylxwEyOqL7T9g1SQ_BXSacNh54kzTAUpQsheJuXDJqav6MgBbpAz7qjHH3w7HynXvwcHmE-dforWWDRVmGkuNl9Ks9vy9Y5KxcED4cBj2jZcQbLTfcivZ7k-RkOox7od583mjg8ybTk2FbkMUj_3CHHm7GS1xyqu3OOl5dtfC3gnJDK9yp3M_hud8bjEPXRyv8JCqysNzpUagZhs8MfUyT92o98ct-Lh4e5M-GR-t35ESKz9q6evH9m0A6W-JSr53Va5PyVdRyfTzvdm7UZf143m3dqNv88bzbvVG3_72UDv9G3RcQz89t9z60Zfao80jiedt0UduAta7KOaeR1lbOko62EbXvzYs_PYNTwN7G0fnFHPK7g5-Ei86PstrH3uDdiGNLR4djOs1uXdNpSGnH-FayAkF6gFAgtcNLPaAYSkMo60jKa4iMSeJVG2y1ebOFrh-kcEjTJS5TLbXBh0E24mx6VbGHelJs2HP7dRsuNWJs2PghcAZSGQxvBG85gxRvjLS-tMA8eIe4vo0drBQZW-QaXicjhvOvwsoXto52oFDev67hFJMD4cvoZtif1YT1-DJDr-66VhTErcuMHFeEZOEKoXKLtCCVB9pkdjqBCSeJv9_Ae9c8Eigl7f4JQwgKX7VZkYOw4afF9y-Iw_Sd_0_UBuQFISUFw1TNaWtEo8Q_LaHwYPxO4cZxwoIU9m8VYnDjQRtYqeqcpK-zq7ZVsAnN9cPfzeS8xP8)
 · or drag [`tool-landscape.wmap`](tool-landscape.wmap) onto the canvas of any running instance.
 
 ## How to read it (30 seconds)
@@ -31,9 +31,12 @@ Both needs rest on one quiet but decisive capability in the middle of the map: *
 A map that is drawn once and pasted into a slide deck dies the day after the workshop (the
 amber note). A map that lives as a versioned text file next to the everyday work stays current.
 
-## Browser vs. VS Code — two doors into the same room
+## Browser vs. VS Code — one tool, two variants (the pipeline)
 
-Both apps share the same editor engine; they differ in **who they serve and when**:
+On the map the modelling tool is drawn as a **pipeline**: one capability ("Visual Map Editor",
+the square anchor) with two concrete variants inside the box — the **VS Code extension**
+further left, the **browser app** further right. Both share the same editor engine; they
+differ in **who they serve and when**:
 
 |               | **Browser app**                                       | **VS Code extension**                              |
 | ------------- | ----------------------------------------------------- | -------------------------------------------------- |
@@ -44,7 +47,8 @@ Both apps share the same editor engine; they differ in **who they serve and when
 
 That is why neither replaces the other: the browser app wins **adoption** (zero friction —
 anyone in the meeting can open the map), the VS Code extension wins **longevity** (the map is
-versioned and reviewed exactly like the work it describes).
+versioned and reviewed exactly like the work it describes). Like every pipeline, expect more
+variants over time — the format underneath stays the same.
 
 ## Why text + agents — the ecosystem play
 
@@ -59,6 +63,11 @@ Text is the API. Because of it:
   description, review an existing one, or update it when the underlying reality changes. The
   red arrow shows where this is heading: agents are racing to the right and become routine.
 - Any other tool can produce or consume maps — no exporter, no lock-in, no screenshot graveyard.
+
+And there is a second ecosystem on the map: **VS Code itself** (also marked with the dotted
+ring). Millions of developers, their extensions and — increasingly — their AI agents already
+live there. Shipping a plugin into that ecosystem is far cheaper than building another app and
+puts the maps exactly where the agents are.
 
 This is a classic ecosystem move: standardise the boring part (the format) and let everyone —
 humans in two apps, agents, other tools — build on top of it. The value of the tool grows with
