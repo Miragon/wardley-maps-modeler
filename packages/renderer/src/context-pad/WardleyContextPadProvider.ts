@@ -8,7 +8,7 @@ import type {
   default as ContextPadProvider,
 } from 'diagram-js/lib/features/context-pad/ContextPadProvider';
 import type { Element } from 'diagram-js/lib/model/Types';
-import type { ComponentElement, MapEdge, SubmapElement } from '@miragon/wardley-schema-model';
+import type { ComponentElement, SubmapElement } from '@miragon/wardley-schema-model';
 import {
   isWardleyShape,
   isWardleyConnection,
@@ -16,7 +16,6 @@ import {
   type WardleyShape,
 } from '../model/di-types.js';
 import type WardleyModeling from '../modeling/WardleyModeling.js';
-import type WardleyConnectMode from '../modeling/WardleyConnectMode.js';
 import type WardleyLabelEditing from '../label-editing/WardleyLabelEditing.js';
 import type WardleyEvolveDragging from '../evolve/WardleyEvolveDragging.js';
 import type WardleyElementFactory from '../model/WardleyElementFactory.js';
@@ -32,7 +31,6 @@ import {
   ICON_EDIT,
   ICON_PALETTE,
   ICON_SETTINGS,
-  ICON_SWAP_HORIZ,
 } from '../draw/icons.js';
 
 /**
@@ -52,7 +50,6 @@ export default class WardleyContextPadProvider implements ContextPadProvider {
     'create',
     'popupMenu',
     'wardleyModeling',
-    'wardleyConnectMode',
     'wardleyLabelEditing',
     'wardleyEvolveDragging',
     'wardleyElementFactory',
@@ -66,7 +63,6 @@ export default class WardleyContextPadProvider implements ContextPadProvider {
     private readonly create: Create,
     private readonly popupMenu: PopupMenu,
     private readonly wardleyModeling: WardleyModeling,
-    private readonly connectMode: WardleyConnectMode,
     private readonly labelEditing: WardleyLabelEditing,
     private readonly evolveDragging: WardleyEvolveDragging,
     private readonly factory: WardleyElementFactory,
@@ -76,21 +72,15 @@ export default class WardleyContextPadProvider implements ContextPadProvider {
   }
 
   getContextPadEntries(element: Element): ContextPadEntries {
-    // Connections (dependency/flow): type toggle + value/annotation editing + delete.
+    // Connections: edit the annotation (or the flow value of an imported flow link) + delete.
     if (isWardleyConnection(element)) {
       const conn = element as WardleyConnection;
-      const toFlow = conn.wardleyType === 'dependency';
+      const isFlow = conn.wardleyType === 'flow';
       return {
-        'toggle-type': {
-          group: 'edit',
-          title: toFlow ? 'Convert to flow link' : 'Convert to dependency',
-          html: cpHtml(ICON_SWAP_HORIZ, toFlow ? 'Convert to flow link' : 'Convert to dependency'),
-          action: { click: () => this.toggleConnectionType(conn) },
-        },
         'edit-value': {
           group: 'edit',
-          title: toFlow ? 'Edit link annotation' : 'Edit flow value',
-          html: cpHtml(ICON_EDIT, toFlow ? 'Edit link annotation' : 'Edit flow value'),
+          title: isFlow ? 'Edit flow value' : 'Edit link annotation',
+          html: cpHtml(ICON_EDIT, isFlow ? 'Edit flow value' : 'Edit link annotation'),
           action: { click: () => this.labelEditing.activateConnection(conn) },
         },
         delete: {
@@ -133,19 +123,6 @@ export default class WardleyContextPadProvider implements ContextPadProvider {
         title: 'Connect to existing element',
         html: cpHtml(ICON_ARROW_FORWARD, 'Connect to existing element', true),
         action: { click: startConnect, dragstart: startConnect },
-      };
-
-      // Flow variant: identical connect drag, but the connection.create rule reads the
-      // one-shot mode flag and creates a flow link (+>).
-      const startFlowConnect = (event: Event) => {
-        this.connectMode.setFlow();
-        this.connect.start(event as MouseEvent, shape as unknown as Element);
-      };
-      entries['connect-flow'] = {
-        group: 'edit',
-        title: 'Connect as flow (+>)',
-        html: cpHtml(ICON_SWAP_HORIZ, 'Connect as flow', true),
-        action: { click: startFlowConnect, dragstart: startFlowConnect },
       };
     }
 
@@ -230,29 +207,5 @@ export default class WardleyContextPadProvider implements ContextPadProvider {
     };
 
     return entries;
-  }
-
-  /**
-   * Toggles a connection between dependency <-> flow (undoable). The businessObject is updated
-   * along with it because the exporter prefers it for imported edges; flow-specific fields
-   * (flowValue/bidirectional) are dropped when switching to dependency.
-   */
-  private toggleConnectionType(conn: WardleyConnection): void {
-    const next = conn.wardleyType === 'dependency' ? 'flow' : 'dependency';
-    const base = {
-      id: conn.id,
-      from: conn.source?.id ?? '',
-      to: conn.target?.id ?? '',
-      ...(conn.linkLabel ? { label: conn.linkLabel } : {}),
-    };
-    const businessObject: MapEdge =
-      next === 'flow'
-        ? { ...base, edgeType: 'flow', ...(conn.bidirectional ? { bidirectional: true } : {}) }
-        : { ...base, edgeType: 'dependency' };
-    this.wardleyModeling.updateProperties(conn, {
-      wardleyType: next,
-      businessObject,
-      ...(next === 'dependency' ? { bidirectional: undefined, flowValue: undefined } : {}),
-    });
   }
 }

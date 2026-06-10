@@ -236,28 +236,9 @@ export default class WardleyRenderer extends BaseRenderer {
       }
     }
 
-    // Sourcing method (build/buy/outsource): visible marker around the node (concept doc §8.3
-    // "shape variant or badge") — distinguishable per method via the stroke style.
-    if (dec?.method) {
-      const mr = COMPONENT_RADIUS + 4.5;
-      const dash = dec.method === 'build' ? undefined : dec.method === 'buy' ? '4 3' : '1.5 2.5';
-      svgAppend(
-        visuals,
-        svgAttr(svgCreate('rect'), {
-          x: cx - mr,
-          y: cy - mr,
-          width: mr * 2,
-          height: mr * 2,
-          rx: 6,
-          fill: 'none',
-          stroke: dec.method === 'build' ? COLORS.stroke : COLORS.axisText,
-          'stroke-width': 1.25,
-          ...(dash ? { 'stroke-dasharray': dash } : {}),
-        }),
-      );
-    }
-
     // Honor the OWM `label [dx, dy]` offset (px relative to the default position).
+    // Sourcing (build/buy/outsource) stays a subtle text label below the name —
+    // deliberately no marker box around the node (product decision: keep the canvas calm).
     const lx = cx + COMPONENT_RADIUS + 7 + (shape.labelOffset?.dx ?? 0);
     const ly = cy - 4 + (shape.labelOffset?.dy ?? 0);
     svgAppend(visuals, label(shape.wardleyLabel, lx, ly, { 'font-weight': '500' }));

@@ -1,7 +1,6 @@
 import RuleProvider from 'diagram-js/lib/features/rules/RuleProvider';
 import type EventBus from 'diagram-js/lib/core/EventBus';
 import { isWardleyShape, isPipeline, isAttitude, type WardleyShape } from '../model/di-types.js';
-import type WardleyConnectMode from '../modeling/WardleyConnectMode.js';
 
 // Submaps are referenceable nodes on the parent map (OWM serializes their edges by name).
 const CONNECTABLE: ReadonlySet<string> = new Set(['component', 'anchor', 'submap']);
@@ -19,17 +18,14 @@ function alreadyConnected(source: WardleyShape, target: WardleyShape): boolean {
 }
 
 /**
- * Allowed editing operations (concept doc §5.4). On success the `connection.create` rule returns
- * the new connection's attributes — the connection type comes from `wardleyConnectMode`
- * (default dependency; the context pad sets 'flow' once for "Connect as flow").
+ * Allowed edit operations (concept doc §5.4). On success the `connection.create` rule returns
+ * the new connection's attributes. The editor deliberately only creates dependencies — flow
+ * links (`+>`) exist for OWM import compatibility but are not authored interactively.
  */
 export default class WardleyRules extends RuleProvider {
-  static override $inject = ['eventBus', 'wardleyConnectMode'];
+  static override $inject = ['eventBus'];
 
-  constructor(
-    eventBus: EventBus,
-    private readonly connectMode: WardleyConnectMode,
-  ) {
+  constructor(eventBus: EventBus) {
     super(eventBus);
   }
 
@@ -42,10 +38,10 @@ export default class WardleyRules extends RuleProvider {
       const { source, target } = context;
       if (!isConnectable(source) || !isConnectable(target)) return false;
       if (source === target) return false;
-      // Duplicate lines between the same endpoints are never useful (and not distinguishable
+      // Duplicate lines between the same endpoints are never meaningful (and indistinguishable
       // in the DSL) — prevent them instead of silently stacking.
       if (alreadyConnected(source, target)) return false;
-      return { wardleyType: this.connectMode.current };
+      return { wardleyType: 'dependency' };
     });
 
     this.addRule(['shape.move', 'elements.move'], () => true);

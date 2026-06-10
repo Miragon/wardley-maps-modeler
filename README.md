@@ -46,6 +46,21 @@ const { svg } = await viewer.saveSVG();
 - **Strict DOM-free core** (model, DSL, transforms) — usable in any JavaScript runtime.
 - **Self-hosted fonts** — no CDN, offline-capable.
 
+### Editor interactions
+
+| Action                          | How                                                       |
+| ------------------------------- | --------------------------------------------------------- |
+| Multi-select (lasso)            | `Shift` + drag on the empty canvas (plain drag pans)      |
+| Add to selection                | `Shift` + click on elements                               |
+| Copy / paste / duplicate        | `Ctrl/Cmd+C` / `Ctrl/Cmd+V` / `Ctrl/Cmd+D`                |
+| Nudge selection                 | Arrow keys (`Shift` = coarse)                             |
+| Undo / redo                     | `Ctrl/Cmd+Z` / `Ctrl/Cmd+Shift+Z`                         |
+| Zoom                            | `Ctrl/Cmd` + `+` / `-` / `0` (fit), controls bottom-right |
+| Edit label / note               | Double-click (notes: `Cmd/Ctrl+Enter` saves)              |
+| Edit link annotation/flow value | Double-click the connection (or pencil in the pad)        |
+| Evolve                          | Drag from the context pad; drag the red target circle     |
+| Pipeline membership             | Drop a component into/out of the pipeline box             |
+
 ## Packages
 
 | Package                                                  | Description                                              |
