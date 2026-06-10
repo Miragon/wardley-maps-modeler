@@ -2,7 +2,7 @@
   "name": "wardley-mapping-modeler",
   "private": true,
   "version": "0.1.1",
-  "displayName": "Wardley Maps",
+  "displayName": "Wardley Mapping Modeler",
   "description": "View and edit Wardley Maps directly in VS Code, including .wmap and .owm files.",
   "publisher": "miragon-gmbh",
   "icon": "icon.png",

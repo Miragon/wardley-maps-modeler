@@ -31,34 +31,45 @@ jobs:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
 
-  publish-npm:
+  publish-npm-schema-model:
     needs: release-please
-    if: >
-      needs.release-please.outputs.schema_model == 'true' ||
-      needs.release-please.outputs.dsl == 'true' ||
-      needs.release-please.outputs.transforms == 'true' ||
-      needs.release-please.outputs.renderer == 'true'
-    runs-on: ubuntu-latest
-    environment: npm
+    if: needs.release-please.outputs.schema_model == 'true'
     permissions:
       contents: read
       id-token: write
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 24
-          registry-url: https://registry.npmjs.org
-      - run: npm ci
-      - run: npm run build
-      - if: needs.release-please.outputs.schema_model == 'true'
-        run: npm publish -w packages/schema-model --provenance --access public
-      - if: needs.release-please.outputs.dsl == 'true'
-        run: npm publish -w packages/dsl --provenance --access public
-      - if: needs.release-please.outputs.transforms == 'true'
-        run: npm publish -w packages/transforms --provenance --access public
-      - if: needs.release-please.outputs.renderer == 'true'
-        run: npm publish -w packages/renderer --provenance --access public
+    uses: ./.github/workflows/publish-npm-package.yml
+    with:
+      package: schema-model
+
+  publish-npm-dsl:
+    needs: release-please
+    if: needs.release-please.outputs.dsl == 'true'
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/publish-npm-package.yml
+    with:
+      package: dsl
+
+  publish-npm-transforms:
+    needs: release-please
+    if: needs.release-please.outputs.transforms == 'true'
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/publish-npm-package.yml
+    with:
+      package: transforms
+
+  publish-npm-renderer:
+    needs: release-please
+    if: needs.release-please.outputs.renderer == 'true'
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/publish-npm-package.yml
+    with:
+      package: renderer
 
   publish-vscode:
     needs: release-please
