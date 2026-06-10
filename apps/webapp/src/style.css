@@ -461,3 +461,38 @@ body {
   border-color: var(--accent);
   color: var(--accent);
 }
+
+/* --- Zoom controls (bottom right, Excalidraw style) --- */
+.app-zoom {
+  position: absolute;
+  bottom: 14px;
+  right: 14px;
+  z-index: 30;
+  display: flex;
+  align-items: stretch;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #fff;
+  box-shadow: 0 4px 16px rgba(27, 27, 26, 0.08);
+  overflow: hidden;
+}
+.app-zoom button {
+  font: inherit;
+  font-size: 13px;
+  color: var(--ink);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 6px 10px;
+  transition: background 120ms ease;
+}
+.app-zoom button:hover {
+  background: rgba(14, 124, 116, 0.08);
+  color: var(--accent);
+}
+.app-zoom .zoom-level {
+  min-width: 52px;
+  font-variant-numeric: tabular-nums;
+  border-left: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+}

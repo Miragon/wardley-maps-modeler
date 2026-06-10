@@ -13,6 +13,7 @@ export {
   EvolutionGrid,
 } from './evolution-grid/index.js';
 export { wardleyDrawModule, WardleyRenderer } from './draw/index.js';
+export { COLORS, PLOT } from './draw/styles.js';
 export { ioModule, WardleyImporter, WardleyExporter, saveSVG, ROOT_ID } from './io/index.js';
 export { wardleyModelingModule, WardleyModeling } from './modeling/index.js';
 export type { EvolveOptions } from './modeling/index.js';

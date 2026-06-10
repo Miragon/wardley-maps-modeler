@@ -1,6 +1,6 @@
 import type CommandStack from 'diagram-js/lib/command/CommandStack';
 import type { Method } from '@miragon/wardley-schema-model';
-import type { WardleyShape } from '../model/di-types.js';
+import type { WardleyConnection, WardleyShape } from '../model/di-types.js';
 import { noteMetrics } from '../draw/styles.js';
 import UpdatePropertiesHandler from './cmd/UpdatePropertiesHandler.js';
 
@@ -28,7 +28,10 @@ export default class WardleyModeling {
     commandStack.registerHandler(UPDATE_PROPERTIES, UpdatePropertiesHandler);
   }
 
-  updateProperties(element: WardleyShape, properties: Record<string, unknown>): void {
+  updateProperties(
+    element: WardleyShape | WardleyConnection,
+    properties: Record<string, unknown>,
+  ): void {
     this.commandStack.execute(UPDATE_PROPERTIES, { element, properties });
   }
 
@@ -51,9 +54,12 @@ export default class WardleyModeling {
   }
 
   evolveComponent(element: WardleyShape, targetEvolution: number, opts: EvolveOptions = {}): void {
+    const target = clamp01(targetEvolution);
+    // Evolution only moves forward (canon) — silently ignore targets left of the current position.
+    if (target <= element.evolution) return;
     this.updateProperties(element, {
       movement: compact({
-        targetEvolution: clamp01(targetEvolution),
+        targetEvolution: target,
         newLabel: opts.newLabel,
         method: opts.method,
       }),

@@ -94,9 +94,13 @@ export default class EvolutionGrid {
     const right = left + this.plotWidth;
     const bottom = top + this.plotHeight;
 
+    // Plot background
     svgAppend(
       layer,
-      rect(left, top, this.plotWidth, this.plotHeight, { fill: '#ffffff', stroke: COLORS.grid }),
+      rect(left, top, this.plotWidth, this.plotHeight, {
+        fill: COLORS.plotBackground,
+        stroke: COLORS.grid,
+      }),
     );
 
     const edges = [0, ...this.boundaries, 1];

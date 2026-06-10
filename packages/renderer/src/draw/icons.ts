@@ -74,6 +74,9 @@ export const ICON_PLACE =
 export const ICON_FAST_FORWARD = 'M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z';
 /** fast_rewind — Deaccelerator. */
 export const ICON_FAST_REWIND = 'M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z';
+/** swap_horiz — toggle connection type (dependency <-> flow). */
+export const ICON_SWAP_HORIZ =
+  'M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z';
 /** crop_landscape — attitude band (PST). */
 export const ICON_CROP_LANDSCAPE =
   'M19 5H5c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 12H5V7h14v10z';

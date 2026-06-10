@@ -27,6 +27,9 @@ export type {
   WardleyMap,
 } from './types.js';
 
+// Layout default (plot area) — shared by renderer and migrations
+export { DEFAULT_PLOT_SIZE } from './types.js';
+
 export {
   evolutionStage,
   DEFAULT_STAGE_BOUNDARIES,

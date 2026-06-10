@@ -103,7 +103,8 @@ setLabel('m-redo', ICON_REDO, 'Redo');
 setLabel('m-json', ICON_DATA_OBJECT, 'Export · JSON');
 setLabel('m-dsl', ICON_CODE, 'Export · OWM-DSL');
 setLabel('m-svg', ICON_DOWNLOAD, 'Export · SVG');
-setLabel('m-png', ICON_IMAGE, 'Export · PNG');
+setLabel('m-png', ICON_IMAGE, 'Export · PNG (2×)');
+setLabel('m-png-transparent', ICON_IMAGE, 'Export · PNG (4×, transparent)');
 setLabel('m-axis', ICON_EDIT, 'X-axis labels…');
 const sizeField = document.querySelector('.menu-field span');
 if (sizeField) sizeField.innerHTML = `${iconMarkup(ICON_ASPECT_RATIO, 16)}<span>Map size</span>`;
@@ -150,7 +151,7 @@ function syncUrlNow(): void {
   urlTimer = undefined;
   // Empty map without custom config -> drop the hash (clean URL, an empty start stays shareable).
   if (isBlankMap()) history.replaceState(null, '', location.pathname + location.search);
-  else writeHashMap(viewer.exportDSL());
+  else void writeHashMap(viewer.exportDSL());
 }
 /**
  * Toggle the empty state + sync the URL. Discrete edit actions (draw, connect, move, delete) are
@@ -175,9 +176,14 @@ const flushUrl = (): void => {
 window.addEventListener('beforeunload', flushUrl);
 window.addEventListener('pagehide', flushUrl);
 
+/** Surface parser/import findings (console; no modal — the import proceeds anyway). */
+function logWarnings(warnings: ReadonlyArray<{ message: string }>): void {
+  for (const w of warnings) console.warn(`[wardley-import] ${w.message}`);
+}
+
 // --- Actions ---
 function showExample(): void {
-  void viewer.importDSL(TEA_SHOP);
+  void viewer.importDSL(TEA_SHOP).then(({ warnings }) => logWarnings(warnings));
 }
 function clearCanvas(): void {
   void viewer.importMap(createEmptyMap('New map'));
@@ -197,7 +203,7 @@ fileInput?.addEventListener('change', () => {
 });
 async function load(file: File): Promise<void> {
   try {
-    await openFile(file, viewer);
+    logWarnings(await openFile(file, viewer));
   } catch (err) {
     alert(`Could not open file: ${(err as Error).message}`);
   }
@@ -221,10 +227,10 @@ function exportSvg(): void {
     downloadText(embedSvg(svg, viewer.exportDSL()), 'wardley-map.svg', 'image/svg+xml');
   });
 }
-function exportPng(): void {
+function exportPng(options: { scale?: number; transparent?: boolean } = {}): void {
   deselect();
   void viewer.saveSVG().then(async ({ svg }) => {
-    downloadBlob(await svgToEmbeddedPng(svg, viewer.exportDSL()), 'wardley-map.png');
+    downloadBlob(await svgToEmbeddedPng(svg, viewer.exportDSL(), options), 'wardley-map.png');
   });
 }
 
@@ -239,7 +245,8 @@ onMenu('m-redo', () => viewer.redo());
 onMenu('m-json', () => openOutput('Export · JSON', JSON.stringify(viewer.exportMap(), null, 2)));
 onMenu('m-dsl', () => openOutput('Export · OWM-DSL', viewer.exportDSL()));
 onMenu('m-svg', exportSvg);
-onMenu('m-png', exportPng);
+onMenu('m-png', () => exportPng());
+onMenu('m-png-transparent', () => exportPng({ scale: 4, transparent: true }));
 document.getElementById('map-size')?.addEventListener('change', (e) => {
   const [w, h] = (e.target as HTMLSelectElement).value.split('x').map(Number);
   if (w && h) void viewer.setMapSize(w, h);
@@ -346,12 +353,40 @@ document.getElementById('output-copy')?.addEventListener('click', () => {
 
 // --- Share ---
 document.getElementById('btn-share')?.addEventListener('click', () => {
-  const url = shareUrl(viewer.exportDSL());
-  writeHashMap(viewer.exportDSL());
-  void navigator.clipboard?.writeText(url).then(() => {
+  void (async () => {
+    const dsl = viewer.exportDSL();
+    const url = await shareUrl(dsl);
+    await writeHashMap(dsl);
+    await navigator.clipboard?.writeText(url);
     setLabel('btn-share', ICON_SHARE, 'Link copied!');
     setTimeout(() => setLabel('btn-share', ICON_SHARE, 'Share'), 1600);
-  });
+  })();
+});
+
+// --- Zoom-Controls (unten rechts) + Shortcuts ---
+const zoomScroll = viewer.get('zoomScroll') as { stepZoom(delta: number): void };
+const canvasService = viewer.get('canvas') as { zoom(): number };
+const zoomLevelBtn = document.getElementById('z-level');
+function updateZoomLevel(): void {
+  if (zoomLevelBtn) zoomLevelBtn.textContent = `${Math.round(canvasService.zoom() * 100)}%`;
+}
+viewer.on('canvas.viewbox.changed', updateZoomLevel);
+document.getElementById('z-in')?.addEventListener('click', () => zoomScroll.stepZoom(1));
+document.getElementById('z-out')?.addEventListener('click', () => zoomScroll.stepZoom(-1));
+zoomLevelBtn?.addEventListener('click', fitView);
+window.addEventListener('keydown', (e) => {
+  if (!(e.ctrlKey || e.metaKey)) return;
+  if ((e.target as HTMLElement | null)?.closest('input, textarea, [contenteditable]')) return;
+  if (e.key === '+' || e.key === '=') {
+    e.preventDefault();
+    zoomScroll.stepZoom(1);
+  } else if (e.key === '-') {
+    e.preventDefault();
+    zoomScroll.stepZoom(-1);
+  } else if (e.key === '0') {
+    e.preventDefault();
+    fitView();
+  }
 });
 
 // --- Drag & drop (over the whole stage, including over the empty state) ---
@@ -382,12 +417,22 @@ stage?.addEventListener('drop', (e) => {
 });
 
 // --- Startup: load the map from the URL hash, otherwise an EMPTY canvas (no auto-example) ---
-const initial = readHashMap();
-void (initial ? viewer.importDSL(initial) : viewer.importMap(createEmptyMap('New map')));
+const initial = await readHashMap();
+if (initial) {
+  const { warnings } = await viewer.importDSL(initial);
+  logWarnings(warnings);
+} else {
+  await viewer.importMap(createEmptyMap('New map'));
+}
 
 // Pasting a shared link into an already-open tab: adopt the hash change.
 // (writeHashMap uses history.replaceState and fires NO hashchange -> no loop.)
 window.addEventListener('hashchange', () => {
-  const dsl = readHashMap();
-  if (dsl && dsl !== viewer.exportDSL()) void viewer.importDSL(dsl);
+  void (async () => {
+    const dsl = await readHashMap();
+    if (dsl && dsl !== viewer.exportDSL()) {
+      const { warnings } = await viewer.importDSL(dsl);
+      logWarnings(warnings);
+    }
+  })();
 });

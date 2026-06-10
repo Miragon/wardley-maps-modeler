@@ -4,6 +4,9 @@ import type { Root } from 'diagram-js/lib/model/Types';
 import {
   validateMap,
   CURRENT_SCHEMA_VERSION,
+  type AnchorElement,
+  type AnnotationElement,
+  type AttitudeElement,
   type ComponentElement,
   type MapConfig,
   type MapEdge,
@@ -63,10 +66,29 @@ export default class WardleyExporter {
       }
     }
 
+    // Consolidate pipeline membership: childIds are derived from component.pipelineId
+    // (single source of truth); pipelineId references to deleted pipelines are discarded.
+    const pipelineIds = new Set(
+      elements.filter((e) => e.elementType === 'pipeline').map((e) => e.id),
+    );
+    const consolidated = elements.map((el) => {
+      if (el.elementType === 'component' && el.pipelineId && !pipelineIds.has(el.pipelineId)) {
+        const { pipelineId: _stale, ...rest } = el;
+        return rest as MapElement;
+      }
+      if (el.elementType === 'pipeline') {
+        const childIds = elements
+          .filter((e) => e.elementType === 'component' && e.pipelineId === el.id)
+          .map((e) => e.id);
+        return { ...el, childIds };
+      }
+      return el;
+    });
+
     const map: WardleyMap = {
       schemaVersion: CURRENT_SCHEMA_VERSION,
       config,
-      elements,
+      elements: consolidated,
       edges,
       ...(meta?.rawPassthrough ? { rawPassthrough: meta.rawPassthrough } : {}),
     };
@@ -86,12 +108,22 @@ export default class WardleyExporter {
           elementType: 'component',
           label: el.wardleyLabel,
           position,
+          // labelOffset is not editable (yet); without the fallback it would be lost on
+          // every export round trip.
+          labelOffset: el.labelOffset ?? (bo as ComponentElement | undefined)?.labelOffset,
           decorators: el.decorators,
           movement: el.movement,
-          pipelineId: (bo as ComponentElement | undefined)?.pipelineId,
+          pipelineId: el.pipelineId ?? (bo as ComponentElement | undefined)?.pipelineId,
+          url: (bo as ComponentElement | undefined)?.url,
         }) as ComponentElement;
       case 'anchor':
-        return { id: el.id, elementType: 'anchor', label: el.wardleyLabel, position };
+        return compact({
+          id: el.id,
+          elementType: 'anchor',
+          label: el.wardleyLabel,
+          position,
+          labelOffset: el.labelOffset ?? (bo as AnchorElement | undefined)?.labelOffset,
+        }) as AnchorElement;
       case 'note':
         return compact({
           id: el.id,
@@ -118,8 +150,12 @@ export default class WardleyExporter {
           kind: el.attitudeKind ?? 'pioneers',
           label: el.wardleyLabel,
           position,
-          width: el.width,
-          height: el.height,
+          // corner2 is maintained by the EvolutionConstraintBehavior on move/resize/create.
+          corner2: el.corner2 ??
+            (bo as AttitudeElement | undefined)?.corner2 ?? {
+              visibility: Math.max(0, position.visibility - 0.1),
+              evolution: Math.min(1, position.evolution + 0.15),
+            },
         };
       case 'accelerator':
         return {
@@ -129,16 +165,20 @@ export default class WardleyExporter {
           label: el.wardleyLabel,
           position,
         };
-      case 'annotation':
+      case 'annotation': {
+        // The marker shows positions[0]; additional positions (multi-point annotation) are
+        // preserved from the businessObject instead of collapsing to a single point on round trip.
+        const extraPositions = ((bo as AnnotationElement | undefined)?.positions ?? []).slice(1);
         return {
           id: el.id,
           elementType: 'annotation',
           label: el.wardleyLabel,
           position,
           number: el.annotationNumber ?? 0,
-          positions: [position],
+          positions: [position, ...extraPositions],
           text: el.wardleyLabel,
         };
+      }
       case 'submap':
         return compact({
           id: el.id,

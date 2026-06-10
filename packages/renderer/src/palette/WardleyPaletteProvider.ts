@@ -123,6 +123,8 @@ const SPECS: readonly PaletteSpec[] = [
     extra: { acceleratorDirection: 'deaccelerate' },
   },
 
+  // Annotations (numbered markers + legend) are deliberately NOT in the palette: Note covers
+  // free text; imported OWM maps still render annotations (viewer compatibility).
   {
     key: 'note',
     type: 'note',
@@ -130,15 +132,6 @@ const SPECS: readonly PaletteSpec[] = [
     title: 'Note',
     icon: PALETTE_ICONS.note!,
     group: GROUP_NOTES,
-  },
-  {
-    key: 'annotation',
-    type: 'annotation',
-    label: 'Annotation',
-    title: 'Annotation (numbered marker)',
-    icon: PALETTE_ICONS.annotation!,
-    group: GROUP_NOTES,
-    extra: { annotationNumber: 1 },
   },
 ];
 

@@ -78,10 +78,13 @@ export default class WardleyRenderer extends BaseRenderer {
     });
     svgAppend(visuals, path);
 
-    // BPMN-style arrowhead at the target (both line types); for bidirectional flow also at the source.
-    svgAppend(visuals, connectionArrow(start, end, color, isFlow ? 11 : 9, isFlow ? 5 : 4));
-    if (isFlow && conn.bidirectional) {
-      svgAppend(visuals, connectionArrow(end, start, color, 11, 5));
+    // Canon: dependencies are plain lines WITHOUT an arrowhead (direction follows from the value
+    // chain, concept doc §8.3); only flow links carry arrowheads (bidirectional: on both ends).
+    if (isFlow) {
+      svgAppend(visuals, connectionArrow(start, end, color, 11, 5));
+      if (conn.bidirectional) {
+        svgAppend(visuals, connectionArrow(end, start, color, 11, 5));
+      }
     }
     const mx = (start.x + end.x) / 2;
     const my = (start.y + end.y) / 2;
@@ -127,30 +130,56 @@ export default class WardleyRenderer extends BaseRenderer {
     const evolving = !!shape.movement;
     const dec = shape.decorators;
 
-    // Planned evolution: red arrow to the target event circle (pixel delta via the single source of math).
+    // Planned evolution (canon: DASHED red line with arrow, target label in red).
     if (shape.movement) {
+      const mv = shape.movement;
       const here = this.grid.toCanvas({ visibility: shape.visibility, evolution: shape.evolution });
       const there = this.grid.toCanvas({
         visibility: shape.visibility,
-        evolution: shape.movement.targetEvolution,
+        evolution: mv.targetEvolution,
       });
       const dx = there.x - here.x;
+      const tx = cx + dx;
+      // End the arrowhead BEFORE the target circle's edge — otherwise the circle hides it entirely.
+      const dir = Math.sign(dx) || 1;
+      const tipX = tx - dir * (COMPONENT_RADIUS + 2);
       svgAppend(
         visuals,
-        line(cx, cy, cx + dx, cy, { stroke: COLORS.movement, 'stroke-width': 1.5 }),
+        line(cx, cy, tipX, cy, {
+          stroke: COLORS.movement,
+          'stroke-width': 1.5,
+          'stroke-dasharray': '6 4',
+        }),
       );
-      svgAppend(visuals, connectionArrow({ x: cx, y: cy }, { x: cx + dx, y: cy }, COLORS.movement));
+      svgAppend(visuals, connectionArrow({ x: cx, y: cy }, { x: tipX, y: cy }, COLORS.movement));
       // Target circle = direct drag handle: marked by class so the evolve module can intercept a
       // mousedown on it and let the target be moved by dragging (see WardleyEvolveDragging).
       svgAppend(
         visuals,
-        circle(cx + dx, cy, COMPONENT_RADIUS, {
+        circle(tx, cy, COMPONENT_RADIUS, {
           fill: COLORS.paper,
           stroke: COLORS.movement,
           'stroke-width': 2,
           class: 'wardley-evolve-handle',
         }),
       );
+      // Target label (evolve Old->New) or the component's name — canonically red at the target circle.
+      svgAppend(
+        visuals,
+        label(mv.newLabel ?? shape.wardleyLabel, tx + COMPONENT_RADIUS + 7, cy - 4, {
+          'font-weight': '500',
+          fill: COLORS.movement,
+        }),
+      );
+      if (mv.method) {
+        svgAppend(
+          visuals,
+          label(mv.method, tx + COMPONENT_RADIUS + 7, cy + 11, {
+            'font-size': 10.5,
+            fill: COLORS.movement,
+          }),
+        );
+      }
     }
 
     if (dec?.inertia) {
@@ -194,14 +223,14 @@ export default class WardleyRenderer extends BaseRenderer {
       svgAppend(visuals, circle(cx, cy, 3, { fill: COLORS.stroke }));
     }
 
-    svgAppend(
-      visuals,
-      label(shape.wardleyLabel, cx + COMPONENT_RADIUS + 7, cy - 4, { 'font-weight': '500' }),
-    );
+    // OWM `label [dx, dy]`-Offset respektieren (px relativ zur Default-Position).
+    const lx = cx + COMPONENT_RADIUS + 7 + (shape.labelOffset?.dx ?? 0);
+    const ly = cy - 4 + (shape.labelOffset?.dy ?? 0);
+    svgAppend(visuals, label(shape.wardleyLabel, lx, ly, { 'font-weight': '500' }));
     if (dec?.method) {
       svgAppend(
         visuals,
-        label(dec.method, cx + COMPONENT_RADIUS + 7, cy + 11, {
+        label(dec.method, lx, ly + 15, {
           'font-size': 10.5,
           fill: COLORS.axisText,
         }),
@@ -217,10 +246,15 @@ export default class WardleyRenderer extends BaseRenderer {
     svgAppend(visuals, icon);
     svgAppend(
       visuals,
-      label(shape.wardleyLabel, cx, cy - ANCHOR_ICON_SIZE / 2 - 4, {
-        'text-anchor': 'middle',
-        'font-weight': '700',
-      }),
+      label(
+        shape.wardleyLabel,
+        cx + (shape.labelOffset?.dx ?? 0),
+        cy - ANCHOR_ICON_SIZE / 2 - 4 + (shape.labelOffset?.dy ?? 0),
+        {
+          'text-anchor': 'middle',
+          'font-weight': '700',
+        },
+      ),
     );
     return icon;
   }
@@ -265,10 +299,7 @@ export default class WardleyRenderer extends BaseRenderer {
   }
 
   private drawAttitude(visuals: SVGElement, shape: WardleyShape): SVGElement {
-    const c = ATTITUDE_COLORS[shape.attitudeKind ?? 'pioneers'] ?? {
-      fill: 'rgba(0,0,0,0.05)',
-      stroke: '#666666',
-    };
+    const c = ATTITUDE_COLORS[shape.attitudeKind ?? 'pioneers'] ?? ATTITUDE_COLORS['pioneers']!;
     const box = svgAttr(svgCreate('rect'), {
       x: 0,
       y: 0,
@@ -296,7 +327,7 @@ export default class WardleyRenderer extends BaseRenderer {
     const cx = shape.width / 2;
     const cy = shape.height / 2;
     const marker = circle(cx, cy, 10, {
-      fill: '#fff8e6',
+      fill: COLORS.annotationFill,
       stroke: COLORS.stroke,
       'stroke-width': 1.25,
     });

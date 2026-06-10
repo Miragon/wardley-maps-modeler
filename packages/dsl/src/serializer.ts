@@ -6,6 +6,13 @@ import type {
   WardleyMap,
 } from '@miragon/wardley-schema-model';
 
+/** Address of an element (component.url / submap.urlRef) — or undefined. */
+function urlOf(el: MapElement): string | undefined {
+  if (el.elementType === 'component') return el.url;
+  if (el.elementType === 'submap') return el.urlRef;
+  return undefined;
+}
+
 function r(n: number): string {
   return String(Math.round(n * 1000) / 1000);
 }
@@ -83,12 +90,58 @@ export function serializeDSL(map: WardleyMap): string {
     lines.push(`annotations [${r(b.visibility)}, ${r(b.evolution)}]`);
   }
 
+  // url definitions: one `url <Name> URL [address]` line per element with an address,
+  // referenced on the element via `url(<Name> URL)` (OWM form: definition + reference).
+  const urlDefNames = new Map<string, string>(); // element ID -> definition name
+  for (const el of map.elements) {
+    const address = urlOf(el);
+    if (!address) continue;
+    const defName = `${nameOf(el)} URL`;
+    urlDefNames.set(el.id, defName);
+    lines.push(`url ${defName} [${address}]`);
+  }
+  const urlSuffix = (el: MapElement): string => {
+    const def = urlDefNames.get(el.id);
+    return def ? ` url(${def})` : '';
+  };
+
+  // Pipeline children (pipelineId set + pipeline exists) are emitted in the pipeline's
+  // block form instead of as top-level components (OWM v2).
+  const pipelineIds = new Set(
+    map.elements.filter((e) => e.elementType === 'pipeline').map((e) => e.id),
+  );
+  const childrenByPipeline = new Map<string, ComponentElement[]>();
+  for (const el of map.elements) {
+    if (el.elementType !== 'component' || !el.pipelineId || !pipelineIds.has(el.pipelineId)) {
+      continue;
+    }
+    const list = childrenByPipeline.get(el.pipelineId) ?? [];
+    list.push(el);
+    childrenByPipeline.set(el.pipelineId, list);
+  }
+  const isPipelineChild = (el: MapElement): el is ComponentElement =>
+    el.elementType === 'component' && !!el.pipelineId && pipelineIds.has(el.pipelineId);
+
   const evolveLines: string[] = [];
 
   for (const el of map.elements) {
-    lines.push(elementLine(el, nameOf(el)));
     if (el.elementType === 'component' && el.movement) {
       evolveLines.push(evolveLine(el, nameOf(el)));
+    }
+    if (isPipelineChild(el)) continue; // emitted inside the pipeline block
+    lines.push(elementLine(el, nameOf(el)) + urlSuffix(el));
+    if (el.elementType === 'pipeline') {
+      const kids = childrenByPipeline.get(el.id) ?? [];
+      if (kids.length) {
+        lines.push('{');
+        for (const k of kids) {
+          lines.push(
+            `  component ${nameOf(k)} [${r(k.position.evolution)}]` +
+              `${decoratorSuffix(k.decorators)}${offsetSuffix(k.labelOffset)}`,
+          );
+        }
+        lines.push('}');
+      }
     }
   }
 
@@ -140,12 +193,18 @@ function elementLine(el: MapElement, name: string): string {
       return `pipeline ${name} [${r(el.evolutionStart)}, ${r(el.evolutionEnd)}]`;
     case 'submap':
       return `submap ${name} [${r(p.visibility)}, ${r(p.evolution)}]`;
-    case 'annotation':
-      return `annotation ${el.number} [${r(p.visibility)}, ${r(p.evolution)}] ${el.text}`;
+    case 'annotation': {
+      const pos =
+        el.positions.length > 1
+          ? `[${el.positions.map((q) => `[${r(q.visibility)}, ${r(q.evolution)}]`).join(', ')}]`
+          : `[${r(p.visibility)}, ${r(p.evolution)}]`;
+      return `annotation ${el.number} ${pos} ${el.text}`;
+    }
     case 'accelerator':
       return `${el.direction === 'deaccelerate' ? 'deaccelerator' : 'accelerator'} ${name} [${r(p.visibility)}, ${r(p.evolution)}]`;
     case 'attitude':
-      return `${el.kind} [${r(p.visibility)}, ${r(p.evolution)}] ${r(el.width)} ${r(el.height)}`;
+      // OWM canon: two corners, normalized — `pioneers [vis1, mat1, vis2, mat2]`.
+      return `${el.kind} [${r(p.visibility)}, ${r(p.evolution)}, ${r(el.corner2.visibility)}, ${r(el.corner2.evolution)}]`;
   }
 }
 
@@ -153,5 +212,5 @@ function evolveLine(el: ComponentElement, name: string): string {
   const mv = el.movement!;
   const label = mv.newLabel ? `${name}->${mv.newLabel}` : name;
   const method = mv.method ? ` (${mv.method})` : '';
-  return `evolve ${label} ${r(mv.targetEvolution)}${method}`;
+  return `evolve ${label} ${r(mv.targetEvolution)}${method}${offsetSuffix(mv.labelOffset)}`;
 }

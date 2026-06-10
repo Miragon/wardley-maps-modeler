@@ -1,6 +1,7 @@
 import CommandInterceptor from 'diagram-js/lib/command/CommandInterceptor';
 import type EventBus from 'diagram-js/lib/core/EventBus';
-import { isWardleyShape, type WardleyShape } from '../model/di-types.js';
+import type ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
+import { isWardleyShape, isPipeline, type WardleyShape } from '../model/di-types.js';
 import type EvolutionGrid from './EvolutionGrid.js';
 
 const MOVE_COMMANDS = [
@@ -21,13 +22,18 @@ interface CommandContextLike {
  * After every geometry change (move/create/resize), keeps the normalized Wardley coordinates
  * in sync with the pixel geometry — in BOTH directions (postExecuted AND reverted), so that undo/redo
  * stays consistent (concept doc §5.3). `EvolutionGrid` is the single source of math (P7).
+ *
+ * It also manages pipeline membership: a component whose midpoint lands inside a pipeline box
+ * becomes a child (pipelineId) and is glued vertically onto the pipeline; dragging it out ends
+ * the membership. When the pipeline moves, its children follow vertically.
  */
 export default class EvolutionConstraintBehavior extends CommandInterceptor {
-  static override $inject = ['eventBus', 'evolutionGrid'];
+  static override $inject = ['eventBus', 'evolutionGrid', 'elementRegistry'];
 
   constructor(
-    eventBus: EventBus,
+    private readonly eventBus: EventBus,
     private readonly grid: EvolutionGrid,
+    private readonly elementRegistry: ElementRegistry,
   ) {
     super(eventBus);
     const sync = (event: { context?: CommandContextLike }) => this.syncAll(event.context);
@@ -52,21 +58,85 @@ export default class EvolutionConstraintBehavior extends CommandInterceptor {
     if (shape.wardleyType === 'pipeline') {
       const start = this.grid.fromCanvas({ x: shape.x, y: cy });
       const end = this.grid.fromCanvas({ x: shape.x + shape.width, y: cy });
-      shape.evolutionStart = start.evolution;
-      shape.evolutionEnd = Math.max(end.evolution, start.evolution + 0.001);
-      shape.evolution = (shape.evolutionStart + shape.evolutionEnd) / 2;
+      // Keep the schema invariants even outside the plot area (0 <= start < end <= 1) —
+      // otherwise every export/share crashes once the pipeline has been dragged past the plot edge.
+      const [s, e] = clampRange(start.evolution, end.evolution);
+      shape.evolutionStart = s;
+      shape.evolutionEnd = e;
+      shape.evolution = clamp01((s + e) / 2);
       shape.visibility = start.visibility;
+      this.syncChildren(shape);
       return;
     }
     if (shape.wardleyType === 'attitude') {
-      // Attitude position = anchor point (top left), matching the OWM semantics.
+      // Attitude position = anchor point (top left), corner2 = bottom-right corner (OWM semantics).
       const tl = this.grid.fromCanvas({ x: shape.x, y: shape.y });
+      const br = this.grid.fromCanvas({ x: shape.x + shape.width, y: shape.y + shape.height });
       shape.evolution = tl.evolution;
       shape.visibility = tl.visibility;
+      shape.corner2 = br;
       return;
     }
     const coord = this.grid.fromCanvas({ x: shape.x + shape.width / 2, y: cy });
     shape.evolution = coord.evolution;
     shape.visibility = coord.visibility;
+    if (shape.wardleyType === 'component') this.updateMembership(shape);
   }
+
+  /** Derives pipeline membership from the geometry: midpoint inside the box = child. */
+  private updateMembership(shape: WardleyShape): void {
+    const cx = shape.x + shape.width / 2;
+    const cy = shape.y + shape.height / 2;
+    const host = (this.elementRegistry.filter((el) => isPipeline(el)) as WardleyShape[]).find(
+      (p) =>
+        // The eponymous component stays independent (it anchors the pipeline visibility).
+        p.wardleyLabel !== shape.wardleyLabel &&
+        cx >= p.x &&
+        cx <= p.x + p.width &&
+        cy >= p.y &&
+        cy <= p.y + p.height,
+    );
+    if (host) {
+      shape.pipelineId = host.id;
+      this.glueToPipeline(shape, host);
+    } else if (shape.pipelineId) {
+      delete shape.pipelineId;
+    }
+  }
+
+  /** Glues a child vertically onto its pipeline (children share its visibility). */
+  private glueToPipeline(child: WardleyShape, pipeline: WardleyShape): void {
+    child.y = pipeline.y + pipeline.height / 2 - child.height / 2;
+    child.visibility = pipeline.visibility;
+    this.fireChanged(child);
+  }
+
+  /** After a pipeline move/resize: carry the children along vertically. */
+  private syncChildren(pipeline: WardleyShape): void {
+    const children = this.elementRegistry.filter(
+      (el) => isWardleyShape(el) && (el as WardleyShape).pipelineId === pipeline.id,
+    ) as WardleyShape[];
+    for (const child of children) this.glueToPipeline(child, pipeline);
+  }
+
+  /** Triggers a re-render for programmatically moved shapes plus their connections. */
+  private fireChanged(shape: WardleyShape): void {
+    this.eventBus.fire('element.changed', { element: shape });
+    for (const conn of [...(shape.incoming ?? []), ...(shape.outgoing ?? [])]) {
+      this.eventBus.fire('element.changed', { element: conn });
+    }
+  }
+}
+
+const RANGE_EPS = 0.001;
+
+function clamp01(n: number): number {
+  return n < 0 ? 0 : n > 1 ? 1 : n;
+}
+
+/** Clamps an evolution range to [0,1] while guaranteeing `start < end` (schema invariant). */
+export function clampRange(start: number, end: number): [number, number] {
+  const e = clamp01(Math.max(end, start + RANGE_EPS));
+  const s = Math.max(0, Math.min(start, e - RANGE_EPS));
+  return [s, e];
 }

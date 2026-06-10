@@ -26,6 +26,92 @@ export function stripCoords(line: string): string {
   return line.replace(COORDS_RE, ' ');
 }
 
+/**
+ * Splits a line at the first `[a, b]` tuple: name before, suffix after.
+ * Decorators/label offsets may then only be looked up in the suffix — parentheses or
+ * words like "inertia" inside the name stay untouched.
+ */
+export function splitAtCoords(
+  line: string,
+): { name: string; coords: ParsedCoords; suffix: string } | null {
+  const m = COORDS_RE.exec(line);
+  if (!m) return null;
+  const a = Number(m[1]);
+  const b = Number(m[2]);
+  if (Number.isNaN(a) || Number.isNaN(b)) return null;
+  return {
+    name: line.slice(0, m.index).trim(),
+    coords: { a, b },
+    suffix: line.slice(m.index + m[0].length),
+  };
+}
+
+const COORDS4_RE = /\[\s*([-\d.]+)\s*,\s*([-\d.]+)\s*,\s*([-\d.]+)\s*,\s*([-\d.]+)\s*\]/;
+
+export interface ParsedCoords4 {
+  readonly a: number;
+  readonly b: number;
+  readonly c: number;
+  readonly d: number;
+}
+
+/** Extracts an `[a, b, c, d]` tuple (OWM attitude form) — or null. */
+export function parseCoords4(line: string): ParsedCoords4 | null {
+  const m = COORDS4_RE.exec(line);
+  if (!m) return null;
+  const vals = [m[1], m[2], m[3], m[4]].map(Number);
+  if (vals.some(Number.isNaN)) return null;
+  return { a: vals[0]!, b: vals[1]!, c: vals[2]!, d: vals[3]! };
+}
+
+const MULTI_COORDS_RE = /\[\s*(\[[^\]]*\](?:\s*,\s*\[[^\]]*\])+)\s*\]/;
+
+/** Extracts a tuple list `[[a,b],[c,d],…]` (OWM multi-position annotation) — or null. */
+export function parseMultiCoords(line: string): { tuples: ParsedCoords[]; rest: string } | null {
+  const m = MULTI_COORDS_RE.exec(line);
+  if (!m) return null;
+  const tuples: ParsedCoords[] = [];
+  const inner = /\[\s*([-\d.]+)\s*,\s*([-\d.]+)\s*\]/g;
+  let t: RegExpExecArray | null;
+  while ((t = inner.exec(m[1]!))) {
+    const a = Number(t[1]);
+    const b = Number(t[2]);
+    if (!Number.isNaN(a) && !Number.isNaN(b)) tuples.push({ a, b });
+  }
+  if (!tuples.length) return null;
+  return { tuples, rest: line.replace(MULTI_COORDS_RE, ' ') };
+}
+
+/**
+ * Splits off a `//` line comment. Quote-aware (`+'http://x'>` stays untouched) and
+ * URL-aware: `//` directly after `:` is a scheme separator (`url(https://…)`), not a comment.
+ */
+export function splitLineComment(line: string): { code: string; comment: string | null } {
+  let inQuote = false;
+  for (let i = 0; i < line.length - 1; i++) {
+    const ch = line[i];
+    if (ch === "'") inQuote = !inQuote;
+    else if (!inQuote && ch === '/' && line[i + 1] === '/' && line[i - 1] !== ':') {
+      return { code: line.slice(0, i), comment: line.slice(i) };
+    }
+  }
+  return { code: line, comment: null };
+}
+
+/** First occurrence of `needle` outside `'…'` quotes — or -1. */
+export function indexOfOutsideQuotes(line: string, needle: string): number {
+  let inQuote = false;
+  for (let i = 0; i + needle.length <= line.length; i++) {
+    const ch = line[i];
+    if (ch === "'") {
+      inQuote = !inQuote;
+      continue;
+    }
+    if (!inQuote && line.startsWith(needle, i)) return i;
+  }
+  return -1;
+}
+
 export interface InlineDecorators {
   readonly market?: boolean;
   readonly ecosystem?: boolean;
@@ -101,6 +187,16 @@ export function parseLabelOffset(line: string): {
   const rest = line.replace(LABEL_OFFSET_RE, ' ');
   if (Number.isNaN(dx) || Number.isNaN(dy)) return { labelOffset: null, rest };
   return { labelOffset: { dx, dy }, rest };
+}
+
+const URL_REF_RE = /\burl\s*\(\s*([^)]*?)\s*\)/i;
+
+/** Reads an optional `url(Name)` reference (OWM) and returns it plus the stripped line.
+ *  MUST run before parseDecorators — otherwise the word "url" would remain as junk in the suffix. */
+export function parseUrlRef(line: string): { urlRef: string | null; rest: string } {
+  const m = URL_REF_RE.exec(line);
+  if (!m) return { urlRef: null, rest: line };
+  return { urlRef: m[1] || null, rest: line.replace(URL_REF_RE, ' ') };
 }
 
 /** First word (keyword) of a line, lowercased. */

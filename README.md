@@ -81,14 +81,16 @@ Without a font the fallback chain degrades cleanly to system sans.
 | Flow `+>` / `+<>` / `+<` / `+'value'>`              |  ✅   |   ✅   |  ✅   |
 | Evolution `evolve`                                  |  ✅   |   ✅   |  ✅   |
 | Inertia                                             |  ✅   |   ✅   |  ✅   |
-| Pipeline `[matStart, matEnd]`                       |  ✅   |   ✅   |  ✅   |
-| Build / buy / outsource                             |  ✅   |   ✅   |  ✅   |
+| Pipeline `[matStart, matEnd]` + v2 block `{ … }`    |  ✅   |   ✅   |  ✅   |
+| Build / buy / outsource (incl. standalone lines)    |  ✅   |   ✅   |  ✅   |
 | Market / ecosystem                                  |  ✅   |   ✅   |  ✅   |
 | Accelerator / deaccelerator                         |  ✅   |   ✅   |  ✅   |
-| Pioneers / settlers / town planners                 |  ✅   |   ✅   |  ✅   |
-| Note                                                |  ✅   |   ✅   |  ✅   |
-| Annotation                                          |  ✅   |   ✅   |  ✅   |
-| Submap                                              |  ✅   |   ✅   |  ✅   |
+| Pioneers / settlers / town planners `[v1,m1,v2,m2]` |  ✅   |   ✅   |  ✅   |
+| Note (multi-line, colour)                           |  ✅   |   ✅   |  ✅   |
+| Annotation (incl. multi-position)                   |  ✅   |   ✅   |  ✅   |
+| Submap + `url` definitions / `url(...)` references  |  ✅   |   ✅   |  ✅   |
+| Comments `//` and `/* */` (kept via passthrough)    |  n/a  |  n/a   |  ✅   |
+| `label [dx, dy]` offsets                            |  ✅   |   ✅   |  ✅   |
 | `title` / `style` / `size` / `evolution` / `y-axis` |  ✅   |   ✅   |  ✅   |
 
 </details>

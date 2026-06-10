@@ -4,9 +4,10 @@
  * via drag & drop (idea borrowed from Excalidraw).
  */
 import { loadMap } from '@miragon/wardley-schema-model';
-import type { Modeler } from '@miragon/wardley-renderer';
+import { COLORS, type ImportWarning, type Modeler } from '@miragon/wardley-renderer';
 import { encodeMap, decodeMap } from './share.js';
 
+/** PNG tEXt keyword / SVG attribute for the embedded scene. */
 const EMBED_KEYWORD = 'wardley-map';
 const SVG_ATTR = 'data-wardley-map';
 
@@ -14,28 +15,31 @@ const SVG_ATTR = 'data-wardley-map';
 // Open
 // ---------------------------------------------------------------------------
 
-export async function openFile(file: File, viewer: Modeler): Promise<void> {
+/** Reads a file and imports it into the modeler. Throws with a descriptive message on errors. */
+export async function openFile(file: File, viewer: Modeler): Promise<ImportWarning[]> {
   const name = file.name.toLowerCase();
   if (name.endsWith('.png')) {
     const embedded = pngExtractText(new Uint8Array(await file.arrayBuffer()), EMBED_KEYWORD);
     if (!embedded) throw new Error('This PNG does not contain an embedded Wardley map.');
-    await viewer.importDSL(decodeMap(embedded));
-  } else if (name.endsWith('.svg')) {
+    return (await viewer.importDSL(decodeMap(embedded))).warnings;
+  }
+  if (name.endsWith('.svg')) {
     const dsl = extractSvgDsl(await file.text());
     if (!dsl) throw new Error('This SVG does not contain an embedded Wardley map.');
-    await viewer.importDSL(dsl);
-  } else if (name.endsWith('.json')) {
-    await viewer.importMap(loadMap(JSON.parse(await file.text())));
-  } else {
-    // .wmap / .owm / .txt / unknown -> treat as OWM-DSL
-    await viewer.importDSL(await file.text());
+    return (await viewer.importDSL(dsl)).warnings;
   }
+  if (name.endsWith('.json')) {
+    return (await viewer.importMap(loadMap(JSON.parse(await file.text())))).warnings;
+  }
+  // .wmap / .owm / .txt / unknown -> treat as OWM-DSL
+  return (await viewer.importDSL(await file.text())).warnings;
 }
 
 // ---------------------------------------------------------------------------
 // SVG export (with embedded DSL)
 // ---------------------------------------------------------------------------
 
+/** Embeds the DSL as an attribute on the root <svg>. */
 export function embedSvg(svg: string, dsl: string): string {
   return svg.replace(/<svg\b/, `<svg ${SVG_ATTR}="${encodeMap(dsl)}"`);
 }
@@ -49,9 +53,21 @@ function extractSvgDsl(svg: string): string | null {
 // PNG export (rasterize + embed DSL via a tEXt chunk)
 // ---------------------------------------------------------------------------
 
-export async function svgToEmbeddedPng(svg: string, dsl: string, scale = 2): Promise<Blob> {
+export interface PngOptions {
+  /** Rasterization factor (default 2x). */
+  readonly scale?: number;
+  /** Export without a background fill (for slides/docs). */
+  readonly transparent?: boolean;
+}
+
+/** Rasterizes the SVG to PNG and embeds the DSL as a tEXt chunk. */
+export async function svgToEmbeddedPng(
+  svg: string,
+  dsl: string,
+  options: PngOptions = {},
+): Promise<Blob> {
   const { width, height } = svgSize(svg);
-  const png = await rasterize(svg, width, height, scale);
+  const png = await rasterize(svg, width, height, options.scale ?? 2, options.transparent ?? false);
   const withScene = pngInsertText(png, EMBED_KEYWORD, encodeMap(dsl));
   return new Blob([withScene as BlobPart], { type: 'image/png' });
 }
@@ -67,6 +83,7 @@ async function rasterize(
   width: number,
   height: number,
   scale: number,
+  transparent: boolean,
 ): Promise<Uint8Array> {
   const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
   try {
@@ -83,8 +100,10 @@ async function rasterize(
     canvas.height = Math.round(height * scale);
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('Canvas 2D context not available.');
-    ctx.fillStyle = '#fbfaf7';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    if (!transparent) {
+      ctx.fillStyle = COLORS.paper;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
     if (!blob) throw new Error('PNG generation failed.');

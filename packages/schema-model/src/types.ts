@@ -68,6 +68,8 @@ export interface ComponentElement extends MapElementBase {
   readonly movement?: Movement;
   /** Membership in a pipeline (shares its visibility). */
   readonly pipelineId?: string;
+  /** Resolved address from OWM `url Name [address]` + a `url(Name)` reference. */
+  readonly url?: string;
 }
 
 export interface PipelineElement extends MapElementBase {
@@ -111,12 +113,12 @@ export interface AcceleratorElement extends MapElementBase {
 export type AttitudeKind = 'pioneers' | 'settlers' | 'townplanners';
 
 export interface AttitudeElement extends MapElementBase {
-  /** OWM syntax: `<kind> [visibility, maturity] width height`. `position` = anchor point (top left),
-   *  `width`/`height` in (OWM) pixels. */
+  /** OWM syntax: `<kind> [vis1, mat1, vis2, mat2]` (two corner points, normalized).
+   *  `position` = anchor point at the top left (higher visibility, lower evolution),
+   *  `corner2` = opposite corner at the bottom right. */
   readonly elementType: 'attitude';
   readonly kind: AttitudeKind;
-  readonly width: number;
-  readonly height: number;
+  readonly corner2: Coordinate;
 }
 
 export interface SubmapElement extends MapElementBase {
@@ -174,6 +176,13 @@ export interface MapConfig {
   readonly yAxisLabel?: string;
   readonly annotationsBoxPosition?: Coordinate;
 }
+
+/**
+ * Default plot area in diagram px (inner area without axis margins). Single source of truth for
+ * the renderer (PLOT) and for migrations (legacy px -> normalized); can be overridden via
+ * `config.size`.
+ */
+export const DEFAULT_PLOT_SIZE = { width: 1080, height: 680 } as const;
 
 /** Root object. Domain and layout are separated logically (not physically). */
 export interface WardleyMap {

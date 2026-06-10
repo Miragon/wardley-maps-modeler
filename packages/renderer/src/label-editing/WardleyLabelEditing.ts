@@ -13,6 +13,19 @@ interface ActiveEdit {
 }
 
 /**
+ * Defuses DSL metacharacters in labels: in the OWM DSL, names double as references —
+ * `->`, `;` and square brackets would corrupt edge/coordinate lines on re-import.
+ */
+function sanitizeLabel(raw: string): string {
+  return raw
+    .replace(/->/g, '→') // -> would be the edge operator
+    .replace(/;/g, ',') // ; separates link annotations
+    .replace(/\[/g, '(') // [..] would be a coordinate tuple
+    .replace(/\]/g, ')')
+    .trim();
+}
+
+/**
  * Custom inline label editing as an HTML overlay (deliberately not diagram-js direct-editing, §8.5).
  * Commit goes through `wardleyModeling.updateLabel` -> commandStack (undo, P4).
  * Notes are edited in a `<textarea>` (multiline: Enter = line break, Cmd/Ctrl+Enter or click outside
@@ -78,7 +91,9 @@ export default class WardleyLabelEditing {
     };
     const commit = () => {
       if (done) return;
-      const value = field.value.trim();
+      // Enforce metacharacter protection also on RENAME — the DSL references elements by their
+      // name; unescaped `->`, `;` or brackets would corrupt edge/coordinate lines on re-import.
+      const value = sanitizeLabel(field.value);
       const changed = value && value !== element.wardleyLabel;
       cleanup();
       if (!changed) return;

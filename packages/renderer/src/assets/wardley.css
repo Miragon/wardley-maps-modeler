@@ -189,11 +189,21 @@
   pointer-events: none;
 }
 
+/* Style variant: dark — set by the viewer from the DSL directive `style dark`.
+   Deliberate design: the surroundings turn dark, while the plot area itself stays "paper"
+   (map contents are SVG presentation attributes and thus theme-stable/printable). */
 .wardley-container.wardley-dark {
   --wardley-paper: #11151b;
   --wardley-ink: #e8eaed;
   background-color: var(--wardley-paper);
   background-image: radial-gradient(rgba(255, 255, 255, 0.05) 0.6px, transparent 0.6px);
+}
+.wardley-container.wardley-dark .djs-palette {
+  background: #1a2028;
+  border-color: #2a323d;
+}
+.wardley-container.wardley-dark .djs-palette .entry {
+  color: var(--wardley-ink);
 }
 
 /* Note color picker (bpmn.io style): compact 3x3 grid of small color squares, no text.

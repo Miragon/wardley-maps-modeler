@@ -8,8 +8,15 @@ import type {
   default as ContextPadProvider,
 } from 'diagram-js/lib/features/context-pad/ContextPadProvider';
 import type { Element } from 'diagram-js/lib/model/Types';
-import { isWardleyShape, isWardleyConnection, type WardleyShape } from '../model/di-types.js';
+import type { ComponentElement, MapEdge, SubmapElement } from '@miragon/wardley-schema-model';
+import {
+  isWardleyShape,
+  isWardleyConnection,
+  type WardleyConnection,
+  type WardleyShape,
+} from '../model/di-types.js';
 import type WardleyModeling from '../modeling/WardleyModeling.js';
+import type WardleyConnectMode from '../modeling/WardleyConnectMode.js';
 import type WardleyLabelEditing from '../label-editing/WardleyLabelEditing.js';
 import type WardleyEvolveDragging from '../evolve/WardleyEvolveDragging.js';
 import type WardleyElementFactory from '../model/WardleyElementFactory.js';
@@ -25,6 +32,7 @@ import {
   ICON_EDIT,
   ICON_PALETTE,
   ICON_SETTINGS,
+  ICON_SWAP_HORIZ,
 } from '../draw/icons.js';
 
 /**
@@ -44,6 +52,7 @@ export default class WardleyContextPadProvider implements ContextPadProvider {
     'create',
     'popupMenu',
     'wardleyModeling',
+    'wardleyConnectMode',
     'wardleyLabelEditing',
     'wardleyEvolveDragging',
     'wardleyElementFactory',
@@ -57,6 +66,7 @@ export default class WardleyContextPadProvider implements ContextPadProvider {
     private readonly create: Create,
     private readonly popupMenu: PopupMenu,
     private readonly wardleyModeling: WardleyModeling,
+    private readonly connectMode: WardleyConnectMode,
     private readonly labelEditing: WardleyLabelEditing,
     private readonly evolveDragging: WardleyEvolveDragging,
     private readonly factory: WardleyElementFactory,
@@ -66,10 +76,17 @@ export default class WardleyContextPadProvider implements ContextPadProvider {
   }
 
   getContextPadEntries(element: Element): ContextPadEntries {
-    // Connections (dependency/flow): own pad with delete only — otherwise there would be no way to
-    // remove a line again (shapes get their full pad further below).
+    // Connections (dependency/flow): type toggle + delete.
     if (isWardleyConnection(element)) {
+      const conn = element as WardleyConnection;
+      const toFlow = conn.wardleyType === 'dependency';
       return {
+        'toggle-type': {
+          group: 'edit',
+          title: toFlow ? 'Convert to flow link' : 'Convert to dependency',
+          html: cpHtml(ICON_SWAP_HORIZ, toFlow ? 'Convert to flow link' : 'Convert to dependency'),
+          action: { click: () => this.toggleConnectionType(conn) },
+        },
         delete: {
           group: 'edit',
           title: 'Delete connection',
@@ -108,6 +125,19 @@ export default class WardleyContextPadProvider implements ContextPadProvider {
         html: cpHtml(ICON_ARROW_FORWARD, 'Connect to existing element', true),
         action: { click: startConnect, dragstart: startConnect },
       };
+
+      // Flow variant: identical connect drag, but the connection.create rule reads the
+      // one-shot mode flag and creates a flow link (+>).
+      const startFlowConnect = (event: Event) => {
+        this.connectMode.setFlow();
+        this.connect.start(event as MouseEvent, shape as unknown as Element);
+      };
+      entries['connect-flow'] = {
+        group: 'edit',
+        title: 'Connect as flow (+>)',
+        html: cpHtml(ICON_SWAP_HORIZ, 'Connect as flow', true),
+        action: { click: startFlowConnect, dragstart: startFlowConnect },
+      };
     }
 
     if (shape.wardleyType === 'component') {
@@ -120,9 +150,10 @@ export default class WardleyContextPadProvider implements ContextPadProvider {
           html: cpHtml(ICON_CLOSE, 'Remove evolve'),
           action: { click: () => this.wardleyModeling.clearMovement(shape) },
         };
-      } else {
+      } else if (shape.evolution < 0.999) {
         // Drag the target out along the axis (live preview). The click does NOT model immediately
-        // (no automatic +0.2 anymore) — it only starts the placement.
+        // (no automatic +0.2 anymore) — it only starts the placement. At evolution ~ 1 there is
+        // no meaningful target left — the entry is omitted (instead of creating a null movement).
         const startEvolve = (event: Event) => this.evolveDragging.start(event, shape);
         entries['evolve'] = {
           group: 'wardley',
@@ -162,6 +193,19 @@ export default class WardleyContextPadProvider implements ContextPadProvider {
       };
     }
 
+    // OWM `url(...)`: open the stored address (submap drill-down / component link).
+    const bo = shape.businessObject;
+    const linkUrl =
+      (bo as ComponentElement | undefined)?.url ?? (bo as SubmapElement | undefined)?.urlRef;
+    if (linkUrl) {
+      entries['open-link'] = {
+        group: 'wardley',
+        title: `Open link (${linkUrl})`,
+        html: cpHtml(ICON_ARROW_FORWARD, 'Open link'),
+        action: { click: () => window.open(linkUrl, '_blank', 'noopener') },
+      };
+    }
+
     entries['edit-label'] = {
       group: 'edit',
       title: 'Edit label',
@@ -177,5 +221,29 @@ export default class WardleyContextPadProvider implements ContextPadProvider {
     };
 
     return entries;
+  }
+
+  /**
+   * Toggles a connection between dependency <-> flow (undoable). The businessObject is updated
+   * along with it because the exporter prefers it for imported edges; flow-specific fields
+   * (flowValue/bidirectional) are dropped when switching to dependency.
+   */
+  private toggleConnectionType(conn: WardleyConnection): void {
+    const next = conn.wardleyType === 'dependency' ? 'flow' : 'dependency';
+    const base = {
+      id: conn.id,
+      from: conn.source?.id ?? '',
+      to: conn.target?.id ?? '',
+      ...(conn.linkLabel ? { label: conn.linkLabel } : {}),
+    };
+    const businessObject: MapEdge =
+      next === 'flow'
+        ? { ...base, edgeType: 'flow', ...(conn.bidirectional ? { bidirectional: true } : {}) }
+        : { ...base, edgeType: 'dependency' };
+    this.wardleyModeling.updateProperties(conn, {
+      wardleyType: next,
+      businessObject,
+      ...(next === 'dependency' ? { bidirectional: undefined, flowValue: undefined } : {}),
+    });
   }
 }

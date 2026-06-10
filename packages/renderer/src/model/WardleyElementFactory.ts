@@ -59,6 +59,16 @@ export default class WardleyElementFactory {
     return `${base} ${i}`;
   }
 
+  /** Next free annotation number (max + 1) — palette annotations therefore never collide. */
+  private nextAnnotationNumber(): number {
+    let max = 0;
+    for (const el of this.elementRegistry.getAll()) {
+      const n = (el as { annotationNumber?: unknown }).annotationNumber;
+      if (typeof n === 'number' && n > max) max = n;
+    }
+    return max + 1;
+  }
+
   createComponent(el: ComponentElement): WardleyShape {
     return this.node(
       'component',
@@ -70,12 +80,16 @@ export default class WardleyElementFactory {
       {
         ...(el.decorators ? { decorators: el.decorators } : {}),
         ...(el.movement ? { movement: el.movement } : {}),
+        ...(el.labelOffset ? { labelOffset: el.labelOffset } : {}),
+        ...(el.pipelineId ? { pipelineId: el.pipelineId } : {}),
       },
     );
   }
 
   createAnchor(el: AnchorElement): WardleyShape {
-    return this.node('anchor', el.id, el.label, el.position.visibility, el.position.evolution, el);
+    return this.node('anchor', el.id, el.label, el.position.visibility, el.position.evolution, el, {
+      ...(el.labelOffset ? { labelOffset: el.labelOffset } : {}),
+    });
   }
 
   createNote(el: NoteElement): WardleyShape {
@@ -150,19 +164,23 @@ export default class WardleyElementFactory {
   }
 
   createAttitude(el: AttitudeElement): WardleyShape {
-    // OWM: position = anchor point (top left), width/height in px.
-    const anchor = this.grid.toCanvas(el.position);
+    // OWM canon: position = top-left corner, corner2 = bottom-right corner (both normalized).
+    const a = this.grid.toCanvas(el.position);
+    const b = this.grid.toCanvas(el.corner2);
+    const x = Math.min(a.x, b.x);
+    const y = Math.min(a.y, b.y);
     const shape = this.elementFactory.createShape({
       id: el.id,
-      x: anchor.x,
-      y: anchor.y,
-      width: Math.max(el.width, 4),
-      height: Math.max(el.height, 4),
+      x,
+      y,
+      width: Math.max(Math.abs(b.x - a.x), 4),
+      height: Math.max(Math.abs(b.y - a.y), 4),
       wardleyType: 'attitude',
       wardleyLabel: el.label || el.kind,
       attitudeKind: el.kind,
       evolution: el.position.evolution,
       visibility: el.position.visibility,
+      corner2: el.corner2,
       isFrame: true,
       businessObject: el,
     });
@@ -224,6 +242,9 @@ export default class WardleyElementFactory {
       : extra.ecosystem
         ? { ecosystem: true }
         : undefined;
+    // Annotations automatically get the next free number (instead of a fixed "1").
+    const annotationNumber =
+      type === 'annotation' ? (extra.annotationNumber ?? this.nextAnnotationNumber()) : undefined;
     const shape = this.elementFactory.createShape({
       width: NODE_SIZE,
       height: NODE_SIZE,
@@ -232,7 +253,7 @@ export default class WardleyElementFactory {
       evolution: 0.5,
       visibility: 0.5,
       ...(extra.acceleratorDirection ? { acceleratorDirection: extra.acceleratorDirection } : {}),
-      ...(extra.annotationNumber !== undefined ? { annotationNumber: extra.annotationNumber } : {}),
+      ...(annotationNumber !== undefined ? { annotationNumber } : {}),
       ...(decorators ? { decorators } : {}),
     });
     return shape as unknown as WardleyShape;
