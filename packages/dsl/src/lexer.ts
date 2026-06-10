@@ -64,14 +64,15 @@ export function parseCoords4(line: string): ParsedCoords4 | null {
   return { a: vals[0]!, b: vals[1]!, c: vals[2]!, d: vals[3]! };
 }
 
-const MULTI_COORDS_RE = /\[\s*(\[[^\]]*\](?:\s*,\s*\[[^\]]*\])+)\s*\]/;
+// `[^[\]]` (tuples cannot contain '[') + bounded whitespace keep the scan linear (ReDoS-safe).
+const MULTI_COORDS_RE = /\[\s{0,8}(\[[^[\]]*\](?:\s{0,8},\s{0,8}\[[^[\]]*\])+)\s{0,8}\]/;
 
 /** Extracts a tuple list `[[a,b],[c,d],…]` (OWM multi-position annotation) — or null. */
 export function parseMultiCoords(line: string): { tuples: ParsedCoords[]; rest: string } | null {
   const m = MULTI_COORDS_RE.exec(line);
   if (!m) return null;
   const tuples: ParsedCoords[] = [];
-  const inner = /\[\s*([-\d.]+)\s*,\s*([-\d.]+)\s*\]/g;
+  const inner = /\[\s{0,8}([-\d.]+)\s{0,8},\s{0,8}([-\d.]+)\s{0,8}\]/g;
   let t: RegExpExecArray | null;
   while ((t = inner.exec(m[1]!))) {
     const a = Number(t[1]);
@@ -119,7 +120,7 @@ export interface InlineDecorators {
   readonly method?: Method;
 }
 
-const PAREN_RE = /\(([^)]*)\)/g;
+const PAREN_RE = /\(([^()]*)\)/g;
 const METHODS: ReadonlySet<string> = new Set(['build', 'buy', 'outsource']);
 
 /**
@@ -189,14 +190,14 @@ export function parseLabelOffset(line: string): {
   return { labelOffset: { dx, dy }, rest };
 }
 
-const URL_REF_RE = /\burl\s*\(\s*([^)]*?)\s*\)/i;
+const URL_REF_RE = /\burl\s{0,8}\(([^()]*)\)/i;
 
 /** Reads an optional `url(Name)` reference (OWM) and returns it plus the stripped line.
  *  MUST run before parseDecorators — otherwise the word "url" would remain as junk in the suffix. */
 export function parseUrlRef(line: string): { urlRef: string | null; rest: string } {
   const m = URL_REF_RE.exec(line);
   if (!m) return { urlRef: null, rest: line };
-  return { urlRef: m[1] || null, rest: line.replace(URL_REF_RE, ' ') };
+  return { urlRef: m[1]!.trim() || null, rest: line.replace(URL_REF_RE, ' ') };
 }
 
 /** First word (keyword) of a line, lowercased. */
@@ -211,6 +212,7 @@ export function slug(label: string): string {
       .trim()
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '_')
-      .replace(/^_+|_+$/g, '') || 'x'
+      .replace(/^_/, '')
+      .replace(/_$/, '') || 'x'
   );
 }

@@ -39,9 +39,17 @@ import {
   type InlineDecorators,
 } from './lexer.js';
 
-const DEP_RE = /^(.+?)\s*->\s*(.+)$/;
-// Flow: A +> B, A +<> B, A +< B (reverse), A +'120ms'> B, A +'120ms'<> B
-const FLOW_RE = /^(.+?)\s*\+(?:'([^']*)')?(<>|>|<)\s*(.+)$/;
+/** Splits `A -> B` at the FIRST arrow — plain indexOf, immune to regex backtracking. */
+function splitDependency(core: string): { left: string; right: string } | null {
+  const arrow = core.indexOf('->');
+  if (arrow <= 0) return null;
+  const left = core.slice(0, arrow).trim();
+  const right = core.slice(arrow + 2).trim();
+  return left && right ? { left, right } : null;
+}
+// Flow: A +> B, A +<> B, A +< B (reverse), A +'120ms'> B, A +'120ms'<> B.
+// No `\s*` before/after the operator (captures are trimmed in code) — keeps matching linear.
+const FLOW_RE = /^(.+?)\+(?:'([^']*)')?(<>|>|<)(.+)$/;
 // Config/special keywords that must NOT be (pre-)detected as an edge — `evolution`/`evolve`/
 // `y-axis`/`title` can themselves contain `->` and have their own handling in the switch.
 const NON_LINK_KEYWORDS: ReadonlySet<string> = new Set([
@@ -182,12 +190,12 @@ export function parseDSLWithDiagnostics(text: string): ParseResult {
     const semi = line.indexOf(';');
     const core = semi >= 0 ? line.slice(0, semi).trim() : line;
     const linkLabel = semi >= 0 ? line.slice(semi + 1).trim() : '';
-    const dep = DEP_RE.exec(core);
+    const dep = splitDependency(core);
     const flow = dep ? null : FLOW_RE.exec(core);
     if (dep) {
       pendingLinks.push({
-        left: dep[1]!.trim(),
-        right: dep[2]!.trim(),
+        left: dep.left,
+        right: dep.right,
         kind: 'dependency',
         ...(linkLabel ? { label: linkLabel } : {}),
         raw: line,
@@ -557,12 +565,16 @@ export function parseDSLWithDiagnostics(text: string): ParseResult {
 
       case 'url': {
         // OWM: `url Name [https://…]` — definition, referenced via `url(Name)` on elements.
-        const m = /^(.*?)\s*\[\s*([^\]]+?)\s*\]\s*$/.exec(after);
-        if (!m || !m[1]!.trim()) {
+        // Parsed via indexOf (not regex) — immune to backtracking on hostile input.
+        const open = after.indexOf('[');
+        const close = after.lastIndexOf(']');
+        const name = open > 0 ? after.slice(0, open).trim() : '';
+        const address = open > 0 && close > open ? after.slice(open + 1, close).trim() : '';
+        if (!name || !address || after.slice(close + 1).trim() !== '') {
           failed(line);
           break;
         }
-        urlDefs.set(m[1]!.trim(), m[2]!.trim());
+        urlDefs.set(name, address);
         break;
       }
 
