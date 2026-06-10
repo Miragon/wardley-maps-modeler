@@ -143,6 +143,8 @@ export default class WardleyImporter {
         return this.factory.createAccelerator(el);
       case 'submap':
         return this.factory.createSubmap(el);
+      case 'drawing':
+        return this.factory.createDrawing(el);
       default: {
         const exhaustive: never = el;
         void exhaustive;

@@ -14,6 +14,7 @@ import PopupMenuModule from 'diagram-js/lib/features/popup-menu';
 
 import { NavigatedViewer } from './NavigatedViewer.js';
 import { wardleyModelingModule } from './modeling/index.js';
+import { wardleyLassoModule } from './lasso/index.js';
 import { wardleyRulesModule } from './rules/index.js';
 import { evolutionConstraintModule } from './evolution-grid/index.js';
 import { stageSnappingModule } from './snapping/index.js';
@@ -25,6 +26,8 @@ import { wardleyEvolveModule } from './evolve/index.js';
 import { wardleyPopupModule } from './popup/index.js';
 import { wardleyAppendModule } from './append/index.js';
 import { wardleyColorPickerModule } from './color-picker/index.js';
+import { wardleyOrderingModule } from './ordering/index.js';
+import { wardleyDrawToolModule } from './draw-tool/index.js';
 
 /**
  * Full Wardley editor: palette/create, move with EvolutionConstraint + stage snapping, connect with
@@ -56,6 +59,9 @@ export class Modeler extends NavigatedViewer {
       wardleyPopupModule,
       wardleyAppendModule,
       wardleyColorPickerModule,
+      wardleyLassoModule,
+      wardleyOrderingModule,
+      wardleyDrawToolModule,
     ];
   }
 

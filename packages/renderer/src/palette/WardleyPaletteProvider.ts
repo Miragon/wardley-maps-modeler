@@ -1,5 +1,7 @@
 import type Palette from 'diagram-js/lib/features/palette/Palette';
 import type Create from 'diagram-js/lib/features/create/Create';
+import type LassoTool from 'diagram-js/lib/features/lasso-tool/LassoTool';
+import type WardleyDrawTool from '../draw-tool/WardleyDrawTool.js';
 import type {
   PaletteEntries,
   PaletteEntry,
@@ -30,7 +32,7 @@ const SPECS: readonly PaletteSpec[] = [
     key: 'component',
     type: 'component',
     label: 'Component',
-    title: 'Component',
+    title: 'Component — C',
     icon: PALETTE_ICONS.component!,
     group: GROUP_BLOCKS,
   },
@@ -56,7 +58,7 @@ const SPECS: readonly PaletteSpec[] = [
     key: 'anchor',
     type: 'anchor',
     label: 'User',
-    title: 'Anchor / User',
+    title: 'Anchor / User — U',
     icon: PALETTE_ICONS.anchor!,
     group: GROUP_BLOCKS,
   },
@@ -123,6 +125,8 @@ const SPECS: readonly PaletteSpec[] = [
     extra: { acceleratorDirection: 'deaccelerate' },
   },
 
+  // Annotations (numbered markers + legend) are deliberately NOT in the palette: Note covers
+  // free text; imported OWM maps still render annotations (viewer compatibility).
   {
     key: 'note',
     type: 'note',
@@ -131,30 +135,45 @@ const SPECS: readonly PaletteSpec[] = [
     icon: PALETTE_ICONS.note!,
     group: GROUP_NOTES,
   },
-  {
-    key: 'annotation',
-    type: 'annotation',
-    label: 'Annotation',
-    title: 'Annotation (numbered marker)',
-    icon: PALETTE_ICONS.annotation!,
-    group: GROUP_NOTES,
-    extra: { annotationNumber: 1 },
-  },
 ];
 
 export default class WardleyPaletteProvider implements PaletteProvider {
-  static $inject = ['palette', 'create', 'wardleyElementFactory'];
+  static $inject = ['palette', 'create', 'wardleyElementFactory', 'lassoTool', 'wardleyDrawTool'];
 
   constructor(
     palette: Palette,
     private readonly create: Create,
     private readonly factory: WardleyElementFactory,
+    private readonly lassoTool: LassoTool,
+    private readonly drawTool: WardleyDrawTool,
   ) {
     palette.registerProvider(this);
   }
 
   getPaletteEntries(): PaletteEntries {
     const entries: Record<string, PaletteEntry> = {};
+
+    // Selection tool first. Group MUST be called "tools" and the key end in "-tool" — that is
+    // what diagram-js' palette uses to highlight the active tool (tool-manager.update).
+    entries['lasso-tool'] = {
+      group: 'tools',
+      title: 'Selection tool — L (or Shift+drag)',
+      html: `<div class="entry wardley-palette-entry" title="Selection tool — L (or Shift+drag)">${PALETTE_ICONS.lasso}</div>`,
+      action: {
+        click: (event: Event) => this.lassoTool.activateSelection(event as MouseEvent),
+      },
+    };
+
+    entries['draw-tool'] = {
+      group: 'tools',
+      title:
+        'Draw — click point by point, double-click/Enter finishes, click the start point to close',
+      html: `<div class="entry wardley-palette-entry" title="Draw — click point by point, double-click/Enter finishes, click the start point to close">${PALETTE_ICONS.draw}</div>`,
+      action: {
+        click: () => this.drawTool.toggle(),
+      },
+    };
+
     for (const spec of SPECS) {
       const start = (event: Event) => {
         const shape = this.factory.createNew(spec.type, spec.label, spec.extra ?? {});

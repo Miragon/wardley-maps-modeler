@@ -54,7 +54,12 @@
             Export · OWM-DSL
           </button>
           <button id="m-svg" type="button" class="menu-item" role="menuitem">Export · SVG</button>
-          <button id="m-png" type="button" class="menu-item" role="menuitem">Export · PNG</button>
+          <button id="m-png" type="button" class="menu-item" role="menuitem">
+            Export · PNG (2×)
+          </button>
+          <button id="m-png-transparent" type="button" class="menu-item" role="menuitem">
+            Export · PNG (4×, transparent)
+          </button>
           <div class="menu-sep" role="separator"></div>
           <label class="menu-field">
             <span>Map size</span>
@@ -75,6 +80,13 @@
       <!-- Floating share button, top right -->
       <div class="app-toolbar">
         <button id="btn-share" type="button" class="primary">Share</button>
+      </div>
+
+      <!-- Zoom-Controls unten rechts (Excalidraw-Stil) -->
+      <div class="app-zoom" role="toolbar" aria-label="Zoom">
+        <button id="z-out" type="button" class="zoom-btn" title="Zoom out (Ctrl+-)">−</button>
+        <button id="z-level" type="button" class="zoom-level" title="Fit map (Ctrl+0)">100%</button>
+        <button id="z-in" type="button" class="zoom-btn" title="Zoom in (Ctrl++)">+</button>
       </div>
       <input id="file-input" type="file" accept=".wmap,.owm,.txt,.json,.svg,.png" hidden />
     </div>

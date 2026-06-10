@@ -8,6 +8,7 @@ import type {
   AttitudeElement,
   AttitudeKind,
   ComponentElement,
+  DrawingElement,
   MapEdge,
   NoteElement,
   PipelineElement,
@@ -59,8 +60,18 @@ export default class WardleyElementFactory {
     return `${base} ${i}`;
   }
 
+  /** Next free annotation number (max + 1) — palette annotations therefore never collide. */
+  private nextAnnotationNumber(): number {
+    let max = 0;
+    for (const el of this.elementRegistry.getAll()) {
+      const n = (el as { annotationNumber?: unknown }).annotationNumber;
+      if (typeof n === 'number' && n > max) max = n;
+    }
+    return max + 1;
+  }
+
   createComponent(el: ComponentElement): WardleyShape {
-    return this.node(
+    const shape = this.node(
       'component',
       el.id,
       el.label,
@@ -70,12 +81,20 @@ export default class WardleyElementFactory {
       {
         ...(el.decorators ? { decorators: el.decorators } : {}),
         ...(el.movement ? { movement: el.movement } : {}),
+        ...(el.labelOffset ? { labelOffset: el.labelOffset } : {}),
+        ...(el.pipelineId ? { pipelineId: el.pipelineId } : {}),
       },
     );
+    // Pipeline children sit INSIDE the box (whose top edge is the anchor line) — shift their
+    // pixel position to the box center; visibility (model truth) stays the pipeline's.
+    if (el.pipelineId) shape.y += PIPELINE_HEIGHT / 2;
+    return shape;
   }
 
   createAnchor(el: AnchorElement): WardleyShape {
-    return this.node('anchor', el.id, el.label, el.position.visibility, el.position.evolution, el);
+    return this.node('anchor', el.id, el.label, el.position.visibility, el.position.evolution, el, {
+      ...(el.labelOffset ? { labelOffset: el.labelOffset } : {}),
+    });
   }
 
   createNote(el: NoteElement): WardleyShape {
@@ -112,7 +131,8 @@ export default class WardleyElementFactory {
     const shape = this.elementFactory.createShape({
       id: el.id,
       x: start.x,
-      y: start.y - PIPELINE_HEIGHT / 2,
+      // The box's TOP EDGE is the anchor line — the ■ square straddles it (drawn by the renderer).
+      y: start.y,
       width,
       height: PIPELINE_HEIGHT,
       wardleyType: 'pipeline',
@@ -124,6 +144,7 @@ export default class WardleyElementFactory {
       // Frame: only the border is clickable -> inner clicks reach the nodes (diagram-js isFrame).
       isFrame: true,
       businessObject: el,
+      ...(el.color ? { color: el.color } : {}),
     });
     return shape as unknown as WardleyShape;
   }
@@ -150,27 +171,81 @@ export default class WardleyElementFactory {
   }
 
   createAttitude(el: AttitudeElement): WardleyShape {
-    // OWM: position = anchor point (top left), width/height in px.
-    const anchor = this.grid.toCanvas(el.position);
+    // OWM canon: position = top-left corner, corner2 = bottom-right corner (both normalized).
+    const a = this.grid.toCanvas(el.position);
+    const b = this.grid.toCanvas(el.corner2);
+    const x = Math.min(a.x, b.x);
+    const y = Math.min(a.y, b.y);
     const shape = this.elementFactory.createShape({
       id: el.id,
-      x: anchor.x,
-      y: anchor.y,
-      width: Math.max(el.width, 4),
-      height: Math.max(el.height, 4),
+      x,
+      y,
+      width: Math.max(Math.abs(b.x - a.x), 4),
+      height: Math.max(Math.abs(b.y - a.y), 4),
       wardleyType: 'attitude',
       wardleyLabel: el.label || el.kind,
       attitudeKind: el.kind,
       evolution: el.position.evolution,
       visibility: el.position.visibility,
+      corner2: el.corner2,
       isFrame: true,
       businessObject: el,
+      ...(el.color ? { color: el.color } : {}),
     });
     return shape as unknown as WardleyShape;
   }
 
   createSubmap(el: SubmapElement): WardleyShape {
     return this.node('submap', el.id, el.label, el.position.visibility, el.position.evolution, el);
+  }
+
+  createDrawing(el: DrawingElement): WardleyShape {
+    const canvasPoints = el.points.map((p) => this.grid.toCanvas(p));
+    return this.drawingFromCanvasPoints(canvasPoints, {
+      id: el.id,
+      ...(el.closed ? { closed: true } : {}),
+      ...(el.strokeStyle ? { strokeStyle: el.strokeStyle } : {}),
+      ...(el.color ? { color: el.color } : {}),
+      businessObject: el,
+    });
+  }
+
+  /** Builds a drawing shape from ABSOLUTE canvas points (bbox shape + relative points). */
+  drawingFromCanvasPoints(
+    canvasPoints: ReadonlyArray<{ x: number; y: number }>,
+    extra: {
+      id?: string;
+      closed?: boolean;
+      strokeStyle?: DrawingElement['strokeStyle'];
+      color?: string;
+      businessObject?: DrawingElement;
+    } = {},
+  ): WardleyShape {
+    const xs = canvasPoints.map((p) => p.x);
+    const ys = canvasPoints.map((p) => p.y);
+    const x = Math.min(...xs);
+    const y = Math.min(...ys);
+    const width = Math.max(Math.max(...xs) - x, 4);
+    const height = Math.max(Math.max(...ys) - y, 4);
+    const first = canvasPoints[0]!;
+    const firstNorm = this.grid.fromCanvas(first);
+    const shape = this.elementFactory.createShape({
+      ...(extra.id ? { id: extra.id } : {}),
+      x,
+      y,
+      width,
+      height,
+      wardleyType: 'drawing',
+      wardleyLabel: '',
+      evolution: firstNorm.evolution,
+      visibility: firstNorm.visibility,
+      drawingPoints: canvasPoints.map((p) => ({ x: p.x - x, y: p.y - y })),
+      ...(extra.closed ? { closed: true } : {}),
+      ...(extra.strokeStyle ? { strokeStyle: extra.strokeStyle } : {}),
+      ...(extra.color ? { color: extra.color } : {}),
+      ...(extra.businessObject ? { businessObject: extra.businessObject } : {}),
+    });
+    return shape as unknown as WardleyShape;
   }
 
   createNew(
@@ -224,6 +299,9 @@ export default class WardleyElementFactory {
       : extra.ecosystem
         ? { ecosystem: true }
         : undefined;
+    // Annotations automatically get the next free number (instead of a fixed "1").
+    const annotationNumber =
+      type === 'annotation' ? (extra.annotationNumber ?? this.nextAnnotationNumber()) : undefined;
     const shape = this.elementFactory.createShape({
       width: NODE_SIZE,
       height: NODE_SIZE,
@@ -232,7 +310,7 @@ export default class WardleyElementFactory {
       evolution: 0.5,
       visibility: 0.5,
       ...(extra.acceleratorDirection ? { acceleratorDirection: extra.acceleratorDirection } : {}),
-      ...(extra.annotationNumber !== undefined ? { annotationNumber: extra.annotationNumber } : {}),
+      ...(annotationNumber !== undefined ? { annotationNumber } : {}),
       ...(decorators ? { decorators } : {}),
     });
     return shape as unknown as WardleyShape;
@@ -257,6 +335,7 @@ export default class WardleyElementFactory {
     extra: Partial<WardleyShape> = {},
   ): WardleyShape {
     const center = this.grid.toCanvas({ visibility, evolution });
+    const color = (businessObject as { color?: string } | undefined)?.color;
     const shape = this.elementFactory.createShape({
       id,
       x: center.x - NODE_SIZE / 2,
@@ -268,6 +347,7 @@ export default class WardleyElementFactory {
       evolution,
       visibility,
       businessObject,
+      ...(color ? { color } : {}),
       ...extra,
     });
     return shape as unknown as WardleyShape;
@@ -297,5 +377,7 @@ export default class WardleyElementFactory {
 }
 
 function centerOf(shape: WardleyShape): { x: number; y: number } {
+  // Pipelines dock at their ■ anchor (top-edge center), not at the box center.
+  if (shape.wardleyType === 'pipeline') return { x: shape.x + shape.width / 2, y: shape.y };
   return { x: shape.x + shape.width / 2, y: shape.y + shape.height / 2 };
 }

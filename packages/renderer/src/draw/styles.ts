@@ -1,7 +1,12 @@
-/** Default plot area in diagram px (interior without axis margins). Changeable at runtime via config.size. */
+/** Central rendering constants (geometry, colors, typography) — "Strategic Blueprint" aesthetic. */
+
+import { DEFAULT_PLOT_SIZE } from '@miragon/wardley-schema-model';
+
+/** Default plot area in diagram px (interior without axis margins). Changeable at runtime via
+ *  config.size. Width/height come from schema-model (single source, also used for migrations). */
 export const PLOT = {
-  width: 1080,
-  height: 680,
+  width: DEFAULT_PLOT_SIZE.width,
+  height: DEFAULT_PLOT_SIZE.height,
   marginLeft: 66,
   marginTop: 38,
   marginRight: 44,
@@ -16,6 +21,8 @@ export const COMPONENT_RADIUS = 15;
 export const COMPONENT_INNER_RADIUS = 12;
 export const ANCHOR_ICON_SIZE = 26;
 export const PIPELINE_HEIGHT = 30;
+/** Side length of the ■ anchor square drawn on the pipeline box's top edge. */
+export const PIPELINE_ANCHOR_SIZE = 16;
 
 export const NOTE_LINE_HEIGHT = 17;
 const NOTE_PAD_X = 8;
@@ -58,6 +65,13 @@ export const COLORS = {
   inertia: '#1b1b1a',
   noteText: '#4a4640',
   pipeline: '#1b1b1a',
+  /** Fill of the annotation marker (also used in the palette icons). */
+  annotationFill: '#fff8e6',
+  /** Background of the plot area (deliberately white, lighter than paper). */
+  plotBackground: '#ffffff',
+  /** Accelerator / deaccelerator (own semantic constants — not flow/movement). */
+  accelerator: '#0e7c74',
+  deaccelerator: '#bf2f2a',
 } as const;
 
 /**

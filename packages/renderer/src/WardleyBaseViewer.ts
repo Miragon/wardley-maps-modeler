@@ -1,10 +1,11 @@
 import Diagram from 'diagram-js/lib/Diagram';
 import type { ModuleDeclaration } from 'didi';
 import type Canvas from 'diagram-js/lib/core/Canvas';
+import type CommandStack from 'diagram-js/lib/command/CommandStack';
 import type EventBus from 'diagram-js/lib/core/EventBus';
 import type { Root } from 'diagram-js/lib/model/Types';
 import type { MapConfig, WardleyMap } from '@miragon/wardley-schema-model';
-import { parseDSL, serializeDSL } from '@miragon/wardley-dsl';
+import { parseDSLWithDiagnostics, serializeDSL } from '@miragon/wardley-dsl';
 import { saveSVG } from './io/saveSvg.js';
 import type WardleyImporter from './io/WardleyImporter.js';
 import type WardleyExporter from './io/WardleyExporter.js';
@@ -79,16 +80,34 @@ export abstract class WardleyBaseViewer {
     const importer = diagram.get<WardleyImporter>('wardleyImporter');
     importer.clear();
     const warnings = importer.import(map);
+    this._applyStyleClass(map.config.style);
+    // Discard the PREVIOUS map's undo history (concept doc §5.6): undo on orphaned
+    // elements would otherwise crash or insert zombie elements into the new map.
+    diagram.get<CommandStack>('commandStack').clear();
     eventBus.fire('import.done', { warnings });
     return { warnings };
   }
 
+  /** DSL `style` directive as a CSS class on the container (`wardley-dark` etc., concept §8.1). */
+  private _applyStyleClass(style?: string): void {
+    const cls = this._container.classList;
+    for (const s of ['wardley', 'handwritten', 'colour', 'dark']) cls.remove(`wardley-${s}`);
+    if (style && style !== 'wardley') cls.add(`wardley-${style}`);
+  }
+
+  /** Load OWM DSL text (internally parse -> importMap). Parser findings land in the warnings. */
   async importDSL(text: string): Promise<{ warnings: ImportWarning[] }> {
     const eventBus = this._ensureDiagram().get<EventBus>('eventBus');
     eventBus.fire('import.parse.start', { text });
-    const map = parseDSL(text);
-    eventBus.fire('import.parse.done', { map });
-    return this.importMap(map);
+    const { map, diagnostics } = parseDSLWithDiagnostics(text);
+    eventBus.fire('import.parse.done', { map, diagnostics });
+    const { warnings } = await this.importMap(map);
+    return {
+      warnings: [
+        ...diagnostics.map((d) => ({ message: `Line ${d.line}: ${d.message} — "${d.text}"` })),
+        ...warnings,
+      ],
+    };
   }
 
   /** Current state as the canonical model (from the DI properties). */
@@ -138,7 +157,12 @@ export abstract class WardleyBaseViewer {
 
   /** Static, standalone SVG. */
   async saveSVG(): Promise<{ svg: string }> {
-    return saveSVG(this.get<Canvas>('canvas'));
+    // viewBox from the ACTUAL plot size (config.size), not the defaults —
+    // otherwise the export clips enlarged maps.
+    return saveSVG(
+      this.get<Canvas>('canvas'),
+      this.get<EvolutionGrid>('evolutionGrid').outerBounds(),
+    );
   }
 
   /** Own implementation (not a diagram-js primitive): attach the container to `target`. */

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseDSL, serializeDSL } from '../src/index.js';
+import { parseDSL, parseDSLWithDiagnostics, serializeDSL } from '../src/index.js';
 
 const TEA_SHOP = `title Tea Shop
 anchor Business [0.95, 0.63]
@@ -75,7 +75,7 @@ A +> B
 B +<> A
 annotation 1 [0.9, 0.4] First note
 annotations [0.2, 0.8]
-pioneers [0.9, 0.1] 120 30
+pioneers [0.9, 0.1, 0.7, 0.4]
 accelerator Boost [0.7, 0.5]
 deaccelerator Brake [0.3, 0.5]
 submap Detail [0.4, 0.7]`;
@@ -89,16 +89,35 @@ describe('parseDSL – M4 types', () => {
     expect(map.config.annotationsBoxPosition).toEqual({ visibility: 0.2, evolution: 0.8 });
   });
 
-  it('reads attitude (pioneers) as [vis, mat] + width height (OWM syntax)', () => {
+  it('reads attitude (pioneers) with two normalized corners', () => {
     const map = parseDSL(RICH);
     const att = map.elements.find((e) => e.elementType === 'attitude');
     expect(att?.elementType).toBe('attitude');
     if (att?.elementType === 'attitude') {
       expect(att.kind).toBe('pioneers');
       expect(att.position).toEqual({ visibility: 0.9, evolution: 0.1 });
-      expect(att.width).toBe(120);
-      expect(att.height).toBe(30);
+      expect(att.corner2).toEqual({ visibility: 0.7, evolution: 0.4 });
     }
+  });
+
+  it('legacy px form `pioneers [v,m] w h` lands in rawPassthrough (hard cut)', () => {
+    const map = parseDSL('title T\npioneers [0.9, 0.1] 120 30');
+    expect(map.elements.find((e) => e.elementType === 'attitude')).toBeUndefined();
+    expect(map.rawPassthrough).toContain('pioneers [0.9, 0.1] 120 30');
+  });
+
+  it('reads the canonical attitude form [vis1, mat1, vis2, mat2] (OWM)', () => {
+    const map = parseDSL('title T\nsettlers [0.59, 0.43, 0.49, 0.63]');
+    const att = map.elements.find((e) => e.elementType === 'attitude');
+    expect(att?.elementType).toBe('attitude');
+    if (att?.elementType === 'attitude') {
+      expect(att.kind).toBe('settlers');
+      expect(att.position).toEqual({ visibility: 0.59, evolution: 0.43 });
+      expect(att.corner2).toEqual({ visibility: 0.49, evolution: 0.63 });
+    }
+    const out = serializeDSL(map);
+    expect(out).toContain('settlers [0.59, 0.43, 0.49, 0.63]');
+    expect(serializeDSL(parseDSL(out))).toBe(out);
   });
 
   it('reads accelerator and deaccelerator', () => {
@@ -158,6 +177,15 @@ describe('parseDSL – axis config & labeled flow', () => {
     );
     expect(map.config.evolutionLabels).toEqual(['Novel', 'Emerging', 'Good', 'Best']);
     expect(map.config.yAxisLabel).toBe('Value chain');
+  });
+
+  it('keeps the y-axis end labels losslessly through the round-trip', () => {
+    const src = 'title T\ny-axis Value chain->Invisible->Visible';
+    const map = parseDSL(src);
+    expect(map.config.yAxisEndLabels).toEqual(['Invisible', 'Visible']);
+    const once = serializeDSL(map);
+    expect(once).toContain('y-axis Value chain->Invisible->Visible');
+    expect(serializeDSL(parseDSL(once))).toBe(once);
   });
 
   it('custom evolution labels survive the serialize round-trip', () => {
@@ -245,6 +273,255 @@ describe('parseDSL – axis config & labeled flow', () => {
   });
 });
 
+describe('parseDSL – comments', () => {
+  it('does NOT parse commented-out components as elements', () => {
+    const map = parseDSL('title T\n// component Ghost [0.5, 0.5]\ncomponent Real [0.4, 0.4]');
+    expect(map.elements.map((e) => e.label)).toEqual(['Real']);
+    expect(map.rawPassthrough).toContain('// component Ghost [0.5, 0.5]');
+  });
+
+  it('separates trailing // comments from content (label stays clean)', () => {
+    const map = parseDSL('title T\ncomponent Kettle [0.43, 0.35] // replace soon');
+    const kettle = map.elements[0]!;
+    expect(kettle.label).toBe('Kettle');
+    expect(map.rawPassthrough).toContain('// replace soon');
+  });
+
+  it('skips /* ... */ blocks spanning multiple lines', () => {
+    const map = parseDSL(
+      'title T\n/* everything\ncomponent Ghost [0.5, 0.5]\ngone */\ncomponent Real [0.4, 0.4]',
+    );
+    expect(map.elements.map((e) => e.label)).toEqual(['Real']);
+  });
+
+  it('leaves // in quoted flow values untouched', () => {
+    const map = parseDSL(
+      "title T\ncomponent A [0.8, 0.3]\ncomponent B [0.5, 0.6]\nA +'http://x'> B",
+    );
+    const flow = map.edges.find((e) => e.edgeType === 'flow');
+    expect(flow?.edgeType === 'flow' && flow.flowValue).toBe('http://x');
+  });
+
+  it('comments survive the round-trip (rawPassthrough)', () => {
+    const src = 'title T\n// important note\ncomponent Real [0.4, 0.4]';
+    const once = serializeDSL(parseDSL(src));
+    expect(once).toContain('// important note');
+    expect(serializeDSL(parseDSL(once))).toBe(once);
+  });
+});
+
+describe('parseDSL – evolve with label offset', () => {
+  it('reads evolve X 0.62 label [16, 5] as movement with labelOffset', () => {
+    const map = parseDSL(
+      'title T\ncomponent Kettle [0.43, 0.35]\nevolve Kettle 0.62 label [16, 5]',
+    );
+    const kettle = map.elements.find((e) => e.label === 'Kettle');
+    expect(kettle?.elementType === 'component' && kettle.movement?.targetEvolution).toBe(0.62);
+    expect(kettle?.elementType === 'component' && kettle.movement?.labelOffset).toEqual({
+      dx: 16,
+      dy: 5,
+    });
+    const out = serializeDSL(map);
+    expect(out).toContain('evolve Kettle 0.62 label [16, 5]');
+    expect(serializeDSL(parseDSL(out))).toBe(out);
+  });
+});
+
+describe('parseDSL – multi-position annotations', () => {
+  it('reads annotation 1 [[y,x],[y,x]] text losslessly', () => {
+    const src = 'title T\nannotation 1 [[0.9, 0.4], [0.5, 0.6]] Two spots';
+    const map = parseDSL(src);
+    const anno = map.elements.find((e) => e.elementType === 'annotation');
+    expect(anno?.elementType === 'annotation' && anno.positions).toEqual([
+      { visibility: 0.9, evolution: 0.4 },
+      { visibility: 0.5, evolution: 0.6 },
+    ]);
+    expect(anno?.elementType === 'annotation' && anno.text).toBe('Two spots');
+    const out = serializeDSL(map);
+    expect(out).toContain('annotation 1 [[0.9, 0.4], [0.5, 0.6]] Two spots');
+    expect(serializeDSL(parseDSL(out))).toBe(out);
+  });
+});
+
+describe('parseDSL – names with parentheses/keywords', () => {
+  it('leaves parentheses in names untouched (decorators only after coordinates)', () => {
+    const map = parseDSL('title T\ncomponent Tea (green) [0.6, 0.8]');
+    const tea = map.elements[0]!;
+    expect(tea.label).toBe('Tea (green)');
+    expect(tea.elementType === 'component' && tea.decorators).toBeUndefined();
+  });
+
+  it('leaves the word "inertia" in names untouched', () => {
+    const map = parseDSL('title T\ncomponent inertia dampener [0.6, 0.8]');
+    expect(map.elements[0]!.label).toBe('inertia dampener');
+  });
+
+  it('still reads decorators after the coordinates', () => {
+    const map = parseDSL('title T\ncomponent X [0.1, 0.2] (market, outsource) inertia');
+    const x = map.elements[0]!;
+    expect(x.elementType === 'component' && x.decorators).toEqual({
+      market: true,
+      method: 'outsource',
+      inertia: true,
+    });
+  });
+});
+
+describe('parseDSL – Legacy build/buy/outsource', () => {
+  it('sets the method on an existing component (buy Kettle)', () => {
+    const map = parseDSL('title T\ncomponent Kettle [0.43, 0.35]\nbuy Kettle');
+    const kettle = map.elements.find((e) => e.label === 'Kettle');
+    expect(kettle?.elementType === 'component' && kettle.decorators?.method).toBe('buy');
+  });
+
+  it('creates a component with a method when coordinates are given (outsource Power [y,x])', () => {
+    const map = parseDSL('title T\noutsource Power [0.1, 0.7]');
+    const power = map.elements.find((e) => e.label === 'Power');
+    expect(power?.elementType === 'component' && power.decorators?.method).toBe('outsource');
+  });
+
+  it('an unknown reference stays in rawPassthrough', () => {
+    const map = parseDSL('title T\nbuy Ghost');
+    expect(map.rawPassthrough).toContain('buy Ghost');
+  });
+});
+
+describe('parseDSL – pipeline block (OWM v2)', () => {
+  const SRC = `title P
+component Kettle [0.43, 0.35]
+pipeline Kettle [0.1, 0.9]
+{
+  component Campfire Kettle [0.35]
+  component Electric Kettle [0.7] (buy)
+}
+Campfire Kettle -> Electric Kettle`;
+
+  it('reads block children with visibility inheritance and pipelineId', () => {
+    const map = parseDSL(SRC);
+    const pipe = map.elements.find((e) => e.elementType === 'pipeline');
+    expect(pipe?.elementType).toBe('pipeline');
+    const kids = map.elements.filter((e) => e.elementType === 'component' && e.pipelineId);
+    expect(kids.map((k) => k.label)).toEqual(['Campfire Kettle', 'Electric Kettle']);
+    for (const k of kids) {
+      expect(k.elementType === 'component' && k.pipelineId).toBe(pipe!.id);
+      expect(k.position.visibility).toBe(0.43); // inherited from the Kettle component
+    }
+    expect(kids[0]!.position.evolution).toBe(0.35);
+    expect(kids[1]!.elementType === 'component' && kids[1]!.decorators?.method).toBe('buy');
+    if (pipe?.elementType === 'pipeline') expect(pipe.childIds).toHaveLength(2);
+    // edges to block children work
+    expect(map.edges).toHaveLength(1);
+  });
+
+  it('derives the range from the children when no coordinates are given', () => {
+    const map = parseDSL(
+      'title P\npipeline Power Source\n{\n  component Solar [0.4]\n  component Grid [0.8]\n}',
+    );
+    const pipe = map.elements.find((e) => e.elementType === 'pipeline');
+    if (pipe?.elementType === 'pipeline') {
+      expect(pipe.evolutionStart).toBe(0.4);
+      expect(pipe.evolutionEnd).toBe(0.8);
+    }
+  });
+
+  it('serializes the block form and round-trips stably', () => {
+    const once = serializeDSL(parseDSL(SRC));
+    expect(once).toContain('pipeline Kettle [0.1, 0.9]');
+    expect(once).toContain('{');
+    expect(once).toContain('  component Campfire Kettle [0.35]');
+    expect(once).toContain('  component Electric Kettle [0.7] (buy)');
+    expect(once).toContain('}');
+    // children must NOT additionally appear as top-level component
+    expect(once.match(/^component Campfire Kettle/m)).toBeNull();
+    expect(serializeDSL(parseDSL(once))).toBe(once);
+  });
+
+  it('a standalone pipeline (no anchor component) is an edge endpoint itself', () => {
+    const src = `title P
+anchor consumer [0.95, 0.5]
+pipeline GOOD [0.3, 0.7]
+{
+  component physical [0.4]
+}
+consumer -> GOOD`;
+    const map = parseDSL(src);
+    const pipe = map.elements.find((e) => e.elementType === 'pipeline');
+    const edge = map.edges[0];
+    expect(edge?.to).toBe(pipe!.id);
+    const once = serializeDSL(map);
+    expect(once).toContain('consumer -> GOOD');
+    expect(serializeDSL(parseDSL(once))).toBe(once);
+  });
+
+  it('with an anchor component the edge still binds to the component (OWM convention)', () => {
+    const src = `title P
+anchor consumer [0.95, 0.5]
+component GOOD [0.8, 0.5]
+pipeline GOOD [0.3, 0.7]
+consumer -> GOOD`;
+    const map = parseDSL(src);
+    const comp = map.elements.find((e) => e.elementType === 'component' && e.label === 'GOOD');
+    expect(map.edges[0]?.to).toBe(comp!.id);
+  });
+});
+
+describe('parseDSL – url keyword', () => {
+  it('resolves url definition + url(Name) reference on submap/component', () => {
+    const src = `title T
+url TeamMap [https://example.org/team#m=abc]
+submap Platform [0.4, 0.7] url(TeamMap)
+component API [0.6, 0.5] url(https://api.example.org/docs)`;
+    const map = parseDSL(src);
+    const sub = map.elements.find((e) => e.elementType === 'submap');
+    expect(sub?.elementType === 'submap' && sub.urlRef).toBe('https://example.org/team#m=abc');
+    const api = map.elements.find((e) => e.label === 'API');
+    expect(api?.elementType === 'component' && api.url).toBe('https://api.example.org/docs');
+  });
+
+  it('round-trips definition + reference stably', () => {
+    const src =
+      'title T\nurl TeamMap [https://example.org/x]\nsubmap Platform [0.4, 0.7] url(TeamMap)';
+    const once = serializeDSL(parseDSL(src));
+    expect(once).toContain('url Platform URL [https://example.org/x]');
+    expect(once).toContain('url(Platform URL)');
+    expect(serializeDSL(parseDSL(once))).toBe(once);
+  });
+
+  it('keeps unreferenced url definitions in rawPassthrough', () => {
+    const map = parseDSL('title T\nurl Orphaned [https://example.org/y]');
+    expect(map.rawPassthrough).toContain('url Orphaned [https://example.org/y]');
+  });
+});
+
+describe('parseDSLWithDiagnostics', () => {
+  it('reports unparsable lines with line numbers', () => {
+    const { diagnostics } = parseDSLWithDiagnostics('title T\ncomponent broken [oops]\n');
+    expect(diagnostics).toHaveLength(1);
+    expect(diagnostics[0]!.line).toBe(2);
+    expect(diagnostics[0]!.text).toContain('component broken');
+  });
+
+  it('clamps out-of-range coordinates instead of throwing', () => {
+    const { map, diagnostics } = parseDSLWithDiagnostics('title T\ncomponent X [1.4, -0.2]');
+    const x = map.elements[0]!;
+    expect(x.position).toEqual({ visibility: 1, evolution: 0 });
+    expect(diagnostics.some((d) => d.message.includes('clamped'))).toBe(true);
+  });
+
+  it('reports unresolved references (evolve/edges) with line numbers', () => {
+    const { diagnostics } = parseDSLWithDiagnostics(
+      'title T\ncomponent A [0.5, 0.5]\nevolve Ghost 0.8\nA -> Ghost',
+    );
+    expect(diagnostics.some((d) => d.line === 3 && d.message.includes('Ghost'))).toBe(true);
+    expect(diagnostics.some((d) => d.line === 4 && d.message.includes('Ghost'))).toBe(true);
+  });
+
+  it('comments produce NO diagnostics', () => {
+    const { diagnostics } = parseDSLWithDiagnostics('title T\n// just a comment\n');
+    expect(diagnostics).toHaveLength(0);
+  });
+});
+
 describe('serializeDSL Round-Trip', () => {
   it('is stable for the M4 types (annotation/attitude/accelerator/flow/submap)', () => {
     const once = serializeDSL(parseDSL(RICH));
@@ -315,5 +592,73 @@ describe('note color (project extension: `(color …)`)', () => {
     const out = serializeDSL(parseDSL('title T\nnote Plain [0.5, 0.5]'));
     expect(out).toContain('note Plain [0.5, 0.5]');
     expect(out).not.toContain('(color');
+  });
+});
+
+describe('element color on every type (project extension: `(color …)`)', () => {
+  it('parses and round-trips the color on all element lines', () => {
+    const src = `title T
+anchor consumer [0.9, 0.5] (color #b45309)
+component Shop [0.7, 0.4] (market) (color #15803d)
+submap Detail [0.6, 0.2] (color #6d28d9)
+accelerator Boost [0.5, 0.6] (color #0e7c74)
+pioneers [0.8, 0.1, 0.6, 0.3] (color #be123c)
+pipeline Shop [0.3, 0.7] (color #1d4ed8)`;
+    const map = parseDSL(src);
+    const colorOf = (type: string) => map.elements.find((e) => e.elementType === type)?.color;
+    expect(colorOf('anchor')).toBe('#b45309');
+    expect(colorOf('component')).toBe('#15803d');
+    expect(colorOf('submap')).toBe('#6d28d9');
+    expect(colorOf('accelerator')).toBe('#0e7c74');
+    expect(colorOf('attitude')).toBe('#be123c');
+    expect(colorOf('pipeline')).toBe('#1d4ed8');
+    // Decorators survive next to the color.
+    const comp = map.elements.find((e) => e.elementType === 'component');
+    expect(comp && 'decorators' in comp && comp.decorators?.market).toBe(true);
+    const once = serializeDSL(map);
+    expect(once).toContain('component Shop [0.7, 0.4] (market) (color #15803d)');
+    expect(once).toContain('pipeline Shop [0.3, 0.7] (color #1d4ed8)');
+    expect(serializeDSL(parseDSL(once))).toBe(once);
+  });
+
+  it('round-trips freeform drawings (`line` project extension)', () => {
+    const src = `title T
+line [[0.8, 0.2], [0.6, 0.35], [0.7, 0.5]] (closed) (dashed) (color #b45309)
+line [[0.3, 0.1], [0.25, 0.4]]`;
+    const map = parseDSL(src);
+    const drawings = map.elements.filter((e) => e.elementType === 'drawing');
+    expect(drawings).toHaveLength(2);
+    const shape = drawings[0]!;
+    if (shape.elementType === 'drawing') {
+      expect(shape.points).toHaveLength(3);
+      expect(shape.closed).toBe(true);
+      expect(shape.strokeStyle).toBe('dashed');
+      expect(shape.color).toBe('#b45309');
+    }
+    const open = drawings[1]!;
+    if (open.elementType === 'drawing') {
+      expect(open.closed).toBeUndefined();
+      expect(open.strokeStyle).toBeUndefined();
+    }
+    const once = serializeDSL(map);
+    expect(once).toContain(
+      'line [[0.8, 0.2], [0.6, 0.35], [0.7, 0.5]] (closed) (dashed) (color #b45309)',
+    );
+    expect(once).toContain('line [[0.3, 0.1], [0.25, 0.4]]');
+    expect(serializeDSL(parseDSL(once))).toBe(once);
+  });
+
+  it('keeps the color on pipeline block children', () => {
+    const src = `title T
+pipeline GOOD [0.3, 0.7]
+{
+  component physical [0.4] (color #b45309)
+}`;
+    const map = parseDSL(src);
+    const child = map.elements.find((e) => e.label === 'physical');
+    expect(child?.color).toBe('#b45309');
+    const once = serializeDSL(map);
+    expect(once).toContain('  component physical [0.4] (color #b45309)');
+    expect(serializeDSL(parseDSL(once))).toBe(once);
   });
 });

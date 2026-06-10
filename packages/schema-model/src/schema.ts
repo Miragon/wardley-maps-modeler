@@ -39,6 +39,7 @@ const baseFields = {
   label: z.string(),
   position: coordinateSchema,
   labelOffset: labelOffsetSchema.optional(),
+  color: z.string().optional(),
 };
 
 const anchorSchema = z.object({ ...baseFields, elementType: z.literal('anchor') });
@@ -49,6 +50,7 @@ const componentSchema = z.object({
   decorators: decoratorsSchema.optional(),
   movement: movementSchema.optional(),
   pipelineId: z.string().optional(),
+  url: z.string().optional(),
 });
 
 const pipelineSchema = z
@@ -77,7 +79,6 @@ const noteSchema = z.object({
   ...baseFields,
   elementType: z.literal('note'),
   patternType: climaticPatternSchema.optional(),
-  color: z.string().optional(),
 });
 
 const annotationSchema = z.object({
@@ -98,14 +99,22 @@ const attitudeSchema = z.object({
   ...baseFields,
   elementType: z.literal('attitude'),
   kind: z.enum(['pioneers', 'settlers', 'townplanners']),
-  width: z.number().positive(),
-  height: z.number().positive(),
+  /** Opposite corner (normalized) — OWM `[vis1, mat1, vis2, mat2]`. */
+  corner2: coordinateSchema,
 });
 
 const submapSchema = z.object({
   ...baseFields,
   elementType: z.literal('submap'),
   urlRef: z.string().optional(),
+});
+
+const drawingSchema = z.object({
+  ...baseFields,
+  elementType: z.literal('drawing'),
+  points: z.array(coordinateSchema).min(2),
+  closed: z.boolean().optional(),
+  strokeStyle: z.enum(['solid', 'dashed', 'dotted']).optional(),
 });
 
 export const mapElementSchema = z.discriminatedUnion('elementType', [
@@ -117,6 +126,7 @@ export const mapElementSchema = z.discriminatedUnion('elementType', [
   acceleratorSchema,
   attitudeSchema,
   submapSchema,
+  drawingSchema,
 ]);
 
 const dependencySchema = z.object({
@@ -144,8 +154,14 @@ const mapConfigSchema = z.object({
   size: z.object({ width: z.number(), height: z.number() }).optional(),
   style: z.enum(['wardley', 'handwritten', 'colour', 'dark']).optional(),
   evolutionLabels: z.tuple([z.string(), z.string(), z.string(), z.string()]).optional(),
-  stageBoundaries: z.tuple([norm, norm, norm]).optional(),
+  stageBoundaries: z
+    .tuple([norm, norm, norm])
+    .refine(([g, c, p]) => g < c && c < p, {
+      message: 'stageBoundaries must be strictly ascending',
+    })
+    .optional(),
   yAxisLabel: z.string().optional(),
+  yAxisEndLabels: z.tuple([z.string(), z.string()]).optional(),
   annotationsBoxPosition: coordinateSchema.optional(),
 });
 

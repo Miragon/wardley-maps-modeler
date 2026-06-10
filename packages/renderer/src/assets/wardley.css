@@ -41,21 +41,31 @@
   pointer-events: all;
 }
 
-/* Hover / selection: accent color — but NOT on pure text visuals (e.g. notes), otherwise the
-   text gets a distracting outline on mouseover. */
-.wardley-container .djs-element.hover .djs-visual > :first-child:not(text),
-.wardley-container .djs-element.selected .djs-visual > :first-child:not(text) {
-  stroke: var(--wardley-accent) !important;
+/* Hover / selection: NEUTRAL feedback — slightly darker, never a color change (elements keep
+   their own (possibly user-picked) color). Dims the WHOLE visual group: targeting only the
+   first child misses evolving components (movement line first) and fill-less frames. */
+.wardley-container .djs-element.hover > .djs-visual,
+.wardley-container .djs-element.selected > .djs-visual {
+  filter: brightness(0.72) saturate(1.15);
 }
 
 .wardley-container .djs-outline {
-  stroke: var(--wardley-accent);
+  stroke: rgba(0, 0, 0, 0.45);
   stroke-dasharray: 3 3;
+}
+/* diagram-js drives selection/lasso outlines via CSS variables (default: blue), scoped on
+   `.djs-parent` — override there to keep them neutral too. */
+.wardley-container .djs-parent {
+  --element-hover-outline-fill-color: rgba(0, 0, 0, 0.45);
+  --element-selected-outline-stroke-color: rgba(0, 0, 0, 0.45);
+  --element-selected-outline-secondary-stroke-color: rgba(0, 0, 0, 0.3);
+  --lasso-fill-color: rgba(0, 0, 0, 0.04);
+  --lasso-stroke-color: rgba(0, 0, 0, 0.45);
 }
 
 .wardley-container .djs-resizer-visual {
   fill: #fff;
-  stroke: var(--wardley-accent);
+  stroke: rgba(0, 0, 0, 0.55);
 }
 .wardley-container .djs-resizer-hit {
   fill: none;
@@ -93,7 +103,24 @@
   transition: background 120ms ease;
 }
 .djs-palette .entry:hover {
-  background: rgba(14, 124, 116, 0.1);
+  background: rgba(0, 0, 0, 0.05);
+}
+/* Draw mode: crosshair over the whole canvas. */
+.wardley-container.wardley-draw-mode,
+.wardley-container.wardley-draw-mode * {
+  cursor: crosshair !important;
+}
+
+/* Vertex handles of a selected drawing (drag to move single points). */
+.wardley-container .wardley-drawing-handle {
+  cursor: grab;
+  pointer-events: all;
+}
+
+/* Active tool (e.g. the lasso): neutral, just a bit darker than hover — no color. */
+.djs-palette .entry.highlighted-entry {
+  background: rgba(0, 0, 0, 0.1);
+  color: var(--wardley-ink);
 }
 
 /* Subtle vertical separator between the groups (diagram-js does not separate groups on its own). */
@@ -149,7 +176,7 @@
   transition: background 120ms ease;
 }
 .wardley-container .djs-context-pad .entry:hover {
-  background: rgba(14, 124, 116, 0.12);
+  background: rgba(0, 0, 0, 0.06);
 }
 
 .wardley-container .wardley-label-input {
@@ -189,11 +216,21 @@
   pointer-events: none;
 }
 
+/* Style variant: dark — set by the viewer from the DSL directive `style dark`.
+   Deliberate design: the surroundings turn dark, while the plot area itself stays "paper"
+   (map contents are SVG presentation attributes and thus theme-stable/printable). */
 .wardley-container.wardley-dark {
   --wardley-paper: #11151b;
   --wardley-ink: #e8eaed;
   background-color: var(--wardley-paper);
   background-image: radial-gradient(rgba(255, 255, 255, 0.05) 0.6px, transparent 0.6px);
+}
+.wardley-container.wardley-dark .djs-palette {
+  background: #1a2028;
+  border-color: #2a323d;
+}
+.wardley-container.wardley-dark .djs-palette .entry {
+  color: var(--wardley-ink);
 }
 
 /* Note color picker (bpmn.io style): compact 3x3 grid of small color squares, no text.

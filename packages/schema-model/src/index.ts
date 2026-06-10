@@ -17,6 +17,8 @@ export type {
   AttitudeKind,
   AttitudeElement,
   SubmapElement,
+  DrawingStrokeStyle,
+  DrawingElement,
   MapElement,
   EdgeType,
   DependencyLink,
@@ -26,6 +28,9 @@ export type {
   MapConfig,
   WardleyMap,
 } from './types.js';
+
+// Layout default (plot area) — shared by renderer and migrations
+export { DEFAULT_PLOT_SIZE } from './types.js';
 
 export {
   evolutionStage,

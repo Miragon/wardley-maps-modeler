@@ -1,4 +1,5 @@
-export { parseDSL } from './parser.js';
+export { parseDSL, parseDSLWithDiagnostics } from './parser.js';
+export type { ParseDiagnostic, ParseResult } from './parser.js';
 export { serializeDSL } from './serializer.js';
 export { mapToJSON, mapFromJSON, loadMap } from './json.js';
 

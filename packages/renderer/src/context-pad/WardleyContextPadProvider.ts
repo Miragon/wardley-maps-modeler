@@ -8,7 +8,13 @@ import type {
   default as ContextPadProvider,
 } from 'diagram-js/lib/features/context-pad/ContextPadProvider';
 import type { Element } from 'diagram-js/lib/model/Types';
-import { isWardleyShape, isWardleyConnection, type WardleyShape } from '../model/di-types.js';
+import type { ComponentElement, SubmapElement } from '@miragon/wardley-schema-model';
+import {
+  isWardleyShape,
+  isWardleyConnection,
+  type WardleyConnection,
+  type WardleyShape,
+} from '../model/di-types.js';
 import type WardleyModeling from '../modeling/WardleyModeling.js';
 import type WardleyLabelEditing from '../label-editing/WardleyLabelEditing.js';
 import type WardleyEvolveDragging from '../evolve/WardleyEvolveDragging.js';
@@ -25,6 +31,7 @@ import {
   ICON_EDIT,
   ICON_PALETTE,
   ICON_SETTINGS,
+  ICON_SWAP_HORIZ,
 } from '../draw/icons.js';
 
 /**
@@ -66,10 +73,17 @@ export default class WardleyContextPadProvider implements ContextPadProvider {
   }
 
   getContextPadEntries(element: Element): ContextPadEntries {
-    // Connections (dependency/flow): own pad with delete only — otherwise there would be no way to
-    // remove a line again (shapes get their full pad further below).
+    // Connections: edit the annotation (or the flow value of an imported flow link) + delete.
     if (isWardleyConnection(element)) {
+      const conn = element as WardleyConnection;
+      const isFlow = conn.wardleyType === 'flow';
       return {
+        'edit-value': {
+          group: 'edit',
+          title: isFlow ? 'Edit flow value' : 'Edit link annotation',
+          html: cpHtml(ICON_EDIT, isFlow ? 'Edit flow value' : 'Edit link annotation'),
+          action: { click: () => this.labelEditing.activateConnection(conn) },
+        },
         delete: {
           group: 'edit',
           title: 'Delete connection',
@@ -82,7 +96,11 @@ export default class WardleyContextPadProvider implements ContextPadProvider {
     const shape = element as WardleyShape;
     const entries: ContextPadEntries = {};
 
-    const connectable = shape.wardleyType === 'component' || shape.wardleyType === 'anchor';
+    const connectable =
+      shape.wardleyType === 'component' ||
+      shape.wardleyType === 'anchor' ||
+      shape.wardleyType === 'submap' ||
+      shape.wardleyType === 'pipeline';
     if (connectable) {
       // Append component: drags out a new (blank) component and creates the arrow automatically
       // (diagram-js Create with `source` -> modeling.appendShape). Configurable via ⚙.
@@ -120,9 +138,10 @@ export default class WardleyContextPadProvider implements ContextPadProvider {
           html: cpHtml(ICON_CLOSE, 'Remove evolve'),
           action: { click: () => this.wardleyModeling.clearMovement(shape) },
         };
-      } else {
+      } else if (shape.evolution < 0.999) {
         // Drag the target out along the axis (live preview). The click does NOT model immediately
-        // (no automatic +0.2 anymore) — it only starts the placement.
+        // (no automatic +0.2 anymore) — it only starts the placement. At evolution ~ 1 there is
+        // no meaningful target left — the entry is omitted (instead of creating a null movement).
         const startEvolve = (event: Event) => this.evolveDragging.start(event, shape);
         entries['evolve'] = {
           group: 'wardley',
@@ -148,26 +167,60 @@ export default class WardleyContextPadProvider implements ContextPadProvider {
       };
     }
 
-    if (shape.wardleyType === 'note') {
-      entries['color'] = {
+    // Drawings: cycle the stroke style (solid -> dashed -> dotted).
+    if (shape.wardleyType === 'drawing') {
+      const next =
+        shape.strokeStyle === 'dashed'
+          ? 'dotted'
+          : shape.strokeStyle === 'dotted'
+            ? undefined
+            : 'dashed';
+      const title = `Line style: ${shape.strokeStyle ?? 'solid'} (click to change)`;
+      entries['stroke-style'] = {
         group: 'wardley',
-        title: 'Note color',
-        html: cpHtml(ICON_PALETTE, 'Note color'),
+        title,
+        html: cpHtml(ICON_SWAP_HORIZ, title),
         action: {
-          click: (event: Event) => {
-            const e = event as MouseEvent;
-            this.colorPicker.open(shape, e.clientX, e.clientY);
-          },
+          click: () => this.wardleyModeling.updateProperties(shape, { strokeStyle: next }),
         },
       };
     }
 
-    entries['edit-label'] = {
-      group: 'edit',
-      title: 'Edit label',
-      html: cpHtml(ICON_EDIT, 'Edit label'),
-      action: { click: () => this.labelEditing.activate(shape) },
+    // Color is available on EVERY element (model-wide `color`, DSL extension `(color ...)`).
+    entries['color'] = {
+      group: 'wardley',
+      title: 'Color',
+      html: cpHtml(ICON_PALETTE, 'Color'),
+      action: {
+        click: (event: Event) => {
+          const e = event as MouseEvent;
+          this.colorPicker.open(shape, e.clientX, e.clientY);
+        },
+      },
     };
+
+    // OWM `url(...)`: open the stored address (submap drill-down / component link).
+    const bo = shape.businessObject;
+    const linkUrl =
+      (bo as ComponentElement | undefined)?.url ?? (bo as SubmapElement | undefined)?.urlRef;
+    if (linkUrl) {
+      entries['open-link'] = {
+        group: 'wardley',
+        title: `Open link (${linkUrl})`,
+        html: cpHtml(ICON_ARROW_FORWARD, 'Open link'),
+        action: { click: () => window.open(linkUrl, '_blank', 'noopener') },
+      };
+    }
+
+    // Drawings have no label (pure geometry).
+    if (shape.wardleyType !== 'drawing') {
+      entries['edit-label'] = {
+        group: 'edit',
+        title: 'Edit label',
+        html: cpHtml(ICON_EDIT, 'Edit label'),
+        action: { click: () => this.labelEditing.activate(shape) },
+      };
+    }
 
     entries['delete'] = {
       group: 'edit',

@@ -25,7 +25,8 @@ export type ElementType =
   | 'annotation'
   | 'accelerator'
   | 'attitude'
-  | 'submap';
+  | 'submap'
+  | 'drawing';
 
 export type Method = 'build' | 'buy' | 'outsource';
 
@@ -56,6 +57,9 @@ export interface MapElementBase {
   readonly label: string;
   readonly position: Coordinate;
   readonly labelOffset?: LabelOffset;
+  /** Optional element color (CSS color, typically hex from the renderer's palette).
+   *  Serialized as the project extension `(color …)` after the coordinates. */
+  readonly color?: string;
 }
 
 export interface AnchorElement extends MapElementBase {
@@ -68,6 +72,8 @@ export interface ComponentElement extends MapElementBase {
   readonly movement?: Movement;
   /** Membership in a pipeline (shares its visibility). */
   readonly pipelineId?: string;
+  /** Resolved address from OWM `url Name [address]` + a `url(Name)` reference. */
+  readonly url?: string;
 }
 
 export interface PipelineElement extends MapElementBase {
@@ -90,8 +96,6 @@ export type ClimaticPattern =
 export interface NoteElement extends MapElementBase {
   readonly elementType: 'note';
   readonly patternType?: ClimaticPattern;
-  /** Optional note color (CSS color, typically hex from the renderer's `NOTE_COLORS` palette). */
-  readonly color?: string;
 }
 
 export interface AnnotationElement extends MapElementBase {
@@ -111,17 +115,29 @@ export interface AcceleratorElement extends MapElementBase {
 export type AttitudeKind = 'pioneers' | 'settlers' | 'townplanners';
 
 export interface AttitudeElement extends MapElementBase {
-  /** OWM syntax: `<kind> [visibility, maturity] width height`. `position` = anchor point (top left),
-   *  `width`/`height` in (OWM) pixels. */
+  /** OWM syntax: `<kind> [vis1, mat1, vis2, mat2]` (two corner points, normalized).
+   *  `position` = anchor point at the top left (higher visibility, lower evolution),
+   *  `corner2` = opposite corner at the bottom right. */
   readonly elementType: 'attitude';
   readonly kind: AttitudeKind;
-  readonly width: number;
-  readonly height: number;
+  readonly corner2: Coordinate;
 }
 
 export interface SubmapElement extends MapElementBase {
   readonly elementType: 'submap';
   readonly urlRef?: string;
+}
+
+export type DrawingStrokeStyle = 'solid' | 'dashed' | 'dotted';
+
+/** Freeform polyline/polygon (project extension, Excalidraw-style annotation drawing).
+ *  `position` mirrors the first point; `points` are absolute normalized coordinates. */
+export interface DrawingElement extends MapElementBase {
+  readonly elementType: 'drawing';
+  readonly points: readonly Coordinate[];
+  /** true = closed polygon, false/absent = open polyline. */
+  readonly closed?: boolean;
+  readonly strokeStyle?: DrawingStrokeStyle;
 }
 
 export type MapElement =
@@ -132,7 +148,8 @@ export type MapElement =
   | AnnotationElement
   | AcceleratorElement
   | AttitudeElement
-  | SubmapElement;
+  | SubmapElement
+  | DrawingElement;
 
 export type EdgeType = 'dependency' | 'flow';
 
@@ -172,8 +189,17 @@ export interface MapConfig {
   /** Configurable stage boundaries (default [0.17, 0.40, 0.70]). */
   readonly stageBoundaries?: readonly [number, number, number];
   readonly yAxisLabel?: string;
+  /** End labels of the value-chain axis [bottom, top] — OWM `y-axis Label->Bottom->Top`. */
+  readonly yAxisEndLabels?: readonly [string, string];
   readonly annotationsBoxPosition?: Coordinate;
 }
+
+/**
+ * Default plot area in diagram px (inner area without axis margins). Single source of truth for
+ * the renderer (PLOT) and for migrations (legacy px -> normalized); can be overridden via
+ * `config.size`.
+ */
+export const DEFAULT_PLOT_SIZE = { width: 1080, height: 680 } as const;
 
 /** Root object. Domain and layout are separated logically (not physically). */
 export interface WardleyMap {

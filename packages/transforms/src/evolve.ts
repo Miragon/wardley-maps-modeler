@@ -20,6 +20,13 @@ export function evolveComponent(
     if (el.elementType !== 'component') {
       throw new Error(`evolve only applies to components; "${componentId}" is ${el.elementType}.`);
     }
+    // Evolution bewegt sich nur vorwaerts (Kanon): Ziel muss rechts der aktuellen Position liegen.
+    if (targetEvolution <= el.position.evolution) {
+      throw new Error(
+        `targetEvolution (${targetEvolution}) muss rechts der aktuellen Evolution ` +
+          `(${el.position.evolution}) liegen.`,
+      );
+    }
     const movement = compact({
       targetEvolution,
       newLabel: options.newLabel,

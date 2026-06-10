@@ -3,6 +3,8 @@ import type {
   AcceleratorDirection,
   AttitudeKind,
   ComponentDecorators,
+  DrawingStrokeStyle,
+  LabelOffset,
   MapEdge,
   MapElement,
   Movement,
@@ -24,7 +26,8 @@ export type WardleyShapeType =
   | 'annotation'
   | 'attitude'
   | 'submap'
-  | 'accelerator';
+  | 'accelerator'
+  | 'drawing';
 
 export type WardleyConnectionType = 'dependency' | 'flow';
 
@@ -36,18 +39,30 @@ export interface WardleyShape extends Shape {
   visibility: number;
   /** Display text (separate from diagram-js `label`, which references a label element). */
   wardleyLabel: string;
+  /** OWM `label [dx, dy]` — px offset relative to the default label position. */
+  labelOffset?: LabelOffset;
   decorators?: ComponentDecorators;
   movement?: Movement;
   /** pipeline only: evolution range. */
   evolutionStart?: number;
   evolutionEnd?: number;
+  /** component only: membership in a pipeline (id) — runtime truth, maintained via drag. */
+  pipelineId?: string;
   /** annotation only. */
   annotationNumber?: number;
   /** attitude region only. */
   attitudeKind?: AttitudeKind;
+  /** attitude only: opposite corner (normalized), maintained by the EvolutionConstraintBehavior. */
+  corner2?: { visibility: number; evolution: number };
   /** accelerator only. */
   acceleratorDirection?: AcceleratorDirection;
-  /** note only: optional color (CSS color/hex from NOTE_COLORS). */
+  /** drawing only: points in px RELATIVE to the shape's x/y (moving the shape moves them all). */
+  drawingPoints?: Array<{ x: number; y: number }>;
+  /** drawing only: closed polygon vs. open polyline. */
+  closed?: boolean;
+  /** drawing only. */
+  strokeStyle?: DrawingStrokeStyle;
+  /** Optional element color (CSS color/hex from the swatch palette) — any element type. */
   color?: string;
   businessObject?: MapElement;
 }
@@ -79,4 +94,8 @@ export function isComponent(el: unknown): el is WardleyShape {
 
 export function isPipeline(el: unknown): el is WardleyShape {
   return isWardleyShape(el) && el.wardleyType === 'pipeline';
+}
+
+export function isAttitude(el: unknown): el is WardleyShape {
+  return isWardleyShape(el) && el.wardleyType === 'attitude';
 }
