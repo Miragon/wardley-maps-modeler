@@ -3,6 +3,7 @@ import { append as svgAppend, create as svgCreate, attr as svgAttr } from 'tiny-
 import type EventBus from 'diagram-js/lib/core/EventBus';
 import type { ElementLike, ShapeLike, ConnectionLike } from 'diagram-js/lib/model/Types';
 import type { Point } from 'diagram-js/lib/util/Types';
+import type ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
 import {
   COLORS,
   FONT,
@@ -11,6 +12,7 @@ import {
   ANCHOR_ICON_SIZE,
   ATTITUDE_COLORS,
   NOTE_LINE_HEIGHT,
+  PIPELINE_ANCHOR_SIZE,
 } from './styles.js';
 import { drawIcon, ICON_FAST_FORWARD, ICON_FAST_REWIND, ICON_PERSON } from './icons.js';
 import {
@@ -27,11 +29,12 @@ const WARDLEY_RENDER_PRIORITY = 1500;
 type Attrs = Record<string, string | number>;
 
 export default class WardleyRenderer extends BaseRenderer {
-  static $inject = ['eventBus', 'evolutionGrid'];
+  static $inject = ['eventBus', 'evolutionGrid', 'elementRegistry'];
 
   constructor(
     eventBus: EventBus,
     private readonly grid: EvolutionGrid,
+    private readonly elementRegistry: ElementRegistry,
   ) {
     super(eventBus, WARDLEY_RENDER_PRIORITY);
   }
@@ -275,10 +278,11 @@ export default class WardleyRenderer extends BaseRenderer {
   }
 
   private drawPipeline(visuals: SVGElement, shape: WardleyShape): SVGElement {
+    const width = Math.max(shape.width, 1);
     const box = svgAttr(svgCreate('rect'), {
       x: 0,
       y: 0,
-      width: Math.max(shape.width, 1),
+      width,
       height: Math.max(shape.height, 1),
       rx: 4,
       fill: COLORS.accentSoft,
@@ -287,7 +291,33 @@ export default class WardleyRenderer extends BaseRenderer {
       'stroke-dasharray': '6 3',
     });
     svgAppend(visuals, box);
-    svgAppend(visuals, label(shape.wardleyLabel, 4, -6, { 'font-weight': '500' }));
+    // The ■ anchor is PART of the pipeline (Wardley notation): a square straddling the top
+    // edge at the pipeline's position, with the name next to it.
+    const half = PIPELINE_ANCHOR_SIZE / 2;
+    svgAppend(
+      visuals,
+      svgAttr(svgCreate('rect'), {
+        x: width / 2 - half,
+        y: -half,
+        width: PIPELINE_ANCHOR_SIZE,
+        height: PIPELINE_ANCHOR_SIZE,
+        fill: COLORS.componentFill,
+        stroke: COLORS.stroke,
+        'stroke-width': 2,
+      }),
+    );
+    // If a same-named component exists (OWM anchor convention), it carries the name already.
+    const hasNamedComponent = this.elementRegistry
+      .filter(
+        (el) => isWardleyShape(el) && (el as unknown as WardleyShape).wardleyType === 'component',
+      )
+      .some((c) => (c as unknown as WardleyShape).wardleyLabel === shape.wardleyLabel);
+    if (!hasNamedComponent) {
+      svgAppend(
+        visuals,
+        label(shape.wardleyLabel, width / 2 + half + 6, -4, { 'font-weight': '500' }),
+      );
+    }
     return box;
   }
 

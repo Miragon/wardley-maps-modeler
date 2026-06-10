@@ -39,6 +39,33 @@ export default class EvolutionConstraintBehavior extends CommandInterceptor {
     const sync = (event: { context?: CommandContextLike }) => this.syncAll(event.context);
     this.postExecuted(MOVE_COMMANDS, sync);
     this.reverted(MOVE_COMMANDS, sync);
+
+    // The pipeline label is suppressed when a same-named component exists — whenever a
+    // component is created/deleted/renamed, re-render the pipelines so labels toggle.
+    const refreshPipelineLabels = (event: {
+      context?: { shape?: unknown; element?: unknown; elements?: unknown[] };
+    }) => {
+      const candidates = [
+        event.context?.shape,
+        event.context?.element,
+        ...(event.context?.elements ?? []),
+      ];
+      const touchesComponent = candidates.some(
+        (el) => isWardleyShape(el) && (el as WardleyShape).wardleyType === 'component',
+      );
+      if (!touchesComponent) return;
+      for (const p of this.elementRegistry.filter((el) => isPipeline(el))) {
+        this.eventBus.fire('element.changed', { element: p });
+      }
+    };
+    this.postExecuted(
+      ['shape.create', 'shape.delete', 'element.updateProperties'],
+      refreshPipelineLabels,
+    );
+    this.reverted(
+      ['shape.create', 'shape.delete', 'element.updateProperties'],
+      refreshPipelineLabels,
+    );
   }
 
   private syncAll(context: CommandContextLike | undefined): void {
@@ -56,8 +83,10 @@ export default class EvolutionConstraintBehavior extends CommandInterceptor {
   private syncFromGeometry(shape: WardleyShape): void {
     const cy = shape.y + shape.height / 2;
     if (shape.wardleyType === 'pipeline') {
-      const start = this.grid.fromCanvas({ x: shape.x, y: cy });
-      const end = this.grid.fromCanvas({ x: shape.x + shape.width, y: cy });
+      // The anchor line (■ on the box) is the box's TOP EDGE.
+      const anchorY = shape.y;
+      const start = this.grid.fromCanvas({ x: shape.x, y: anchorY });
+      const end = this.grid.fromCanvas({ x: shape.x + shape.width, y: anchorY });
       // Keep the schema invariants even outside the plot area (0 <= start < end <= 1) —
       // otherwise every export/share crashes once the pipeline has been dragged past the plot edge.
       const [s, e] = clampRange(start.evolution, end.evolution);
@@ -68,8 +97,8 @@ export default class EvolutionConstraintBehavior extends CommandInterceptor {
       // Re-project the clamped truth back onto the canvas (no model/pixel divergence).
       const p1 = this.grid.toCanvas({ visibility: shape.visibility, evolution: s });
       const p2 = this.grid.toCanvas({ visibility: shape.visibility, evolution: e });
-      this.applyGeometry(shape, p1.x, p1.y - shape.height / 2, Math.max(p2.x - p1.x, 2));
-      this.syncChildren(shape);
+      this.applyGeometry(shape, p1.x, p1.y, Math.max(p2.x - p1.x, 2));
+      this.reconcileMembership(shape);
       return;
     }
     if (shape.wardleyType === 'attitude') {
@@ -143,12 +172,39 @@ export default class EvolutionConstraintBehavior extends CommandInterceptor {
     this.fireChanged(child);
   }
 
-  /** After a pipeline move/resize: carry the children along vertically. */
-  private syncChildren(pipeline: WardleyShape): void {
-    const children = this.elementRegistry.filter(
-      (el) => isWardleyShape(el) && (el as WardleyShape).pipelineId === pipeline.id,
+  /**
+   * After a pipeline move/resize: children STAY where they are (move them together via lasso) —
+   * membership is purely geometry-derived in both directions: components no longer inside the
+   * box are released, components now inside are (re-)adopted. No vertical snapping here, so
+   * nothing jumps; this also makes undo of a pipeline move restore memberships.
+   */
+  private reconcileMembership(pipeline: WardleyShape): void {
+    const components = this.elementRegistry.filter(
+      (el) => isWardleyShape(el) && (el as WardleyShape).wardleyType === 'component',
     ) as WardleyShape[];
-    for (const child of children) this.glueToPipeline(child, pipeline);
+    for (const comp of components) {
+      // The eponymous component stays independent (it anchors the pipeline in OWM maps).
+      if (comp.wardleyLabel === pipeline.wardleyLabel) continue;
+      const cx = comp.x + comp.width / 2;
+      const cy = comp.y + comp.height / 2;
+      const inside =
+        cx >= pipeline.x &&
+        cx <= pipeline.x + pipeline.width &&
+        cy >= pipeline.y &&
+        cy <= pipeline.y + pipeline.height;
+      if (inside && comp.pipelineId !== pipeline.id) {
+        comp.pipelineId = pipeline.id;
+        comp.visibility = pipeline.visibility;
+        this.fireChanged(comp);
+      } else if (!inside && comp.pipelineId === pipeline.id) {
+        delete comp.pipelineId;
+        // Position stays untouched — only re-derive the component's visibility from geometry.
+        const coord = this.grid.fromCanvas({ x: cx, y: cy });
+        comp.evolution = coord.evolution;
+        comp.visibility = coord.visibility;
+        this.fireChanged(comp);
+      }
+    }
   }
 
   /** Triggers a re-render for programmatically moved shapes plus their connections. */

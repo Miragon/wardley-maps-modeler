@@ -31,7 +31,7 @@ const SPECS: readonly PaletteSpec[] = [
     key: 'component',
     type: 'component',
     label: 'Component',
-    title: 'Component',
+    title: 'Component — C',
     icon: PALETTE_ICONS.component!,
     group: GROUP_BLOCKS,
   },
@@ -57,7 +57,7 @@ const SPECS: readonly PaletteSpec[] = [
     key: 'anchor',
     type: 'anchor',
     label: 'User',
-    title: 'Anchor / User',
+    title: 'Anchor / User — U',
     icon: PALETTE_ICONS.anchor!,
     group: GROUP_BLOCKS,
   },
@@ -155,8 +155,8 @@ export default class WardleyPaletteProvider implements PaletteProvider {
     // what diagram-js' palette uses to highlight the active tool (tool-manager.update).
     entries['lasso-tool'] = {
       group: 'tools',
-      title: 'Selection tool (or Shift+drag on the canvas)',
-      html: `<div class="entry wardley-palette-entry" title="Selection tool (or Shift+drag on the canvas)">${PALETTE_ICONS.lasso}</div>`,
+      title: 'Selection tool — L (or Shift+drag)',
+      html: `<div class="entry wardley-palette-entry" title="Selection tool — L (or Shift+drag)">${PALETTE_ICONS.lasso}</div>`,
       action: {
         click: (event: Event) => this.lassoTool.activateSelection(event as MouseEvent),
       },

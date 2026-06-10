@@ -50,7 +50,8 @@ const { svg } = await viewer.saveSVG();
 
 | Action                          | How                                                                                    |
 | ------------------------------- | -------------------------------------------------------------------------------------- |
-| Multi-select (lasso)            | Palette tool, or `Shift` + drag on the empty canvas                                    |
+| Multi-select (lasso)            | Palette tool, `L`, or `Shift` + drag on the empty canvas                               |
+| Quick create at the cursor      | `C` component, `U` user/anchor                                                         |
 | Add to selection                | `Shift` + click on elements                                                            |
 | Copy / paste                    | `Ctrl/Cmd+C`, `Ctrl/Cmd+V` — paste attaches to the cursor; click places, `Esc` cancels |
 | Duplicate (in place)            | `Ctrl/Cmd+D`                                                                           |

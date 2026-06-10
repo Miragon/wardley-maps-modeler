@@ -113,7 +113,9 @@ export default class WardleyExporter {
           labelOffset: el.labelOffset ?? (bo as ComponentElement | undefined)?.labelOffset,
           decorators: el.decorators,
           movement: el.movement,
-          pipelineId: el.pipelineId ?? (bo as ComponentElement | undefined)?.pipelineId,
+          // Membership is geometry-derived runtime truth (set on import, cleared when the box
+          // moves away) — deliberately NO businessObject fallback.
+          pipelineId: el.pipelineId,
           url: (bo as ComponentElement | undefined)?.url,
         }) as ComponentElement;
       case 'anchor':

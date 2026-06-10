@@ -21,6 +21,8 @@ export const COMPONENT_RADIUS = 15;
 export const COMPONENT_INNER_RADIUS = 12;
 export const ANCHOR_ICON_SIZE = 26;
 export const PIPELINE_HEIGHT = 30;
+/** Side length of the ■ anchor square drawn on the pipeline box's top edge. */
+export const PIPELINE_ANCHOR_SIZE = 16;
 
 export const NOTE_LINE_HEIGHT = 17;
 const NOTE_PAD_X = 8;

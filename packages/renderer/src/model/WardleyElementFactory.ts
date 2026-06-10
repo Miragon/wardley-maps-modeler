@@ -70,7 +70,7 @@ export default class WardleyElementFactory {
   }
 
   createComponent(el: ComponentElement): WardleyShape {
-    return this.node(
+    const shape = this.node(
       'component',
       el.id,
       el.label,
@@ -84,6 +84,10 @@ export default class WardleyElementFactory {
         ...(el.pipelineId ? { pipelineId: el.pipelineId } : {}),
       },
     );
+    // Pipeline children sit INSIDE the box (whose top edge is the anchor line) — shift their
+    // pixel position to the box center; visibility (model truth) stays the pipeline's.
+    if (el.pipelineId) shape.y += PIPELINE_HEIGHT / 2;
+    return shape;
   }
 
   createAnchor(el: AnchorElement): WardleyShape {
@@ -126,7 +130,8 @@ export default class WardleyElementFactory {
     const shape = this.elementFactory.createShape({
       id: el.id,
       x: start.x,
-      y: start.y - PIPELINE_HEIGHT / 2,
+      // The box's TOP EDGE is the anchor line — the ■ square straddles it (drawn by the renderer).
+      y: start.y,
       width,
       height: PIPELINE_HEIGHT,
       wardleyType: 'pipeline',
