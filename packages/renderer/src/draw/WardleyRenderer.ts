@@ -322,28 +322,28 @@ export default class WardleyRenderer extends BaseRenderer {
       'stroke-dasharray': '6 3',
     });
     svgAppend(visuals, box);
-    // The ■ anchor is PART of the pipeline (Wardley notation): a square straddling the top
-    // edge at the pipeline's position, with the name next to it.
-    const half = PIPELINE_ANCHOR_SIZE / 2;
-    svgAppend(
-      visuals,
-      svgAttr(svgCreate('rect'), {
-        x: width / 2 - half,
-        y: -half,
-        width: PIPELINE_ANCHOR_SIZE,
-        height: PIPELINE_ANCHOR_SIZE,
-        fill: COLORS.componentFill,
-        stroke: tint ?? COLORS.stroke,
-        'stroke-width': 2,
-      }),
-    );
-    // If a same-named component exists (OWM anchor convention), it carries the name already.
+    // OWM anchor convention: if a same-named component exists, THAT component is the anchor —
+    // drawing a second ■ (and a duplicate label) on the box would just clutter the line.
+    // Only standalone pipelines render their own ■ anchor + name on the top edge.
     const hasNamedComponent = this.elementRegistry
       .filter(
         (el) => isWardleyShape(el) && (el as unknown as WardleyShape).wardleyType === 'component',
       )
       .some((c) => (c as unknown as WardleyShape).wardleyLabel === shape.wardleyLabel);
     if (!hasNamedComponent) {
+      const half = PIPELINE_ANCHOR_SIZE / 2;
+      svgAppend(
+        visuals,
+        svgAttr(svgCreate('rect'), {
+          x: width / 2 - half,
+          y: -half,
+          width: PIPELINE_ANCHOR_SIZE,
+          height: PIPELINE_ANCHOR_SIZE,
+          fill: COLORS.componentFill,
+          stroke: tint ?? COLORS.stroke,
+          'stroke-width': 2,
+        }),
+      );
       svgAppend(
         visuals,
         label(shape.wardleyLabel, width / 2 + half + 6, -4, {
