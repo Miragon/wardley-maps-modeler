@@ -143,6 +143,7 @@ export default class WardleyElementFactory {
       // Frame: only the border is clickable -> inner clicks reach the nodes (diagram-js isFrame).
       isFrame: true,
       businessObject: el,
+      ...(el.color ? { color: el.color } : {}),
     });
     return shape as unknown as WardleyShape;
   }
@@ -188,6 +189,7 @@ export default class WardleyElementFactory {
       corner2: el.corner2,
       isFrame: true,
       businessObject: el,
+      ...(el.color ? { color: el.color } : {}),
     });
     return shape as unknown as WardleyShape;
   }
@@ -283,6 +285,7 @@ export default class WardleyElementFactory {
     extra: Partial<WardleyShape> = {},
   ): WardleyShape {
     const center = this.grid.toCanvas({ visibility, evolution });
+    const color = (businessObject as { color?: string } | undefined)?.color;
     const shape = this.elementFactory.createShape({
       id,
       x: center.x - NODE_SIZE / 2,
@@ -294,6 +297,7 @@ export default class WardleyElementFactory {
       evolution,
       visibility,
       businessObject,
+      ...(color ? { color } : {}),
       ...extra,
     });
     return shape as unknown as WardleyShape;

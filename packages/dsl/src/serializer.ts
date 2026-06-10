@@ -56,6 +56,11 @@ function offsetSuffix(lo: LabelOffset | undefined): string {
   return lo ? ` label [${r(lo.dx)}, ${r(lo.dy)}]` : '';
 }
 
+/** Project extension: `(color …)` after the coordinates (the OWM parser ignores it). */
+function colorSuffix(el: { color?: string }): string {
+  return el.color ? ` (color ${el.color})` : '';
+}
+
 function decoratorSuffix(dec: ComponentDecorators | undefined): string {
   if (!dec) return '';
   const paren: string[] = [];
@@ -140,7 +145,7 @@ export function serializeDSL(map: WardleyMap): string {
         for (const k of kids) {
           lines.push(
             `  component ${nameOf(k)} [${r(k.position.evolution)}]` +
-              `${decoratorSuffix(k.decorators)}${offsetSuffix(k.labelOffset)}`,
+              `${decoratorSuffix(k.decorators)}${colorSuffix(k)}${offsetSuffix(k.labelOffset)}`,
           );
         }
         lines.push('}');
@@ -189,28 +194,28 @@ function elementLine(el: MapElement, name: string): string {
   const p = el.position;
   switch (el.elementType) {
     case 'anchor':
-      return `anchor ${name} [${r(p.visibility)}, ${r(p.evolution)}]${offsetSuffix(el.labelOffset)}`;
+      return `anchor ${name} [${r(p.visibility)}, ${r(p.evolution)}]${colorSuffix(el)}${offsetSuffix(el.labelOffset)}`;
     case 'component':
-      return `component ${name} [${r(p.visibility)}, ${r(p.evolution)}]${decoratorSuffix(el.decorators)}${offsetSuffix(el.labelOffset)}`;
+      return `component ${name} [${r(p.visibility)}, ${r(p.evolution)}]${decoratorSuffix(el.decorators)}${colorSuffix(el)}${offsetSuffix(el.labelOffset)}`;
     case 'note':
       // Encode line breaks as literal `\n` -> the line-based DSL stays single-line.
-      return `note ${name.replace(/\n/g, '\\n')} [${r(p.visibility)}, ${r(p.evolution)}]${el.color ? ` (color ${el.color})` : ''}`;
+      return `note ${name.replace(/\n/g, '\\n')} [${r(p.visibility)}, ${r(p.evolution)}]${colorSuffix(el)}`;
     case 'pipeline':
-      return `pipeline ${name} [${r(el.evolutionStart)}, ${r(el.evolutionEnd)}]`;
+      return `pipeline ${name} [${r(el.evolutionStart)}, ${r(el.evolutionEnd)}]${colorSuffix(el)}`;
     case 'submap':
-      return `submap ${name} [${r(p.visibility)}, ${r(p.evolution)}]`;
+      return `submap ${name} [${r(p.visibility)}, ${r(p.evolution)}]${colorSuffix(el)}`;
     case 'annotation': {
       const pos =
         el.positions.length > 1
           ? `[${el.positions.map((q) => `[${r(q.visibility)}, ${r(q.evolution)}]`).join(', ')}]`
           : `[${r(p.visibility)}, ${r(p.evolution)}]`;
-      return `annotation ${el.number} ${pos} ${el.text}`;
+      return `annotation ${el.number} ${pos}${colorSuffix(el)} ${el.text}`;
     }
     case 'accelerator':
-      return `${el.direction === 'deaccelerate' ? 'deaccelerator' : 'accelerator'} ${name} [${r(p.visibility)}, ${r(p.evolution)}]`;
+      return `${el.direction === 'deaccelerate' ? 'deaccelerator' : 'accelerator'} ${name} [${r(p.visibility)}, ${r(p.evolution)}]${colorSuffix(el)}`;
     case 'attitude':
       // OWM canon: two corners, normalized — `pioneers [vis1, mat1, vis2, mat2]`.
-      return `${el.kind} [${r(p.visibility)}, ${r(p.evolution)}, ${r(el.corner2.visibility)}, ${r(el.corner2.evolution)}]`;
+      return `${el.kind} [${r(p.visibility)}, ${r(p.evolution)}, ${r(el.corner2.visibility)}, ${r(el.corner2.evolution)}]${colorSuffix(el)}`;
   }
 }
 

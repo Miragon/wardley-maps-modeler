@@ -594,3 +594,44 @@ describe('note color (project extension: `(color …)`)', () => {
     expect(out).not.toContain('(color');
   });
 });
+
+describe('element color on every type (project extension: `(color …)`)', () => {
+  it('parses and round-trips the color on all element lines', () => {
+    const src = `title T
+anchor consumer [0.9, 0.5] (color #b45309)
+component Shop [0.7, 0.4] (market) (color #15803d)
+submap Detail [0.6, 0.2] (color #6d28d9)
+accelerator Boost [0.5, 0.6] (color #0e7c74)
+pioneers [0.8, 0.1, 0.6, 0.3] (color #be123c)
+pipeline Shop [0.3, 0.7] (color #1d4ed8)`;
+    const map = parseDSL(src);
+    const colorOf = (type: string) => map.elements.find((e) => e.elementType === type)?.color;
+    expect(colorOf('anchor')).toBe('#b45309');
+    expect(colorOf('component')).toBe('#15803d');
+    expect(colorOf('submap')).toBe('#6d28d9');
+    expect(colorOf('accelerator')).toBe('#0e7c74');
+    expect(colorOf('attitude')).toBe('#be123c');
+    expect(colorOf('pipeline')).toBe('#1d4ed8');
+    // Decorators survive next to the color.
+    const comp = map.elements.find((e) => e.elementType === 'component');
+    expect(comp && 'decorators' in comp && comp.decorators?.market).toBe(true);
+    const once = serializeDSL(map);
+    expect(once).toContain('component Shop [0.7, 0.4] (market) (color #15803d)');
+    expect(once).toContain('pipeline Shop [0.3, 0.7] (color #1d4ed8)');
+    expect(serializeDSL(parseDSL(once))).toBe(once);
+  });
+
+  it('keeps the color on pipeline block children', () => {
+    const src = `title T
+pipeline GOOD [0.3, 0.7]
+{
+  component physical [0.4] (color #b45309)
+}`;
+    const map = parseDSL(src);
+    const child = map.elements.find((e) => e.label === 'physical');
+    expect(child?.color).toBe('#b45309');
+    const once = serializeDSL(map);
+    expect(once).toContain('  component physical [0.4] (color #b45309)');
+    expect(serializeDSL(parseDSL(once))).toBe(once);
+  });
+});

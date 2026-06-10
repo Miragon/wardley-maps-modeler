@@ -81,12 +81,14 @@ interface PipelineChild {
   readonly maturity: number;
   readonly decorators: InlineDecorators;
   readonly labelOffset?: { dx: number; dy: number };
+  readonly color?: string;
 }
 interface PendingPipeline {
   readonly name: string;
   /** Explicit range; if absent (OWM v2 block form without coordinates), it is derived from the children. */
   readonly start?: number;
   readonly end?: number;
+  readonly color?: string;
   readonly raw: string;
   readonly children: PipelineChild[];
 }
@@ -324,6 +326,7 @@ export function parseDSLWithDiagnostics(text: string): ParseResult {
           label: node.name,
           position: pos(node.coords.a, node.coords.b),
           labelOffset: node.labelOffset,
+          color: node.color,
         }) as AnchorElement;
         elements.push(anchor);
         register(node.name, id);
@@ -347,6 +350,7 @@ export function parseDSLWithDiagnostics(text: string): ParseResult {
           position: pos(node.coords.a, node.coords.b),
           labelOffset: node.labelOffset,
           decorators: Object.keys(decorators).length ? decorators : undefined,
+          color: node.color,
         }) as ComponentElement;
         elements.push(component);
         if (node.urlRef) pendingUrlRefs.push({ index: elements.length - 1, ref: node.urlRef });
@@ -383,8 +387,9 @@ export function parseDSLWithDiagnostics(text: string): ParseResult {
           opensBlock = true;
           body = body.slice(0, -1).trim();
         }
-        const coords = parseCoords(body);
-        const name = stripCoords(body).trim();
+        const col = parseColor(body);
+        const coords = parseCoords(col.rest);
+        const name = stripCoords(col.rest).trim();
         if (!name) {
           failed(line);
           break;
@@ -392,6 +397,7 @@ export function parseDSLWithDiagnostics(text: string): ParseResult {
         const pending: PendingPipeline = {
           name,
           ...(coords ? { start: coords.a, end: coords.b } : {}),
+          ...(col.color ? { color: col.color } : {}),
           raw: line,
           children: [],
         };
@@ -468,7 +474,8 @@ export function parseDSLWithDiagnostics(text: string): ParseResult {
       case 'annotation': {
         const numMatch = /^\s*(\d+)/.exec(after);
         const number = numMatch ? Number(numMatch[1]) : ++annoCounter;
-        const afterNum = after.replace(/^\s*\d+\s*/, '');
+        const colA = parseColor(after.replace(/^\s*\d+\s*/, ''));
+        const afterNum = colA.rest;
         // Try the multi-position form `[[y,x],[y,x]]` FIRST — the single-tuple RE would otherwise
         // match only the first inner tuple and corrupt the rest as text.
         const multi = parseMultiCoords(afterNum);
@@ -494,6 +501,7 @@ export function parseDSLWithDiagnostics(text: string): ParseResult {
           number,
           positions,
           text,
+          ...(colA.color ? { color: colA.color } : {}),
         };
         elements.push(annotation);
         break;
@@ -503,12 +511,15 @@ export function parseDSLWithDiagnostics(text: string): ParseResult {
       case 'settlers':
       case 'townplanners': {
         // Canonical OWM form: `<kind> [vis1, mat1, vis2, mat2]` (two corners, normalized).
-        const four = parseCoords4(after);
+        const col = parseColor(after);
+        const four = parseCoords4(col.rest);
         if (!four) {
           failed(line);
           break;
         }
-        elements.push(makeAttitude(ids, kw as AttitudeKind, four.a, four.b, four.c, four.d));
+        elements.push(
+          makeAttitude(ids, kw as AttitudeKind, four.a, four.b, four.c, four.d, col.color),
+        );
         break;
       }
 
@@ -538,6 +549,7 @@ export function parseDSLWithDiagnostics(text: string): ParseResult {
             position: pos(node.coords.a, node.coords.b),
             labelOffset: node.labelOffset,
             decorators: { ...node.decorators, method: kw as Method },
+            color: node.color,
           }) as ComponentElement;
           elements.push(component);
           register(node.name, id);
@@ -563,6 +575,7 @@ export function parseDSLWithDiagnostics(text: string): ParseResult {
           direction: kw === 'deaccelerator' ? 'deaccelerate' : 'accelerate',
           label: node.name,
           position: pos(node.coords.a, node.coords.b),
+          ...(node.color ? { color: node.color } : {}),
         };
         elements.push(accelerator);
         register(node.name, id);
@@ -581,6 +594,7 @@ export function parseDSLWithDiagnostics(text: string): ParseResult {
           elementType: 'submap',
           label: node.name,
           position: pos(node.coords.a, node.coords.b),
+          ...(node.color ? { color: node.color } : {}),
         };
         elements.push(submap);
         if (node.urlRef) pendingUrlRefs.push({ index: elements.length - 1, ref: node.urlRef });
@@ -619,6 +633,7 @@ export function parseDSLWithDiagnostics(text: string): ParseResult {
           labelOffset: c.labelOffset,
           decorators: Object.keys(c.decorators).length ? c.decorators : undefined,
           pipelineId: id,
+          color: c.color,
         }) as ComponentElement,
       );
       register(c.name, cid);
@@ -645,6 +660,7 @@ export function parseDSLWithDiagnostics(text: string): ParseResult {
       evolutionStart: start,
       evolutionEnd: end,
       childIds,
+      ...(p.color ? { color: p.color } : {}),
     };
     elements.push(pipeline, ...childElements);
   }
@@ -760,6 +776,8 @@ interface ParsedNode {
   readonly labelOffset?: { dx: number; dy: number };
   /** `url(Name)` reference (definition name, not yet resolved). */
   readonly urlRef?: string;
+  /** Project extension `(color …)` — supported on every element line. */
+  readonly color?: string;
 }
 
 /**
@@ -770,7 +788,10 @@ interface ParsedNode {
 function parseNode(after: string): ParsedNode | null {
   const split = splitAtCoords(after);
   if (!split || !split.name) return null;
-  const url = parseUrlRef(split.suffix);
+  // Color must be stripped BEFORE the decorators — `(color x)` would otherwise be consumed
+  // (and silently dropped) by the decorator parentheses.
+  const col = parseColor(split.suffix);
+  const url = parseUrlRef(col.rest);
   const lo = parseLabelOffset(url.rest);
   const dec = parseDecorators(lo.rest);
   return compact({
@@ -779,6 +800,7 @@ function parseNode(after: string): ParsedNode | null {
     decorators: dec.decorators,
     labelOffset: lo.labelOffset ?? undefined,
     urlRef: url.urlRef ?? undefined,
+    color: col.color ?? undefined,
   }) as ParsedNode;
 }
 
@@ -797,13 +819,15 @@ function parseBlockChild(after: string): PipelineChild | null {
   const name = after.slice(0, m.index).trim();
   if (!name) return null;
   const suffix = after.slice(m.index + m[0].length);
-  const lo = parseLabelOffset(suffix);
+  const col = parseColor(suffix);
+  const lo = parseLabelOffset(col.rest);
   const dec = parseDecorators(lo.rest);
   return compact({
     name,
     maturity,
     decorators: dec.decorators,
     labelOffset: lo.labelOffset ?? undefined,
+    color: col.color ?? undefined,
   }) as PipelineChild;
 }
 
@@ -815,12 +839,14 @@ function makeAttitude(
   m1: number,
   v2: number,
   m2: number,
+  color?: string,
 ): AttitudeElement {
   return {
     id: ids.alloc('attitude', kind),
     elementType: 'attitude',
     kind,
     label: '',
+    ...(color ? { color } : {}),
     position: {
       visibility: clamp01(Math.max(v1, v2)),
       evolution: clamp01(Math.min(m1, m2)),

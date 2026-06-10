@@ -39,6 +39,7 @@ const baseFields = {
   label: z.string(),
   position: coordinateSchema,
   labelOffset: labelOffsetSchema.optional(),
+  color: z.string().optional(),
 };
 
 const anchorSchema = z.object({ ...baseFields, elementType: z.literal('anchor') });
@@ -78,7 +79,6 @@ const noteSchema = z.object({
   ...baseFields,
   elementType: z.literal('note'),
   patternType: climaticPatternSchema.optional(),
-  color: z.string().optional(),
 });
 
 const annotationSchema = z.object({

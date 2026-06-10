@@ -117,6 +117,7 @@ export default class WardleyExporter {
           // moves away) — deliberately NO businessObject fallback.
           pipelineId: el.pipelineId,
           url: (bo as ComponentElement | undefined)?.url,
+          color: el.color,
         }) as ComponentElement;
       case 'anchor':
         return compact({
@@ -125,6 +126,7 @@ export default class WardleyExporter {
           label: el.wardleyLabel,
           position,
           labelOffset: el.labelOffset ?? (bo as AnchorElement | undefined)?.labelOffset,
+          color: el.color,
         }) as AnchorElement;
       case 'note':
         return compact({
@@ -144,6 +146,7 @@ export default class WardleyExporter {
           evolutionStart: el.evolutionStart ?? 0,
           evolutionEnd: el.evolutionEnd ?? 1,
           childIds: (bo as PipelineElement | undefined)?.childIds ?? [],
+          ...(el.color ? { color: el.color } : {}),
         };
       case 'attitude':
         return {
@@ -158,6 +161,7 @@ export default class WardleyExporter {
               visibility: Math.max(0, position.visibility - 0.1),
               evolution: Math.min(1, position.evolution + 0.15),
             },
+          ...(el.color ? { color: el.color } : {}),
         };
       case 'accelerator':
         return {
@@ -166,6 +170,7 @@ export default class WardleyExporter {
           direction: el.acceleratorDirection ?? 'accelerate',
           label: el.wardleyLabel,
           position,
+          ...(el.color ? { color: el.color } : {}),
         };
       case 'annotation': {
         // The marker shows positions[0]; additional positions (multi-point annotation) are
@@ -179,6 +184,7 @@ export default class WardleyExporter {
           number: el.annotationNumber ?? 0,
           positions: [position, ...extraPositions],
           text: el.wardleyLabel,
+          ...(el.color ? { color: el.color } : {}),
         };
       }
       case 'submap':
@@ -188,6 +194,7 @@ export default class WardleyExporter {
           label: el.wardleyLabel,
           position,
           urlRef: (bo as SubmapElement | undefined)?.urlRef,
+          color: el.color,
         }) as SubmapElement;
       default: {
         const exhaustive: never = el.wardleyType;

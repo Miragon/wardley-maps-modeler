@@ -56,6 +56,9 @@ export interface MapElementBase {
   readonly label: string;
   readonly position: Coordinate;
   readonly labelOffset?: LabelOffset;
+  /** Optional element color (CSS color, typically hex from the renderer's palette).
+   *  Serialized as the project extension `(color …)` after the coordinates. */
+  readonly color?: string;
 }
 
 export interface AnchorElement extends MapElementBase {
@@ -92,8 +95,6 @@ export type ClimaticPattern =
 export interface NoteElement extends MapElementBase {
   readonly elementType: 'note';
   readonly patternType?: ClimaticPattern;
-  /** Optional note color (CSS color, typically hex from the renderer's `NOTE_COLORS` palette). */
-  readonly color?: string;
 }
 
 export interface AnnotationElement extends MapElementBase {

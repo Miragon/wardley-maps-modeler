@@ -54,7 +54,7 @@ export interface WardleyShape extends Shape {
   corner2?: { visibility: number; evolution: number };
   /** accelerator only. */
   acceleratorDirection?: AcceleratorDirection;
-  /** note only: optional color (CSS color/hex from NOTE_COLORS). */
+  /** Optional element color (CSS color/hex from the swatch palette) — any element type. */
   color?: string;
   businessObject?: MapElement;
 }

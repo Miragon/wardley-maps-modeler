@@ -44,6 +44,7 @@ const SHAPE_PROPS = [
   'corner2',
   'acceleratorDirection',
   'labelOffset',
+  'color',
 ] as const;
 const CONNECTION_PROPS = ['wardleyType', 'bidirectional', 'flowValue', 'linkLabel'] as const;
 

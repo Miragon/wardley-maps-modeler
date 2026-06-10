@@ -40,7 +40,7 @@ export const PALETTE_ICONS: Record<string, string> = {
   // Pipeline = ■ anchor on top, box with variant circles hanging below (Wardley notation).
   pipeline: wrap(
     `<rect x="9.5" y="2.5" width="5.5" height="5.5" fill="${COLORS.componentFill}" stroke="${COLORS.stroke}" stroke-width="1.5"/>` +
-      `<rect x="2" y="10" width="20" height="9" rx="2" fill="${COLORS.accentSoft}" stroke="${COLORS.pipeline}" stroke-width="1.25" stroke-dasharray="3 2"/>` +
+      `<rect x="2" y="10" width="20" height="9" rx="2" fill="none" stroke="${COLORS.pipeline}" stroke-width="1.25" stroke-dasharray="3 2"/>` +
       `<circle cx="7" cy="14.5" r="2.2" fill="${COLORS.componentFill}" stroke="${COLORS.stroke}" stroke-width="1.2"/>` +
       `<circle cx="17" cy="14.5" r="2.2" fill="${COLORS.componentFill}" stroke="${COLORS.stroke}" stroke-width="1.2"/>`,
   ),

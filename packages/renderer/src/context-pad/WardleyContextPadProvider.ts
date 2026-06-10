@@ -166,19 +166,18 @@ export default class WardleyContextPadProvider implements ContextPadProvider {
       };
     }
 
-    if (shape.wardleyType === 'note') {
-      entries['color'] = {
-        group: 'wardley',
-        title: 'Note color',
-        html: cpHtml(ICON_PALETTE, 'Note color'),
-        action: {
-          click: (event: Event) => {
-            const e = event as MouseEvent;
-            this.colorPicker.open(shape, e.clientX, e.clientY);
-          },
+    // Color is available on EVERY element (model-wide `color`, DSL extension `(color ...)`).
+    entries['color'] = {
+      group: 'wardley',
+      title: 'Color',
+      html: cpHtml(ICON_PALETTE, 'Color'),
+      action: {
+        click: (event: Event) => {
+          const e = event as MouseEvent;
+          this.colorPicker.open(shape, e.clientX, e.clientY);
         },
-      };
-    }
+      },
+    };
 
     // OWM `url(...)`: open the stored address (submap drill-down / component link).
     const bo = shape.businessObject;

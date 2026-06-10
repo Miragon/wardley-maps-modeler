@@ -197,9 +197,11 @@ export default class WardleyRenderer extends BaseRenderer {
       );
     }
 
+    // User-picked element color tints stroke and label (default: ink-on-paper look).
+    const tint = shape.color ?? COLORS.stroke;
     const ring = circle(cx, cy, COMPONENT_RADIUS, {
       fill: COLORS.componentFill,
-      stroke: COLORS.stroke,
+      stroke: tint,
       'stroke-width': 2,
     });
     svgAppend(visuals, ring);
@@ -210,7 +212,7 @@ export default class WardleyRenderer extends BaseRenderer {
         visuals,
         circle(cx, cy, COMPONENT_INNER_RADIUS, {
           fill: 'none',
-          stroke: COLORS.stroke,
+          stroke: tint,
           'stroke-width': 1.5,
         }),
       );
@@ -222,7 +224,7 @@ export default class WardleyRenderer extends BaseRenderer {
         visuals,
         circle(cx, cy, COMPONENT_RADIUS + 3.5, {
           fill: 'none',
-          stroke: COLORS.stroke,
+          stroke: tint,
           'stroke-width': 1.25,
           'stroke-dasharray': '1.5 3',
           'stroke-linecap': 'round',
@@ -235,7 +237,7 @@ export default class WardleyRenderer extends BaseRenderer {
         [-3.4, 2.4],
         [3.4, 2.4],
       ] as const) {
-        svgAppend(visuals, circle(cx + mx, cy + my, 1.7, { fill: COLORS.stroke }));
+        svgAppend(visuals, circle(cx + mx, cy + my, 1.7, { fill: tint }));
       }
     }
 
@@ -244,7 +246,13 @@ export default class WardleyRenderer extends BaseRenderer {
     // deliberately no marker box around the node (product decision: keep the canvas calm).
     const lx = cx + COMPONENT_RADIUS + 7 + (shape.labelOffset?.dx ?? 0);
     const ly = cy - 4 + (shape.labelOffset?.dy ?? 0);
-    svgAppend(visuals, label(shape.wardleyLabel, lx, ly, { 'font-weight': '500' }));
+    svgAppend(
+      visuals,
+      label(shape.wardleyLabel, lx, ly, {
+        'font-weight': '500',
+        ...(shape.color ? { fill: shape.color } : {}),
+      }),
+    );
     if (dec?.method) {
       svgAppend(
         visuals,
@@ -260,7 +268,7 @@ export default class WardleyRenderer extends BaseRenderer {
   private drawAnchor(visuals: SVGElement, shape: WardleyShape): SVGElement {
     const cx = shape.width / 2;
     const cy = shape.height / 2;
-    const icon = drawIcon(ICON_PERSON, cx, cy, ANCHOR_ICON_SIZE, COLORS.ink);
+    const icon = drawIcon(ICON_PERSON, cx, cy, ANCHOR_ICON_SIZE, shape.color ?? COLORS.ink);
     svgAppend(visuals, icon);
     svgAppend(
       visuals,
@@ -271,6 +279,7 @@ export default class WardleyRenderer extends BaseRenderer {
         {
           'text-anchor': 'middle',
           'font-weight': '700',
+          ...(shape.color ? { fill: shape.color } : {}),
         },
       ),
     );
@@ -279,14 +288,16 @@ export default class WardleyRenderer extends BaseRenderer {
 
   private drawPipeline(visuals: SVGElement, shape: WardleyShape): SVGElement {
     const width = Math.max(shape.width, 1);
+    const tint = shape.color;
     const box = svgAttr(svgCreate('rect'), {
       x: 0,
       y: 0,
       width,
       height: Math.max(shape.height, 1),
       rx: 4,
-      fill: COLORS.accentSoft,
-      stroke: COLORS.pipeline,
+      // No background fill — the box is a pure outline (the variants stay fully visible).
+      fill: 'none',
+      stroke: tint ?? COLORS.pipeline,
       'stroke-width': 1.25,
       'stroke-dasharray': '6 3',
     });
@@ -302,7 +313,7 @@ export default class WardleyRenderer extends BaseRenderer {
         width: PIPELINE_ANCHOR_SIZE,
         height: PIPELINE_ANCHOR_SIZE,
         fill: COLORS.componentFill,
-        stroke: COLORS.stroke,
+        stroke: tint ?? COLORS.stroke,
         'stroke-width': 2,
       }),
     );
@@ -315,7 +326,10 @@ export default class WardleyRenderer extends BaseRenderer {
     if (!hasNamedComponent) {
       svgAppend(
         visuals,
-        label(shape.wardleyLabel, width / 2 + half + 6, -4, { 'font-weight': '500' }),
+        label(shape.wardleyLabel, width / 2 + half + 6, -4, {
+          'font-weight': '500',
+          ...(tint ? { fill: tint } : {}),
+        }),
       );
     }
     return box;
@@ -345,6 +359,8 @@ export default class WardleyRenderer extends BaseRenderer {
 
   private drawAttitude(visuals: SVGElement, shape: WardleyShape): SVGElement {
     const c = ATTITUDE_COLORS[shape.attitudeKind ?? 'pioneers'] ?? ATTITUDE_COLORS['pioneers']!;
+    // A user-picked color overrides the kind palette (stroke + label; the soft fill stays).
+    const stroke = shape.color ?? c.stroke;
     const box = svgAttr(svgCreate('rect'), {
       x: 0,
       y: 0,
@@ -352,7 +368,7 @@ export default class WardleyRenderer extends BaseRenderer {
       height: Math.max(shape.height, 1),
       rx: 10,
       fill: c.fill,
-      stroke: c.stroke,
+      stroke,
       'stroke-width': 1.25,
       'stroke-dasharray': '5 4',
     });
@@ -367,7 +383,7 @@ export default class WardleyRenderer extends BaseRenderer {
         10,
         18,
         {
-          fill: c.stroke,
+          fill: stroke,
           'font-weight': '700',
           'letter-spacing': '0.04em',
         },
@@ -381,7 +397,7 @@ export default class WardleyRenderer extends BaseRenderer {
     const cy = shape.height / 2;
     const marker = circle(cx, cy, 10, {
       fill: COLORS.annotationFill,
-      stroke: COLORS.stroke,
+      stroke: shape.color ?? COLORS.stroke,
       'stroke-width': 1.25,
     });
     svgAppend(visuals, marker);
@@ -414,7 +430,7 @@ export default class WardleyRenderer extends BaseRenderer {
       cx,
       cy,
       24,
-      accelerate ? COLORS.accelerator : COLORS.deaccelerator,
+      shape.color ?? (accelerate ? COLORS.accelerator : COLORS.deaccelerator),
     );
     svgAppend(visuals, sym);
     if (shape.wardleyLabel) {
@@ -427,6 +443,7 @@ export default class WardleyRenderer extends BaseRenderer {
     const cx = shape.width / 2;
     const cy = shape.height / 2;
     const r = COMPONENT_RADIUS + 1;
+    const tint = shape.color ?? COLORS.stroke;
     const outer = svgAttr(svgCreate('rect'), {
       x: cx - r,
       y: cy - r,
@@ -434,7 +451,7 @@ export default class WardleyRenderer extends BaseRenderer {
       height: r * 2,
       rx: 3,
       fill: COLORS.componentFill,
-      stroke: COLORS.stroke,
+      stroke: tint,
       'stroke-width': 2,
     });
     svgAppend(visuals, outer);
@@ -447,11 +464,17 @@ export default class WardleyRenderer extends BaseRenderer {
         height: r * 2 - 6,
         rx: 1.5,
         fill: 'none',
-        stroke: COLORS.stroke,
+        stroke: tint,
         'stroke-width': 1,
       }),
     );
-    svgAppend(visuals, label(shape.wardleyLabel, cx + r + 6, cy - 6, { 'font-weight': '500' }));
+    svgAppend(
+      visuals,
+      label(shape.wardleyLabel, cx + r + 6, cy - 6, {
+        'font-weight': '500',
+        ...(shape.color ? { fill: shape.color } : {}),
+      }),
+    );
     return outer;
   }
 }

@@ -93,7 +93,7 @@ export default class WardleyModeling {
     this.updateProperties(element, { decorators: Object.keys(dec).length ? dec : undefined });
   }
 
-  /** Sets the note color (CSS color/hex) or removes it (`undefined` = default color). */
+  /** Sets the element color (CSS color/hex) or removes it (`undefined` = default color). */
   setColor(element: WardleyShape, color: string | undefined): void {
     this.updateProperties(element, { color });
   }
