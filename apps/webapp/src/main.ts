@@ -30,21 +30,16 @@ import { readHashMap, writeHashMap, shareUrl } from './share.js';
 import { openFile, embedSvg, svgToEmbeddedPng, downloadBlob, downloadText } from './io.js';
 
 const TEA_SHOP = `title Tea Shop
-anchor Business [0.95, 0.63]
-anchor Public [0.95, 0.78]
 component Cup of Tea [0.79, 0.61]
 component Cup [0.73, 0.78]
 component Tea [0.63, 0.81]
-component Hot Water [0.52, 0.80]
+component Hot Water [0.52, 0.8]
 component Water [0.38, 0.82]
 component Kettle [0.43, 0.35]
+component Power [0.1, 0.71] (outsource)
+anchor Business [0.95, 0.63]
+anchor Public [0.95, 0.78]
 evolve Kettle 0.62
-component Power [0.10, 0.71] (outsource)
-pipeline Kettle Options [0.30, 0.65]
-{
-  component Campfire Kettle [0.35]
-  component Electric Kettle [0.58]
-}
 Business -> Cup of Tea
 Public -> Cup of Tea
 Cup of Tea -> Cup
