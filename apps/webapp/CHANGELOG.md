@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.2.0](https://github.com/Miragon/wardley-maps-modeler/compare/webapp-v0.1.1...webapp-v0.2.0) (2026-06-10)
+
+
+### Features
+
+* **webapp:** add Miragon favicon ([#12](https://github.com/Miragon/wardley-maps-modeler/issues/12)) ([025f415](https://github.com/Miragon/wardley-maps-modeler/commit/025f415ba970bc4b8f1834fd0aa10f8d21c9a255))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @miragon/wardley-dsl bumped from 0.1.1 to 0.2.0
+    * @miragon/wardley-renderer bumped from 0.1.1 to 0.2.0
+    * @miragon/wardley-schema-model bumped from 0.1.1 to 0.2.0
+
 ## [0.1.1](https://github.com/Miragon/wardley-maps-modeler/compare/webapp-v0.1.0...webapp-v0.1.1) (2026-06-09)
 
 

@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.2.0](https://github.com/Miragon/wardley-maps-modeler/compare/vscode-v0.1.1...vscode-v0.2.0) (2026-06-10)
+
+
+### Bug Fixes
+
+* **release:** unique Marketplace display name + independent idempotent npm publish ([#32](https://github.com/Miragon/wardley-maps-modeler/issues/32)) ([a366397](https://github.com/Miragon/wardley-maps-modeler/commit/a366397b7ed18ceb82c48f9a2665ba383833e8cb))
+* repair release publishing (vscode packaging + npm dry-run footgun) ([#30](https://github.com/Miragon/wardley-maps-modeler/issues/30)) ([7865c15](https://github.com/Miragon/wardley-maps-modeler/commit/7865c1575f8cb0376cc92c8309696152c49a0597))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @miragon/wardley-dsl bumped from 0.1.1 to 0.2.0
+    * @miragon/wardley-renderer bumped from 0.1.1 to 0.2.0
+    * @miragon/wardley-schema-model bumped from 0.1.1 to 0.2.0
+
 ## [0.1.1](https://github.com/Miragon/wardley-maps-modeler/compare/vscode-v0.1.0...vscode-v0.1.1) (2026-06-09)
 
 
