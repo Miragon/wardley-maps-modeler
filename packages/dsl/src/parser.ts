@@ -47,9 +47,33 @@ function splitDependency(core: string): { left: string; right: string } | null {
   const right = core.slice(arrow + 2).trim();
   return left && right ? { left, right } : null;
 }
-// Flow: A +> B, A +<> B, A +< B (reverse), A +'120ms'> B, A +'120ms'<> B.
-// No `\s*` before/after the operator (captures are trimmed in code) — keeps matching linear.
-const FLOW_RE = /^(.+?)\+(?:'([^']*)')?(<>|>|<)(.+)$/;
+/** Splits a flow line at the FIRST valid operator (`+>`, `+<>`, `+<`, `+'value'>`/`+'value'<>`)
+ *  via a linear scan — same semantics as the previous lazy regex, but immune to backtracking. */
+function splitFlow(
+  core: string,
+): { left: string; right: string; op: string; value?: string } | null {
+  for (let i = 1; i < core.length; i++) {
+    if (core[i] !== '+') continue;
+    let j = i + 1;
+    let value: string | undefined;
+    if (core[j] === "'") {
+      const end = core.indexOf("'", j + 1);
+      if (end < 0) continue;
+      value = core.slice(j + 1, end);
+      j = end + 1;
+    }
+    const op = core.startsWith('<>', j)
+      ? '<>'
+      : core[j] === '>' || core[j] === '<'
+        ? core[j]!
+        : null;
+    if (!op) continue;
+    const left = core.slice(0, i).trim();
+    const right = core.slice(j + op.length).trim();
+    if (left && right) return { left, right, op, ...(value ? { value } : {}) };
+  }
+  return null;
+}
 // Config/special keywords that must NOT be (pre-)detected as an edge — `evolution`/`evolve`/
 // `y-axis`/`title` can themselves contain `->` and have their own handling in the switch.
 const NON_LINK_KEYWORDS: ReadonlySet<string> = new Set([
@@ -191,7 +215,7 @@ export function parseDSLWithDiagnostics(text: string): ParseResult {
     const core = semi >= 0 ? line.slice(0, semi).trim() : line;
     const linkLabel = semi >= 0 ? line.slice(semi + 1).trim() : '';
     const dep = splitDependency(core);
-    const flow = dep ? null : FLOW_RE.exec(core);
+    const flow = dep ? null : splitFlow(core);
     if (dep) {
       pendingLinks.push({
         left: dep.left,
@@ -204,14 +228,13 @@ export function parseDSLWithDiagnostics(text: string): ParseResult {
       return true;
     }
     if (flow) {
-      const op = flow[3]!;
       pendingLinks.push({
-        left: flow[1]!.trim(),
-        right: flow[4]!.trim(),
+        left: flow.left,
+        right: flow.right,
         kind: 'flow',
-        bidirectional: op === '<>',
-        reverse: op === '<',
-        ...(flow[2] ? { flowValue: flow[2] } : {}),
+        bidirectional: flow.op === '<>',
+        reverse: flow.op === '<',
+        ...(flow.value ? { flowValue: flow.value } : {}),
         ...(linkLabel ? { label: linkLabel } : {}),
         raw: line,
         lineNo,
