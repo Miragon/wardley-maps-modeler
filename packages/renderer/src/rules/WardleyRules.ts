@@ -3,7 +3,8 @@ import type EventBus from 'diagram-js/lib/core/EventBus';
 import { isWardleyShape, isPipeline, isAttitude, type WardleyShape } from '../model/di-types.js';
 import type WardleyConnectMode from '../modeling/WardleyConnectMode.js';
 
-const CONNECTABLE: ReadonlySet<string> = new Set(['component', 'anchor']);
+// Submaps are referenceable nodes on the parent map (OWM serializes their edges by name).
+const CONNECTABLE: ReadonlySet<string> = new Set(['component', 'anchor', 'submap']);
 
 function isConnectable(el: unknown): el is WardleyShape {
   return isWardleyShape(el) && CONNECTABLE.has(el.wardleyType);

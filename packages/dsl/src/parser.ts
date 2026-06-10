@@ -437,12 +437,20 @@ export function parseDSLWithDiagnostics(text: string): ParseResult {
       }
 
       case 'y-axis': {
+        // OWM: `y-axis Label->BottomLabel->TopLabel` — keep the end labels losslessly too.
         const parts = after
           .split('->')
           .map((s) => s.trim())
           .filter(Boolean);
-        if (parts.length) config = { ...config, yAxisLabel: parts[0]! };
-        else failed(line);
+        if (parts.length) {
+          config = {
+            ...config,
+            yAxisLabel: parts[0]!,
+            ...(parts.length >= 3
+              ? { yAxisEndLabels: [parts[1]!, parts[2]!] as [string, string] }
+              : {}),
+          };
+        } else failed(line);
         break;
       }
 

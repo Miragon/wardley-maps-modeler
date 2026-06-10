@@ -12,7 +12,7 @@ import {
   ATTITUDE_COLORS,
   NOTE_LINE_HEIGHT,
 } from './styles.js';
-import { drawIcon, ICON_PERSON } from './icons.js';
+import { drawIcon, ICON_FAST_FORWARD, ICON_FAST_REWIND, ICON_PERSON } from './icons.js';
 import {
   isWardleyConnection,
   isWardleyShape,
@@ -213,17 +213,51 @@ export default class WardleyRenderer extends BaseRenderer {
       );
     }
 
-    // Market/ecosystem as an inner symbol (event-icon idiom).
+    // Canon symbols: market = three dots in a triangle, ecosystem = dotted outer ring.
     if (dec?.ecosystem) {
       svgAppend(
         visuals,
-        circle(cx, cy, 4.5, { fill: 'none', stroke: COLORS.stroke, 'stroke-width': 1.5 }),
+        circle(cx, cy, COMPONENT_RADIUS + 3.5, {
+          fill: 'none',
+          stroke: COLORS.stroke,
+          'stroke-width': 1.25,
+          'stroke-dasharray': '1.5 3',
+          'stroke-linecap': 'round',
+        }),
       );
-    } else if (dec?.market) {
-      svgAppend(visuals, circle(cx, cy, 3, { fill: COLORS.stroke }));
+    }
+    if (dec?.market) {
+      for (const [mx, my] of [
+        [0, -3.8],
+        [-3.4, 2.4],
+        [3.4, 2.4],
+      ] as const) {
+        svgAppend(visuals, circle(cx + mx, cy + my, 1.7, { fill: COLORS.stroke }));
+      }
     }
 
-    // OWM `label [dx, dy]`-Offset respektieren (px relativ zur Default-Position).
+    // Sourcing method (build/buy/outsource): visible marker around the node (concept doc §8.3
+    // "shape variant or badge") — distinguishable per method via the stroke style.
+    if (dec?.method) {
+      const mr = COMPONENT_RADIUS + 4.5;
+      const dash = dec.method === 'build' ? undefined : dec.method === 'buy' ? '4 3' : '1.5 2.5';
+      svgAppend(
+        visuals,
+        svgAttr(svgCreate('rect'), {
+          x: cx - mr,
+          y: cy - mr,
+          width: mr * 2,
+          height: mr * 2,
+          rx: 6,
+          fill: 'none',
+          stroke: dec.method === 'build' ? COLORS.stroke : COLORS.axisText,
+          'stroke-width': 1.25,
+          ...(dash ? { 'stroke-dasharray': dash } : {}),
+        }),
+      );
+    }
+
+    // Honor the OWM `label [dx, dy]` offset (px relative to the default position).
     const lx = cx + COMPONENT_RADIUS + 7 + (shape.labelOffset?.dx ?? 0);
     const ly = cy - 4 + (shape.labelOffset?.dy ?? 0);
     svgAppend(visuals, label(shape.wardleyLabel, lx, ly, { 'font-weight': '500' }));
@@ -314,11 +348,19 @@ export default class WardleyRenderer extends BaseRenderer {
     svgAppend(visuals, box);
     svgAppend(
       visuals,
-      label(capitalize(shape.attitudeKind ?? shape.wardleyLabel), 10, 18, {
-        fill: c.stroke,
-        'font-weight': '700',
-        'letter-spacing': '0.04em',
-      }),
+      // A custom label (edited by the user) wins over the kind; default stays "Pioneers" etc.
+      label(
+        shape.wardleyLabel && shape.wardleyLabel !== shape.attitudeKind
+          ? shape.wardleyLabel
+          : capitalize(shape.attitudeKind ?? 'pioneers'),
+        10,
+        18,
+        {
+          fill: c.stroke,
+          'font-weight': '700',
+          'letter-spacing': '0.04em',
+        },
+      ),
     );
     return box;
   }
@@ -355,15 +397,17 @@ export default class WardleyRenderer extends BaseRenderer {
     const cx = shape.width / 2;
     const cy = shape.height / 2;
     const accelerate = shape.acceleratorDirection !== 'deaccelerate';
-    const sym = label(accelerate ? '»' : '«', cx, cy + 6, {
-      'text-anchor': 'middle',
-      'font-size': 19,
-      'font-weight': '700',
-      fill: accelerate ? COLORS.flow : COLORS.movement,
-    });
+    // Real arrow symbol (OWM canon: a clearly visible market force, not a text glyph).
+    const sym = drawIcon(
+      accelerate ? ICON_FAST_FORWARD : ICON_FAST_REWIND,
+      cx,
+      cy,
+      24,
+      accelerate ? COLORS.accelerator : COLORS.deaccelerator,
+    );
     svgAppend(visuals, sym);
     if (shape.wardleyLabel) {
-      svgAppend(visuals, label(shape.wardleyLabel, cx + 11, cy + 6, { 'font-size': 12 }));
+      svgAppend(visuals, label(shape.wardleyLabel, cx + 15, cy + 5, { 'font-size': 12 }));
     }
     return sym;
   }

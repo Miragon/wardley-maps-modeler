@@ -76,7 +76,7 @@ export default class WardleyContextPadProvider implements ContextPadProvider {
   }
 
   getContextPadEntries(element: Element): ContextPadEntries {
-    // Connections (dependency/flow): type toggle + delete.
+    // Connections (dependency/flow): type toggle + value/annotation editing + delete.
     if (isWardleyConnection(element)) {
       const conn = element as WardleyConnection;
       const toFlow = conn.wardleyType === 'dependency';
@@ -86,6 +86,12 @@ export default class WardleyContextPadProvider implements ContextPadProvider {
           title: toFlow ? 'Convert to flow link' : 'Convert to dependency',
           html: cpHtml(ICON_SWAP_HORIZ, toFlow ? 'Convert to flow link' : 'Convert to dependency'),
           action: { click: () => this.toggleConnectionType(conn) },
+        },
+        'edit-value': {
+          group: 'edit',
+          title: toFlow ? 'Edit link annotation' : 'Edit flow value',
+          html: cpHtml(ICON_EDIT, toFlow ? 'Edit link annotation' : 'Edit flow value'),
+          action: { click: () => this.labelEditing.activateConnection(conn) },
         },
         delete: {
           group: 'edit',
@@ -99,7 +105,10 @@ export default class WardleyContextPadProvider implements ContextPadProvider {
     const shape = element as WardleyShape;
     const entries: ContextPadEntries = {};
 
-    const connectable = shape.wardleyType === 'component' || shape.wardleyType === 'anchor';
+    const connectable =
+      shape.wardleyType === 'component' ||
+      shape.wardleyType === 'anchor' ||
+      shape.wardleyType === 'submap';
     if (connectable) {
       // Append component: drags out a new (blank) component and creates the arrow automatically
       // (diagram-js Create with `source` -> modeling.appendShape). Configurable via ⚙.

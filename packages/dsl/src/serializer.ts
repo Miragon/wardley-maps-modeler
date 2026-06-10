@@ -84,7 +84,10 @@ export function serializeDSL(map: WardleyMap): string {
   if (map.config.size)
     lines.push(`size [${r(map.config.size.width)}, ${r(map.config.size.height)}]`);
   if (map.config.evolutionLabels) lines.push(`evolution ${map.config.evolutionLabels.join('->')}`);
-  if (map.config.yAxisLabel) lines.push(`y-axis ${map.config.yAxisLabel}`);
+  if (map.config.yAxisLabel) {
+    const ends = map.config.yAxisEndLabels;
+    lines.push(`y-axis ${map.config.yAxisLabel}${ends ? `->${ends[0]}->${ends[1]}` : ''}`);
+  }
   if (map.config.annotationsBoxPosition) {
     const b = map.config.annotationsBoxPosition;
     lines.push(`annotations [${r(b.visibility)}, ${r(b.evolution)}]`);

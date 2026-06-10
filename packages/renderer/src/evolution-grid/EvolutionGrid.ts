@@ -33,6 +33,7 @@ export default class EvolutionGrid {
   private boundaries: readonly [number, number, number] = DEFAULT_STAGE_BOUNDARIES;
   private labels: readonly [string, string, string, string] = DEFAULT_EVOLUTION_LABELS;
   private yAxisLabel = 'Value Chain';
+  private yAxisEndLabels: readonly [string, string] = ['invisible', 'visible'];
   private plotWidth: number = PLOT.width;
   private plotHeight: number = PLOT.height;
 
@@ -42,6 +43,7 @@ export default class EvolutionGrid {
     this.boundaries = config.stageBoundaries ?? DEFAULT_STAGE_BOUNDARIES;
     this.labels = config.evolutionLabels ?? DEFAULT_EVOLUTION_LABELS;
     this.yAxisLabel = config.yAxisLabel ?? 'Value Chain';
+    this.yAxisEndLabels = config.yAxisEndLabels ?? ['invisible', 'visible'];
     this.plotWidth = Math.max(config.size?.width ?? PLOT.width, PLOT_MIN.width);
     this.plotHeight = Math.max(config.size?.height ?? PLOT.height, PLOT_MIN.height);
   }
@@ -154,9 +156,10 @@ export default class EvolutionGrid {
     svgAttr(yLabel, { transform: `translate(${left - 46}, ${(top + bottom) / 2}) rotate(-90)` });
     svgAppend(layer, yLabel);
 
+    // Axis end labels [bottom, top] — configurable via `y-axis Label->Bottom->Top`.
     svgAppend(
       layer,
-      text('visible', left - 10, top + 11, {
+      text(this.yAxisEndLabels[1], left - 10, top + 11, {
         'text-anchor': 'end',
         'font-size': FONT.stage,
         fill: COLORS.axisText,
@@ -164,7 +167,7 @@ export default class EvolutionGrid {
     );
     svgAppend(
       layer,
-      text('invisible', left - 10, bottom - 2, {
+      text(this.yAxisEndLabels[0], left - 10, bottom - 2, {
         'text-anchor': 'end',
         'font-size': FONT.stage,
         fill: COLORS.axisText,

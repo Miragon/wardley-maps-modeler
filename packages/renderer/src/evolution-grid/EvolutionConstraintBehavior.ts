@@ -65,6 +65,10 @@ export default class EvolutionConstraintBehavior extends CommandInterceptor {
       shape.evolutionEnd = e;
       shape.evolution = clamp01((s + e) / 2);
       shape.visibility = start.visibility;
+      // Re-project the clamped truth back onto the canvas (no model/pixel divergence).
+      const p1 = this.grid.toCanvas({ visibility: shape.visibility, evolution: s });
+      const p2 = this.grid.toCanvas({ visibility: shape.visibility, evolution: e });
+      this.applyGeometry(shape, p1.x, p1.y - shape.height / 2, Math.max(p2.x - p1.x, 2));
       this.syncChildren(shape);
       return;
     }
@@ -75,12 +79,40 @@ export default class EvolutionConstraintBehavior extends CommandInterceptor {
       shape.evolution = tl.evolution;
       shape.visibility = tl.visibility;
       shape.corner2 = br;
+      const a = this.grid.toCanvas(tl);
+      const b = this.grid.toCanvas(br);
+      this.applyGeometry(shape, a.x, a.y, Math.max(b.x - a.x, 4), Math.max(b.y - a.y, 4));
       return;
     }
     const coord = this.grid.fromCanvas({ x: shape.x + shape.width / 2, y: cy });
     shape.evolution = coord.evolution;
     shape.visibility = coord.visibility;
+    // Re-project: when clamping changed the normalized value (node dropped outside the plot),
+    // pull the pixel geometry back into the plot so model and canvas never diverge.
+    const center = this.grid.toCanvas(coord);
+    this.applyGeometry(shape, center.x - shape.width / 2, center.y - shape.height / 2);
     if (shape.wardleyType === 'component') this.updateMembership(shape);
+  }
+
+  /** Applies pixel geometry only when it actually drifted (and re-renders then). */
+  private applyGeometry(
+    shape: WardleyShape,
+    x: number,
+    y: number,
+    width?: number,
+    height?: number,
+  ): void {
+    const drift =
+      Math.abs(x - shape.x) > 0.5 ||
+      Math.abs(y - shape.y) > 0.5 ||
+      (width !== undefined && Math.abs(width - shape.width) > 0.5) ||
+      (height !== undefined && Math.abs(height - shape.height) > 0.5);
+    if (!drift) return;
+    shape.x = x;
+    shape.y = y;
+    if (width !== undefined) shape.width = width;
+    if (height !== undefined) shape.height = height;
+    this.fireChanged(shape);
   }
 
   /** Derives pipeline membership from the geometry: midpoint inside the box = child. */

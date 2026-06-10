@@ -1,5 +1,5 @@
 import { COLORS, ATTITUDE_COLORS, FONT } from './styles.js';
-import { ICON_PERSON } from './icons.js';
+import { ICON_FAST_FORWARD, ICON_FAST_REWIND, ICON_PERSON } from './icons.js';
 
 /**
  * Palette icons as a mini preview of the ACTUAL canvas rendering (WYSIWYG) — same colors
@@ -17,10 +17,18 @@ const text = (content: string, attrs: string): string =>
 
 export const PALETTE_ICONS: Record<string, string> = {
   component: wrap(eventCircle()),
-  market: wrap(eventCircle(`<circle cx="12" cy="12" r="2.6" fill="${COLORS.stroke}"/>`)),
+  // Canon: market = three dots in a triangle (like drawComponent).
+  market: wrap(
+    eventCircle(
+      `<circle cx="12" cy="10" r="1.4" fill="${COLORS.stroke}"/>` +
+        `<circle cx="10.2" cy="13.4" r="1.4" fill="${COLORS.stroke}"/>` +
+        `<circle cx="13.8" cy="13.4" r="1.4" fill="${COLORS.stroke}"/>`,
+    ),
+  ),
+  // Canon: ecosystem = dotted outer ring (like drawComponent).
   ecosystem: wrap(
     eventCircle(
-      `<circle cx="12" cy="12" r="4" fill="none" stroke="${COLORS.stroke}" stroke-width="1.5"/>`,
+      `<circle cx="12" cy="12" r="10" fill="none" stroke="${COLORS.stroke}" stroke-width="1.25" stroke-dasharray="1.5 3" stroke-linecap="round"/>`,
     ),
   ),
   anchor: wrap(`<path d="${ICON_PERSON}" fill="${COLORS.ink}"/>`),
@@ -34,10 +42,8 @@ export const PALETTE_ICONS: Record<string, string> = {
     `<circle cx="12" cy="12" r="8" fill="${COLORS.annotationFill}" stroke="${COLORS.stroke}" stroke-width="1.25"/>` +
       text('1', `y="16" font-size="11" font-weight="700" fill="${COLORS.stroke}"`),
   ),
-  accelerator: wrap(text('»', `y="17.5" font-size="19" font-weight="700" fill="${COLORS.flow}"`)),
-  deaccelerator: wrap(
-    text('«', `y="17.5" font-size="19" font-weight="700" fill="${COLORS.movement}"`),
-  ),
+  accelerator: wrap(`<path d="${ICON_FAST_FORWARD}" fill="${COLORS.accelerator}"/>`),
+  deaccelerator: wrap(`<path d="${ICON_FAST_REWIND}" fill="${COLORS.deaccelerator}"/>`),
   submap: wrap(
     `<rect x="4" y="4" width="16" height="16" rx="3" fill="${COLORS.componentFill}" stroke="${COLORS.stroke}" stroke-width="2"/>` +
       `<rect x="7.5" y="7.5" width="9" height="9" rx="1.5" fill="none" stroke="${COLORS.stroke}" stroke-width="1"/>`,

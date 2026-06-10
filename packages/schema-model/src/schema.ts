@@ -152,6 +152,7 @@ const mapConfigSchema = z.object({
     })
     .optional(),
   yAxisLabel: z.string().optional(),
+  yAxisEndLabels: z.tuple([z.string(), z.string()]).optional(),
   annotationsBoxPosition: coordinateSchema.optional(),
 });
 

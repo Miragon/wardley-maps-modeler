@@ -1,6 +1,11 @@
 import type Canvas from 'diagram-js/lib/core/Canvas';
 import type EventBus from 'diagram-js/lib/core/EventBus';
-import { isWardleyShape, type WardleyShape } from '../model/di-types.js';
+import {
+  isWardleyConnection,
+  isWardleyShape,
+  type WardleyConnection,
+  type WardleyShape,
+} from '../model/di-types.js';
 import type WardleyModeling from '../modeling/WardleyModeling.js';
 import type WardleyElementFactory from '../model/WardleyElementFactory.js';
 
@@ -44,6 +49,7 @@ export default class WardleyLabelEditing {
   ) {
     eventBus.on('element.dblclick', (event: { element?: unknown }) => {
       if (isWardleyShape(event.element)) this.activate(event.element);
+      else if (isWardleyConnection(event.element)) this.activateConnection(event.element);
     });
     // Click/drag/pan outside the field = SAVE (not discard). Only Escape discards.
     eventBus.on(['element.mousedown', 'drag.init', 'canvas.viewbox.changing'], () =>
@@ -112,6 +118,81 @@ export default class WardleyLabelEditing {
       if (e.key === 'Enter') {
         // Note: save only with Cmd/Ctrl -> otherwise line break. Others: Enter saves.
         if (isNote && !(e.metaKey || e.ctrlKey)) return;
+        e.preventDefault();
+        commit();
+      }
+    };
+    const onBlur = () => commit();
+    field.addEventListener('keydown', onKey as EventListener);
+    field.addEventListener('blur', onBlur);
+
+    this.active = { field, commit, cleanup };
+  }
+
+  /**
+   * Inline editing for connections: a flow edits its value (`+'value'>`), a dependency its
+   * `; annotation` text. An empty input clears the field. Undo-safe via updateProperties.
+   */
+  activateConnection(conn: WardleyConnection): void {
+    this.active?.commit();
+
+    const container = this.canvas.getContainer();
+    const scale = this.canvas.zoom();
+    const vb = this.canvas.viewbox();
+    const first = conn.waypoints[0];
+    const last = conn.waypoints[conn.waypoints.length - 1];
+    if (!first || !last) return;
+    const isFlow = conn.wardleyType === 'flow';
+
+    const field = document.createElement('input');
+    field.type = 'text';
+    field.className = 'wardley-label-input';
+    field.placeholder = isFlow ? 'flow value (e.g. $0.10)' : 'link annotation';
+    field.value = (isFlow ? conn.flowValue : conn.linkLabel) ?? '';
+    field.style.position = 'absolute';
+    field.style.left = `${((first.x + last.x) / 2 - 60 - vb.x) * scale}px`;
+    field.style.top = `${((first.y + last.y) / 2 - 26 - vb.y) * scale}px`;
+    container.appendChild(field);
+    field.focus();
+    field.select();
+
+    let done = false;
+    const cleanup = () => {
+      if (done) return;
+      done = true;
+      field.removeEventListener('keydown', onKey as EventListener);
+      field.removeEventListener('blur', onBlur);
+      field.remove();
+      this.active = null;
+    };
+    const commit = () => {
+      if (done) return;
+      // Defuse DSL metacharacters: `'` delimits the flow value, `;` starts the annotation.
+      const value = field.value.replace(/'/g, '’').replace(/;/g, ',').trim();
+      const current = (isFlow ? conn.flowValue : conn.linkLabel) ?? '';
+      cleanup();
+      if (value === current) return;
+      // Keep the businessObject in sync — the exporter prefers it for imported edges.
+      const bo = conn.businessObject;
+      const nextBo = bo
+        ? isFlow
+          ? { ...bo, ...(value ? { flowValue: value } : {}) }
+          : { ...bo, ...(value ? { label: value } : {}) }
+        : undefined;
+      if (nextBo && !value) {
+        if (isFlow) delete (nextBo as { flowValue?: string }).flowValue;
+        else delete (nextBo as { label?: string }).label;
+      }
+      this.modeling.updateProperties(conn, {
+        [isFlow ? 'flowValue' : 'linkLabel']: value || undefined,
+        ...(nextBo ? { businessObject: nextBo } : {}),
+      });
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        cleanup();
+      } else if (e.key === 'Enter') {
         e.preventDefault();
         commit();
       }

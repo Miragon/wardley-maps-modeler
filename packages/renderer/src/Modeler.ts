@@ -26,6 +26,7 @@ import { wardleyEvolveModule } from './evolve/index.js';
 import { wardleyPopupModule } from './popup/index.js';
 import { wardleyAppendModule } from './append/index.js';
 import { wardleyColorPickerModule } from './color-picker/index.js';
+import { wardleyOrderingModule } from './ordering/index.js';
 
 /**
  * Full Wardley editor: palette/create, move with EvolutionConstraint + stage snapping, connect with
@@ -58,6 +59,7 @@ export class Modeler extends NavigatedViewer {
       wardleyAppendModule,
       wardleyColorPickerModule,
       wardleyLassoModule,
+      wardleyOrderingModule,
     ];
   }
 

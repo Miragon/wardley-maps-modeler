@@ -202,6 +202,8 @@ fileInput?.addEventListener('change', () => {
   fileInput.value = '';
 });
 async function load(file: File): Promise<void> {
+  // Opening a file replaces the current map — ask first (same protection as "New / clear").
+  if (!isEmptyMap() && !confirm(`Replace the current map with "${file.name}"?`)) return;
   try {
     logWarnings(await openFile(file, viewer));
   } catch (err) {

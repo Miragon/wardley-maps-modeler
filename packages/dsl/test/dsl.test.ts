@@ -179,6 +179,15 @@ describe('parseDSL – axis config & labeled flow', () => {
     expect(map.config.yAxisLabel).toBe('Value chain');
   });
 
+  it('keeps the y-axis end labels losslessly through the round-trip', () => {
+    const src = 'title T\ny-axis Value chain->Invisible->Visible';
+    const map = parseDSL(src);
+    expect(map.config.yAxisEndLabels).toEqual(['Invisible', 'Visible']);
+    const once = serializeDSL(map);
+    expect(once).toContain('y-axis Value chain->Invisible->Visible');
+    expect(serializeDSL(parseDSL(once))).toBe(once);
+  });
+
   it('custom evolution labels survive the serialize round-trip', () => {
     const src = 'title T\nevolution Unmodelled->Divergent->Convergent->Modelled';
     const map = parseDSL(src);

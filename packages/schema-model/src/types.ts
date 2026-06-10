@@ -174,6 +174,8 @@ export interface MapConfig {
   /** Configurable stage boundaries (default [0.17, 0.40, 0.70]). */
   readonly stageBoundaries?: readonly [number, number, number];
   readonly yAxisLabel?: string;
+  /** End labels of the value-chain axis [bottom, top] — OWM `y-axis Label->Bottom->Top`. */
+  readonly yAxisEndLabels?: readonly [string, string];
   readonly annotationsBoxPosition?: Coordinate;
 }
 

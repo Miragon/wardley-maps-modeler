@@ -67,6 +67,9 @@ export const COLORS = {
   annotationFill: '#fff8e6',
   /** Background of the plot area (deliberately white, lighter than paper). */
   plotBackground: '#ffffff',
+  /** Accelerator / deaccelerator (own semantic constants — not flow/movement). */
+  accelerator: '#0e7c74',
+  deaccelerator: '#bf2f2a',
 } as const;
 
 /**
