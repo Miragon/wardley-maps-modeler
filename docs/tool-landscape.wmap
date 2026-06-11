@@ -1,0 +1,31 @@
+title Wardley Mapping Tool — the landscape behind it
+pipeline Mapping Tools [0.335, 0.619] (y 0.524)
+{
+  component VS Code Extension [0.374]
+  component Browser App [0.56]
+}
+component Situational Awareness [0.85, 0.266]
+component Alignment & Decisions [0.851, 0.601]
+component Mapping the Landscape [0.761, 0.321]
+component Sharing & Discussing [0.741, 0.641]
+component Visual Map Editor [0.666, 0.42]
+component AI Agents [0.34, 0.506]
+component Share Link [0.41, 0.78]
+component VS Code [0.186, 0.736] (ecosystem)
+component Web Browser [0.294, 0.814]
+component File System [0.135, 0.902]
+anchor Strategist [0.929, 0.267]
+anchor Stakeholders [0.927, 0.616]
+Strategist -> Situational Awareness
+Stakeholders -> Alignment & Decisions
+Situational Awareness -> Mapping the Landscape
+Alignment & Decisions -> Sharing & Discussing
+Mapping the Landscape -> Visual Map Editor
+Browser App -> Share Link
+Browser App -> Web Browser
+VS Code Extension -> VS Code
+Sharing & Discussing -> Browser App
+Mapping the Landscape -> AI Agents
+VS Code -> File System
+AI Agents -> File System
+Visual Map Editor -> VS Code Extension
