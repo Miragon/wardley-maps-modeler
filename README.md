@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/github/license/Miragon/wardley-maps-modeler)](LICENSE)
 [![CI](https://github.com/Miragon/wardley-maps-modeler/actions/workflows/ci.yml/badge.svg)](https://github.com/Miragon/wardley-maps-modeler/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/@miragon/wardley-renderer)](https://www.npmjs.com/package/@miragon/wardley-renderer)
-[![VS Marketplace](https://img.shields.io/visual-studio-marketplace/v/miragon-gmbh.wardley-mapping-modeler?label=VS%20Marketplace)](https://marketplace.visualstudio.com/items?itemName=miragon-gmbh.wardley-mapping-modeler)
+[![VS Marketplace](https://vsmarketplacebadges.dev/version-short/miragon-gmbh.wardley-mapping-modeler.svg?label=VS%20Marketplace)](https://marketplace.visualstudio.com/items?itemName=miragon-gmbh.wardley-mapping-modeler)
 
 Create, edit and embed [Wardley Maps](https://learnwardleymapping.com/) — a TypeScript library, a
 VS Code extension, and a web app, all built on [diagram-js](https://github.com/bpmn-io/diagram-js).
