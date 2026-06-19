@@ -31,7 +31,9 @@ Enforced twice — ESLint (`no-restricted-imports`/`no-restricted-globals`) **an
 ## Commands
 
 - `npm run build` — all packages · `npm run build:webapp` · `npm run build:vscode`
-- `npm run dev:webapp` · `npm run dev:vscode`
+- `npm run dev:webapp` · `npm run dev:vscode` · `npm run dev:webapp:portless` (per-worktree
+  `https://<workspace>.localhost` URL via [Portless](https://portless.sh); one-time host setup — see
+  [`CONTRIBUTING.md`](CONTRIBUTING.md))
 - `npm test` — Vitest · `npm run typecheck` · `npm run lint` (ESLint + typecheck)
 - `npm run format` — Prettier · `npm run depcruise` — check the module graph
 

@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:portless": "portless \"$(basename \"$(git rev-parse --show-toplevel)\")\" vite",
     "build": "vite build",
     "preview": "vite preview"
   },
@@ -16,6 +17,7 @@
     "@miragon/wardley-schema-model": "0.2.1"
   },
   "devDependencies": {
+    "portless": "0.14.0",
     "typescript": "6.0.3",
     "vite": "8.0.16"
   }
