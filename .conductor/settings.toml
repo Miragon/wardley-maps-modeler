@@ -1,0 +1,10 @@
+"$schema" = "https://conductor.build/schemas/settings.repo.schema.json"
+
+[scripts]
+setup = "npm install"
+# Conductor's Run has no TTY, so portless can't prompt for sudo to bind :443. Ensure an unprivileged
+# proxy exists first (no sudo), then launch the webapp through it — it opens the browser and prints
+# the URL (http://<worktree>.localhost:1355). Run `portless trust` + `sudo portless service install`
+# once for the clean port-less https://<worktree>.localhost; that 443 proxy is then reused instead.
+run = "npx portless proxy start --port 1355 --no-tls 2>/dev/null || true; npm run dev:webapp:portless"
+run_mode = "concurrent"
