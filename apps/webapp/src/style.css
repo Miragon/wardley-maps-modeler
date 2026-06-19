@@ -501,3 +501,34 @@ body {
   border-left: 1px solid var(--line);
   border-right: 1px solid var(--line);
 }
+
+/* --- Legal notice (bottom left, subtle — kept clear of the bottom-right zoom widget) --- */
+.app-legal {
+  position: absolute;
+  bottom: 16px;
+  left: 14px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--ink-soft);
+}
+.app-legal a {
+  color: var(--ink-soft);
+  text-decoration: none;
+}
+.app-legal a:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+/* On narrow viewports the empty-state card sits centered low; keep the legal
+   notice from colliding with the zoom widget by letting it wrap out of the way. */
+@media (max-width: 540px) {
+  .app-legal {
+    bottom: 8px;
+    left: 8px;
+    font-size: 11px;
+  }
+}
