@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.3.0](https://github.com/Miragon/wardley-maps-modeler/compare/vscode-v0.2.1...vscode-v0.3.0) (2026-06-19)
+
+
+### Miscellaneous Chores
+
+* **vscode:** Synchronize wardley versions
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @miragon/wardley-dsl bumped from 0.2.1 to 0.3.0
+    * @miragon/wardley-renderer bumped from 0.2.1 to 0.3.0
+    * @miragon/wardley-schema-model bumped from 0.2.1 to 0.3.0
+
 ## [0.2.1](https://github.com/Miragon/wardley-maps-modeler/compare/vscode-v0.2.0...vscode-v0.2.1) (2026-06-10)
 
 

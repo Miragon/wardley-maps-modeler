@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.3.0](https://github.com/Miragon/wardley-maps-modeler/compare/webapp-v0.2.1...webapp-v0.3.0) (2026-06-19)
+
+
+### Features
+
+* **webapp:** legal notice footer + Portless named dev URL ([#46](https://github.com/Miragon/wardley-maps-modeler/issues/46)) ([f9f189f](https://github.com/Miragon/wardley-maps-modeler/commit/f9f189f1f9b760dd10b83e142253ae105b74d00b))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @miragon/wardley-dsl bumped from 0.2.1 to 0.3.0
+    * @miragon/wardley-renderer bumped from 0.2.1 to 0.3.0
+    * @miragon/wardley-schema-model bumped from 0.2.1 to 0.3.0
+
 ## [0.2.1](https://github.com/Miragon/wardley-maps-modeler/compare/webapp-v0.2.0...webapp-v0.2.1) (2026-06-10)
 
 
