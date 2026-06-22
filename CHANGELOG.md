@@ -4,6 +4,13 @@ All notable changes to this project are documented here. From `0.2.1` onward the
 shares a single version, tag (`vX.Y.Z`) and release; entries below `0.2.1` were consolidated from the
 former per-package changelogs.
 
+## [0.3.0](https://github.com/Miragon/wardley-maps-modeler/compare/v0.2.1...v0.3.0) (2026-06-22)
+
+
+### Features
+
+* **webapp:** legal notice footer + Portless named dev URL ([#46](https://github.com/Miragon/wardley-maps-modeler/issues/46)) ([f9f189f](https://github.com/Miragon/wardley-maps-modeler/commit/f9f189f1f9b760dd10b83e142253ae105b74d00b))
+
 ## [0.2.1](https://github.com/Miragon/wardley-maps-modeler/compare/schema-model-v0.2.0...schema-model-v0.2.1) (2026-06-10)
 
 
