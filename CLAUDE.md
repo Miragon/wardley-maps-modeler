@@ -8,9 +8,9 @@ a web app and a VS Code extension.
 
 Workspaces are declared in the root `package.json` (`workspaces` array, listed in topological
 build order). **All** versions are pinned to exact values inline in each package's `package.json`
-(`.npmrc` sets `save-exact=true`) — including internal `@miragon/wardley-*` deps, which use the
-exact local version `0.0.0` (npm still links them to the local workspace). Exact pinning is
-enforced in CI by
+(`.npmrc` sets `save-exact=true`) — including internal `@miragon/wardley-*` deps, which pin to the
+**current shared version** (e.g. `0.2.1`; npm links them to the local workspace because the local
+version satisfies the pin). Exact pinning is enforced in CI by
 [`miragon/pin-npm-dependencies`](https://github.com/Miragon/pin-npm-dependencies) (the `pin-check`
 job).
 
@@ -46,12 +46,29 @@ Requirements: Node ≥ 22.13, npm. Build packages before running tests (workspac
 Everything is managed via **Conventional Commits** — primarily `feat`, `fix`, `refactor`, `chore`,
 `docs`. Example: `feat(renderer): add inertia decorator`.
 
+## Releases
+
+One shared version for the whole monorepo, one tag (`vX.Y.Z`), one GitHub release, one root
+[`CHANGELOG.md`](CHANGELOG.md) — driven by [release-please](https://github.com/googleapis/release-please)
+on push to `main` ([`.github/workflows/release-please.yml`](.github/workflows/release-please.yml)).
+The config ([`release-please-config.json`](release-please-config.json)) uses a **single root
+component** (`"."`, `include-component-in-tag: false`); its `extra-files` list bumps `$.version` in
+every sub-package's `package.json` **and** every internal `@miragon/wardley-*` dependency reference,
+keeping all versions in lockstep. Merging the release PR tags the repo and publishes the four
+`packages/*` libraries to npm and the VS Code extension to the Marketplace.
+
+**Adding a new internal dependency edge** (`@miragon/wardley-*` referenced by another package)
+requires a new `extra-files` entry for that `$.dependencies['@miragon/wardley-…']` path, or the
+reference will not be bumped on release and will go stale. Likewise add `$.version` (and any internal
+dep) entries when adding a whole new package.
+
 ## Conventions
 
 - Keep core packages (`schema-model`, `dsl`, `transforms`) strictly DOM-free (P1, above).
 - The OWM-DSL round-trip must stay lossless; JSON serialization must be deterministic.
 - Pin **all** dependencies to exact versions — no version ranges (`^`/`~`/`>=`/`*`), internal
-  workspace deps included (use `0.0.0`). CI-enforced via `miragon/pin-npm-dependencies`. See
+  workspace deps included (pinned to the current shared version, kept in sync by release-please).
+  CI-enforced via `miragon/pin-npm-dependencies`. See
   [`.claude/rules/package-json-fixed-versions.md`](.claude/rules/package-json-fixed-versions.md).
 - For Wardley-map domain work, use the skill in
   [`.claude/skills/wardley-mapping/`](.claude/skills/wardley-mapping/).
