@@ -31,9 +31,11 @@ Enforced twice — ESLint (`no-restricted-imports`/`no-restricted-globals`) **an
 ## Commands
 
 - `npm run build` — all packages · `npm run build:webapp` · `npm run build:vscode`
-- `npm run dev:webapp` · `npm run dev:vscode` · `npm run dev:webapp:portless` (per-worktree
-  `https://<workspace>.localhost` URL via [Portless](https://portless.sh); one-time host setup — see
-  [`CONTRIBUTING.md`](CONTRIBUTING.md))
+- `npm run dev:webapp` (alias: `npm run dev`) serves the webapp via [Portless](https://portless.sh)
+  at a per-worktree `https://<branch>.wardley.localhost` URL (Portless-derived from the git worktree;
+  config in [`apps/webapp/portless.json`](apps/webapp/portless.json); one-time `npx portless service
+install` — see [`CONTRIBUTING.md`](CONTRIBUTING.md)). `npm run dev:webapp:plain` for plain Vite on
+  `:5180`. · `npm run dev:vscode`
 - `npm test` — Vitest · `npm run typecheck` · `npm run lint` (ESLint + typecheck)
 - `npm run format` — Prettier · `npm run depcruise` — check the module graph
 

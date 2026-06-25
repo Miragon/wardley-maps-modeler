@@ -2,5 +2,5 @@
 
 [scripts]
 setup = "npm install"
-run = "npx portless proxy start --port 1355 --no-tls 2>/dev/null || true; npm run dev:webapp:portless"
+run = "npm run dev"
 run_mode = "concurrent"

@@ -1,7 +1,9 @@
 import { defineConfig, devices } from '@playwright/test';
 
-// Port is overridable via E2E_PORT so parallel runs (e.g. several Conductor workspaces, all of which
-// default the webapp to 5180 with strictPort) don't collide. Defaults to 5180 → CI behaviour is unchanged.
+// Drives the plain Vite server (apps/webapp `dev:app`), not the Portless entrypoint (`dev`) — e2e
+// wants a direct http://localhost:PORT, not a proxied .localhost URL. Port is overridable via E2E_PORT
+// so parallel runs (e.g. several Conductor workspaces, all of which default the webapp to 5180 with
+// strictPort) don't collide. Defaults to 5180 → CI behaviour is unchanged.
 const PORT = process.env.E2E_PORT ?? '5180';
 const BASE_URL = `http://localhost:${PORT}`;
 
@@ -25,7 +27,7 @@ export default defineConfig({
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {
-    command: `npm run dev -w apps/webapp -- --port ${PORT} --strictPort`,
+    command: `npm run dev:app -w apps/webapp -- --port ${PORT} --strictPort`,
     cwd: '..',
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
