@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "dev:portless": "portless \"$(basename \"$(git rev-parse --show-toplevel)\")\" vite",
+    "dev": "portless",
+    "dev:app": "vite --host 127.0.0.1 --port ${PORT:-5180}",
     "build": "vite build",
     "preview": "vite preview"
   },

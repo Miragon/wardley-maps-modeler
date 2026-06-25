@@ -15,33 +15,32 @@ npm run lint    # eslint . + type-check (same check the pre-commit hook runs)
 Useful extras: `npm run dev:webapp`, `npm run dev:vscode`, `npm run depcruise` (module-graph check),
 `npm run format` (Prettier).
 
-### Named local URL via Portless (optional)
+### Named local URL via Portless
 
-`npm run dev:webapp:portless` serves the webapp through [Portless](https://portless.sh) at a named
-`.localhost` URL instead of a Vite port (needs **Node ≥ 24**). The URL is **per worktree**, not
-static: the name is the git worktree's directory (`basename "$(git rev-parse --show-toplevel)"`) —
-e.g. `krakow-v1.localhost` in a Conductor workspace, `wardley-maps-modeler.localhost` in the main
-checkout. That source works everywhere git does (no Conductor-only env var). Each worktree gets its
-own URL, with no Vite port to remember and no collisions between parallel apps. On start it **opens
-your browser** at that URL and prints it as a `➜ Portless:` line under Vite's output.
+`npm run dev:webapp` (and the top-level `npm run dev`) serves the webapp through
+[Portless](https://portless.sh) at a stable, named `.localhost` URL instead of a Vite port
+(needs **Node ≥ 24**). Portless is a pinned **devDependency**, so `npm install` is all you need — no
+global install. Config lives in [`apps/webapp/portless.json`](apps/webapp/portless.json)
+(`{ "name": "wardley", "script": "dev:app" }`): `npm run dev:webapp` runs bare `portless`, which
+starts the real Vite server (the `dev:app` script) behind the proxy.
 
-Portless needs a proxy daemon. There are two ways to get one:
+The URL is **per worktree** and Portless-derived — never hand-built: in a linked git worktree it
+prepends the branch as a subdomain, so you get `https://<branch>.wardley.localhost` in a Conductor
+workspace and `https://wardley.localhost` in the main checkout. Each worktree gets its own URL, so
+parallel apps never collide. On start Portless **opens your browser** there and prints it as a
+`➜ Portless:` line under Vite's output.
 
-- **Zero-setup (default in Conductor):** the Run script first starts an unprivileged proxy
-  (`npx portless proxy start --port 1355 --no-tls`), so the app comes up immediately at
-  `http://<worktree>.localhost:1355` — no sudo, browser opens, URL printed. The `:1355` port is the
-  only cost.
-- **Clean port-less HTTPS (one-time, recommended):** run the two commands below once. They bind port
-  443 and trust a local CA (so **sudo** is required — Conductor's Run is non-TTY and can't prompt for
-  it, which is why it isn't automatic). After this the same Run reuses the 443 proxy and the URL
-  becomes `https://<worktree>.localhost` (no port):
+Portless needs an HTTPS proxy daemon on port 443, installed once per machine (it binds 443 and
+trusts a local CA, so it needs **sudo** — which is also why Conductor's non-TTY Run button can't do
+it for you):
 
-  ```bash
-  npx portless trust            # add the local CA to your system trust store
-  npx portless service install  # run the HTTPS proxy as a background service (survives reboots)
-  ```
+```bash
+npx portless trust            # add the local CA to your system trust store
+npx portless service install  # run the HTTPS proxy as a background service (survives reboots)
+```
 
-Plain `npm run dev:webapp` (Vite on `:5180`) is unaffected and needs none of this.
+Prefer a plain Vite server with no proxy? `npm run dev:webapp:plain` (or
+`npm run dev:app -w apps/webapp`) runs Vite directly on `:5180` and needs none of the above.
 
 ## Browser & e2e tests
 

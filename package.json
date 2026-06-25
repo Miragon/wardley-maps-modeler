@@ -27,8 +27,9 @@
     "test": "vitest run --project=unit",
     "test:browser": "vitest run --project=browser",
     "test:e2e": "npm run test:e2e -w e2e",
+    "dev": "npm run dev:webapp",
     "dev:webapp": "npm run dev -w apps/webapp",
-    "dev:webapp:portless": "npm run dev:portless -w apps/webapp",
+    "dev:webapp:plain": "npm run dev:app -w apps/webapp",
     "dev:vscode": "npm run watch -w apps/vscode",
     "depcruise": "depcruise packages apps --config .dependency-cruiser.cjs",
     "prepare": "husky"
