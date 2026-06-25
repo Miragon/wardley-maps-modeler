@@ -1,9 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
 
-// Drives the plain Vite server (apps/webapp `dev:app`), not the Portless entrypoint (`dev`) — e2e
-// wants a direct http://localhost:PORT, not a proxied .localhost URL. Port is overridable via E2E_PORT
-// so parallel runs (e.g. several Conductor workspaces, all of which default the webapp to 5180 with
-// strictPort) don't collide. Defaults to 5180 → CI behaviour is unchanged.
 const PORT = process.env.E2E_PORT ?? '5180';
 const BASE_URL = `http://localhost:${PORT}`;
 
@@ -17,8 +13,6 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  // Serialize on CI for determinism; omit locally so Playwright auto-picks worker count.
-  // (Spread instead of `workers: undefined` — exactOptionalPropertyTypes forbids the explicit undefined.)
   ...(process.env.CI ? { workers: 1 } : {}),
   reporter: process.env.CI ? [['html', { open: 'never' }], ['list']] : 'list',
   use: {
