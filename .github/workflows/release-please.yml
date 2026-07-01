@@ -95,6 +95,11 @@ jobs:
         run: npx vsce publish --packagePath wardley-mapping-modeler.vsix
         env:
           VSCE_PAT: ${{ secrets.VSCE_PUBLISH }}
+      - name: Publish to Open VSX Marketplace
+        working-directory: apps/vscode
+        run: npx ovsx --pat "$OVSX_PAT" publish --packagePath wardley-mapping-modeler.vsix
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PUBLISH }}
 
   dry-run:
     if: github.event_name == 'workflow_dispatch' && inputs.dry_run
