@@ -68,8 +68,7 @@ export default class WardleyLabelEditing {
     const top = (element.y + element.height / 2 - 11 - vb.y) * scale;
 
     const field = document.createElement(isNote ? 'textarea' : 'input') as
-      | HTMLInputElement
-      | HTMLTextAreaElement;
+      HTMLInputElement | HTMLTextAreaElement;
     field.className = isNote ? 'wardley-label-input wardley-label-textarea' : 'wardley-label-input';
     field.value = element.wardleyLabel ?? '';
     if (isNote) {
