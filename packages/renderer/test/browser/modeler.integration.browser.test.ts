@@ -15,8 +15,7 @@ Customer -> Platform`;
 
 function findByLabel(registry: ElementRegistry, label: string): WardleyShape {
   const shape = registry.find((el) => isWardleyShape(el) && el.wardleyLabel === label) as
-    | WardleyShape
-    | undefined;
+    WardleyShape | undefined;
   if (!shape) throw new Error(`shape not found: ${label}`);
   return shape;
 }
