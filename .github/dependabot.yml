@@ -10,6 +10,9 @@ updates:
     reviewers:
       - 'emaarco'
       - 'dominikhorn'
+    assignees:
+      - 'emaarco'
+      - 'dominikhorn'
     open-pull-requests-limit: 5
     cooldown:
       default-days: 3
@@ -36,6 +39,9 @@ updates:
     labels:
       - 'dependencies'
     reviewers:
+      - 'emaarco'
+      - 'dominikhorn'
+    assignees:
       - 'emaarco'
       - 'dominikhorn'
     open-pull-requests-limit: 5
