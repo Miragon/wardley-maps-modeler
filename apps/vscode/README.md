@@ -3,41 +3,56 @@
 [![VS Marketplace](https://img.shields.io/visual-studio-marketplace/v/miragon-gmbh.wardley-mapping-modeler?label=VS%20Marketplace)](https://marketplace.visualstudio.com/items?itemName=miragon-gmbh.wardley-mapping-modeler)
 [![License: MIT](https://img.shields.io/github/license/Miragon/wardley-maps-modeler)](https://github.com/Miragon/wardley-maps-modeler/blob/main/LICENSE)
 
-View and edit [Wardley Maps](https://learnwardleymapping.com/) directly inside VS Code. The extension
-opens `.wmap` / `.owm` files (the [Online-Wardley-Maps text DSL](https://docs.onlinewardleymaps.com/))
-in a graphical editor — the text file stays the source of truth, so save, Git, and diff keep working.
+[Wardley Maps](https://learnwardleymapping.com/) chart the components of a business by user value and
+evolution, so you can see your landscape and reason about strategy. This extension lets you create and
+edit them directly inside VS Code: it opens `.wmap` / `.owm` files (a simple plain-text format, the
+[Online-Wardley-Maps DSL](https://docs.onlinewardleymaps.com/)) in a graphical editor, while the
+text file stays the source of truth, so save, Git, and diff keep working.
 
 ![The Wardley Maps editor](https://raw.githubusercontent.com/Miragon/wardley-maps-modeler/main/docs/screenshots/editor.png)
 
-## Features
-
-- **Custom editor for `.wmap` / `.owm`.** Open a map file and you get the full graphical editor; the
-  file on disk stays plain OWM-DSL text.
-- **The text file is the source of truth.** VS Code handles dirty state, save (`Ctrl/Cmd+S`), Git,
-  and diffing for free; editing the text in a split view re-renders the canvas live (two-way sync).
-- **Full modeler:** palette, context pad, move, connect, resize, inline label editing, evolve by
-  drag. Undo/redo via `Ctrl/Cmd+Z`.
-- **Collapsed menu** (top-right, Excalidraw-style): fit-to-view · map size · X-axis labels · export
-  SVG/PNG.
-- **Export SVG & PNG with the scene embedded** — exported images can be reopened as editable maps.
-- **Editable embedded-PNG maps (`*.wmap.png` / `*.owm.png`).** The map is stored inside the PNG (a
-  `tEXt` chunk), so the file stays a normal image you can drop into a wiki, README, or chat — and
-  still edit graphically.
-- **Self-hosted font** — no CDN, offline-capable.
+New to Wardley Mapping? Start with [Learn Wardley Mapping](https://learnwardleymapping.com/).
 
 ## Getting started
 
-Install **Wardley Maps** from the VS Code Marketplace, then open any `.wmap` or `.owm` file — or
-create one with the commands below.
+Install **Wardley Mapping Modeler** (publisher `miragon-gmbh`) from the VS Code Marketplace, then
+start from a filled-in Tea Shop example or a blank map. The built-in **Get Started with Wardley Maps**
+walkthrough is the recommended first stop: click its **Create map from example** button and you have a
+ready-made map to explore. From there you can open any `.wmap` or `.owm` file.
 
-## Commands
+Prefer commands? Run these from the Command Palette (`Cmd/Ctrl+Shift+P`, type _"Wardley"_):
 
-- **Wardley: New Empty Map** — pick a location, get a blank map.
-- **Wardley: New Map from Example** — same, pre-filled with the Tea Shop example.
-- **Wardley: New Empty Map (embedded PNG)** — pick a location for a `*.wmap.png`; press `Ctrl/Cmd+S`
-  once to render the first PNG, then edit it like any other map.
+- **Wardley: New Map from Example** — pick a location, pre-filled with the Tea Shop example.
+- **Wardley: New Empty Map** — same, but a blank map (also under **File > New File…**).
 
-To reopen a map as raw text, use **View: Reopen Editor With… → Text Editor**.
+## Reading a map
+
+Every component sits on two axes:
+
+- **Up and down** is the value chain: the higher a component sits, the more visible it is to your user.
+- **Left and right** is evolution: components mature from genesis (brand-new, experimental) on the
+  left, through custom-built and product, to commodity (standardised, ubiquitous) on the right.
+
+Together they show _what_ you depend on and _how mature_ each piece is.
+
+## Editing a map
+
+- **Custom editor for `.wmap` / `.owm`.** Open a map file and you get the full graphical editor,
+  backed by the plain-text file. Editing the text in a split view re-renders the canvas live
+  (two-way sync), and VS Code tracks dirty state as you go. To reopen a map as raw text, use
+  **View: Reopen Editor With…**, then pick **Text Editor**.
+- **Full modeler:** the tool palette on the side and the context pad on a selected component (add,
+  connect, append, delete), move, resize, inline label editing, set component colors, and evolve
+  (drag a component left or right along the maturity axis). Undo/redo via `Ctrl/Cmd+Z` and
+  `Ctrl/Cmd+Shift+Z`.
+- **Collapsed menu** (top-right, Excalidraw-style): fit-to-view · map size · X-axis labels · export
+  SVG/PNG.
+- **Editable embedded-PNG maps (`*.wmap.png` / `*.owm.png`).** Exported PNGs store the map inside a
+  `tEXt` chunk, so the file stays a normal image you can drop into a wiki, README, or chat — and can
+  be reopened and edited graphically. To start one, run **Wardley: New Empty Map (embedded PNG)**
+  (also under **File > New File…**), pick a location, and press `Ctrl/Cmd+S` once to render the first
+  PNG.
+- **Self-hosted font** — no CDN, offline-capable.
 
 ## Development
 

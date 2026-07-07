@@ -106,7 +106,39 @@
           "group": "wardley"
         }
       ]
-    }
+    },
+    "walkthroughs": [
+      {
+        "id": "getStarted",
+        "title": "Get Started with Wardley Maps",
+        "description": "Wardley Maps chart the components of a business by user value and evolution, so you can see your landscape and reason about strategy. This extension lets you create and edit them in VS Code as plain-text .wmap / .owm files.",
+        "steps": [
+          {
+            "id": "create",
+            "title": "Create your first map",
+            "description": "Open a ready-made example map, or start from a blank canvas.\n[Create map from example](command:wardley.newMapFromExample)",
+            "media": {
+              "markdown": "media/walkthrough/create.md"
+            },
+            "completionEvents": [
+              "onCommand:wardley.newMapFromExample",
+              "onCommand:wardley.newMap"
+            ]
+          },
+          {
+            "id": "learn",
+            "title": "Learn the basics",
+            "description": "Add and connect components, move and evolve them, then export the map as SVG or PNG.",
+            "media": {
+              "markdown": "media/walkthrough/learn.md"
+            },
+            "completionEvents": [
+              "onStepSelected"
+            ]
+          }
+        ]
+      }
+    ]
   },
   "scripts": {
     "build": "node esbuild.config.mjs",
