@@ -1,7 +1,7 @@
 {
   "name": "wardley-mapping-modeler",
   "private": true,
-  "version": "0.3.0",
+  "version": "0.4.0",
   "displayName": "Wardley Mapping Modeler",
   "description": "View and edit Wardley Maps directly in VS Code, including .wmap and .owm files.",
   "publisher": "miragon-gmbh",
@@ -149,9 +149,9 @@
   },
   "dependencies": {
     "@fontsource-variable/spline-sans": "5.2.8",
-    "@miragon/wardley-dsl": "0.3.0",
-    "@miragon/wardley-renderer": "0.3.0",
-    "@miragon/wardley-schema-model": "0.3.0"
+    "@miragon/wardley-dsl": "0.4.0",
+    "@miragon/wardley-renderer": "0.4.0",
+    "@miragon/wardley-schema-model": "0.4.0"
   },
   "devDependencies": {
     "@types/node": "26.1.0",

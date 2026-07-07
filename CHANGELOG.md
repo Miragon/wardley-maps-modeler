@@ -4,6 +4,14 @@ All notable changes to this project are documented here. From `0.2.1` onward the
 shares a single version, tag (`vX.Y.Z`) and release; entries below `0.2.1` were consolidated from the
 former per-package changelogs.
 
+## [0.4.0](https://github.com/Miragon/wardley-maps-modeler/compare/v0.3.0...v0.4.0) (2026-07-07)
+
+
+### Features
+
+* **dev:** adopt documented Portless setup for worktree-aware dev URLs ([#54](https://github.com/Miragon/wardley-maps-modeler/issues/54)) ([806005b](https://github.com/Miragon/wardley-maps-modeler/commit/806005be67260b4b82d1193e37a5ca86f83861dd))
+* **vscode:** add "Get Started" walkthrough ([#65](https://github.com/Miragon/wardley-maps-modeler/issues/65)) ([381e954](https://github.com/Miragon/wardley-maps-modeler/commit/381e9542010379722ce4c8e71157ffeb57cba9de))
+
 ## [0.3.0](https://github.com/Miragon/wardley-maps-modeler/compare/v0.2.1...v0.3.0) (2026-06-22)
 
 
