@@ -45,7 +45,7 @@
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
-    "@types/node": "26.0.1",
+    "@types/node": "26.1.0",
     "@vitest/browser-playwright": "4.1.9",
     "dependency-cruiser": "18.0.0",
     "eslint": "10.6.0",
@@ -54,9 +54,9 @@
     "husky": "9.1.7",
     "lint-staged": "17.0.8",
     "playwright": "1.61.1",
-    "prettier": "3.9.3",
+    "prettier": "3.9.4",
     "typescript": "6.0.3",
-    "typescript-eslint": "8.62.0",
+    "typescript-eslint": "8.62.1",
     "vitest": "4.1.9"
   }
 }
