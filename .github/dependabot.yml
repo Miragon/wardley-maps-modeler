@@ -1,5 +1,7 @@
 version: 2
 updates:
+  # npm (workspaces resolve from root): minor + patch arrive grouped, every
+  # major lands as its own PR so breaking changes get individual review.
   - package-ecosystem: 'npm'
     directory: '/'
     schedule:
@@ -7,10 +9,11 @@ updates:
     rebase-strategy: 'disabled'
     labels:
       - 'dependencies'
-    assignees:
-      - 'emaarco'
-      - 'dominikhorn93'
-    open-pull-requests-limit: 5
+    # majors arrive as individual PRs — leave headroom above the default of 5
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: 'chore'
+      include: 'scope'
     cooldown:
       default-days: 3
     # @types/vscode must stay <= engines.vscode (^1.96.0) or `vsce package` fails.
@@ -20,14 +23,21 @@ updates:
           - 'version-update:semver-minor'
           - 'version-update:semver-major'
     groups:
-      npm-dependencies:
+      npm-minor-patch:
+        applies-to: version-updates
         patterns:
           - '*'
         update-types:
-          - 'patch'
           - 'minor'
-          - 'major'
+          - 'patch'
+      npm-security:
+        applies-to: security-updates
+        patterns:
+          - '*'
+    # majors intentionally NOT grouped → one reviewable PR per breaking change
 
+  # github-actions: majors are mechanical (runner/node bumps) and every `uses:`
+  # is SHA-pinned + CI-gated, so grouping all update types stays low-risk.
   - package-ecosystem: 'github-actions'
     directory: '/'
     schedule:
@@ -35,17 +45,22 @@ updates:
     rebase-strategy: 'disabled'
     labels:
       - 'dependencies'
-    assignees:
-      - 'emaarco'
-      - 'dominikhorn93'
     open-pull-requests-limit: 5
+    commit-message:
+      prefix: 'chore'
+      include: 'scope'
     cooldown:
       default-days: 3
     groups:
       github-actions:
+        applies-to: version-updates
         patterns:
           - '*'
         update-types:
           - 'patch'
           - 'minor'
           - 'major'
+      github-actions-security:
+        applies-to: security-updates
+        patterns:
+          - '*'
