@@ -1,13 +1,10 @@
-# Code owners are auto-requested as reviewers on matching PRs.
+# Code owners are auto-requested as reviewers on every matching PR.
 # Dependabot's `reviewers:` config was removed by GitHub (2025-05-20) and
-# replaced by CODEOWNERS, so this is how the github-actions dependency PRs
-# (and any other CI changes) get a review request.
+# replaced by CODEOWNERS, so this is how dependency PRs get a review request.
 #
-# Scoped to CI only: npm dependency PRs are covered by dependabot.yml
-# `assignees:` + the `dependencies` label, so `package.json` is intentionally
-# left out here to avoid pinging owners on every human PR that touches it.
-#
-# NOTE: CODEOWNERS is path-based, not bot-scoped — any PR touching these
-# paths (human or Dependabot) will auto-request the owners below.
+# CODEOWNERS is path-based, not bot-scoped — any PR touching these paths
+# (human or Dependabot) auto-requests the owners below. A repo-wide `*` rule
+# covers all PRs from one place instead of drifting across per-block
+# `assignees:` in dependabot.yml.
 
-/.github/ @emaarco @dominikhorn93
+* @emaarco @dominikhorn93
