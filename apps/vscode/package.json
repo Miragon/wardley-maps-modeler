@@ -154,7 +154,7 @@
     "@miragon/wardley-schema-model": "0.4.0"
   },
   "devDependencies": {
-    "@types/node": "26.1.0",
+    "@types/node": "26.1.1",
     "@types/vscode": "1.96.0",
     "@vscode/vsce": "3.9.2",
     "esbuild": "0.28.1",
