@@ -77,11 +77,12 @@ const { svg } = await viewer.saveSVG();
 
 ## Fonts
 
-The renderer ships no fonts and loads nothing from a CDN. Provide your own — recommended self-hosted
-via [`@fontsource`](https://fontsource.org/):
+The renderer ships no fonts and loads nothing from a CDN. The typeface is **Geist** (Miragon
+corporate identity); provide it yourself — recommended self-hosted via
+[`@fontsource`](https://fontsource.org/) (one variable file covers all weights):
 
 ```ts
-import '@fontsource-variable/spline-sans';
+import '@fontsource-variable/geist/wght.css';
 ```
 
 Without a font the fallback chain degrades cleanly to system sans.

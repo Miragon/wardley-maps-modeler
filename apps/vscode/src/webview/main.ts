@@ -1,5 +1,6 @@
-// Self-hosted font (GDPR-compliant, offline) — the renderer's canvas typeface.
-import '@fontsource-variable/spline-sans/index.css';
+// Geist (Miragon typeface), self-hosted variable font (all weights in one file). esbuild inlines the
+// woff2 as data-URLs; the webview has no code area, so Geist Mono is not needed here.
+import '@fontsource-variable/geist/wght.css';
 // Pulls the renderer CSS (incl. diagram-js.css) into the bundle.
 import {
   Modeler,

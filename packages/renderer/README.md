@@ -36,11 +36,12 @@ Swap `NavigatedViewer` for `Modeler` to get the editable map (palette, context p
 
 ### Fonts
 
-The package ships no fonts and uses no CDN. Provide your own — recommended self-hosted via
-[`@fontsource`](https://fontsource.org/):
+The package ships no fonts and uses no CDN. The canvas typeface is **Geist** (Miragon corporate
+identity); provide it yourself — recommended self-hosted via [`@fontsource`](https://fontsource.org/)
+(one variable file covers all weights):
 
 ```ts
-import '@fontsource-variable/spline-sans';
+import '@fontsource-variable/geist/wght.css';
 ```
 
 Part of the [Wardley Maps](https://github.com/Miragon/wardley-maps-modeler) monorepo.

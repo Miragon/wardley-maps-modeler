@@ -14,6 +14,9 @@ export {
 } from './evolution-grid/index.js';
 export { wardleyDrawModule, WardleyRenderer } from './draw/index.js';
 export { COLORS, PLOT } from './draw/styles.js';
+
+/* Miragon brand tokens (single source of truth for colour) — for consumers theming their own chrome. */
+export { MIRAGON } from './theme/index.js';
 export { ioModule, WardleyImporter, WardleyExporter, saveSVG, ROOT_ID } from './io/index.js';
 export { wardleyModelingModule, WardleyModeling } from './modeling/index.js';
 export type { EvolveOptions } from './modeling/index.js';

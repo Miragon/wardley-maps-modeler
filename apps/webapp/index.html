@@ -3,10 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" type="image/png" href="/favicon.png" />
-    <link rel="apple-touch-icon" href="/favicon.png" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- iOS home-screen / Safari pinned icons don't support SVG — one PNG covers that case. -->
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <title>Wardley Mapping</title>
-    <!-- Fonts are self-hosted via @fontsource (imported in src/main.ts) –
+    <!-- Fonts are self-hosted via @fontsource (Geist, imported in src/main.ts) –
          no external Google Fonts CDN (works offline & GDPR-compliant). -->
   </head>
   <body>
@@ -16,12 +17,15 @@
         <div id="canvas" class="app-canvas"></div>
         <div id="empty-state" class="empty-state" hidden>
           <div class="empty-card">
-            <span class="empty-mark">◵</span>
-            <h2>Empty canvas</h2>
-            <p>Start from the example, drop a file here, or start modelling right away.</p>
-            <button id="btn-example" type="button" class="primary">Show example</button>
+            <img class="empty-mark" src="/favicon.svg" width="60" height="60" alt="" />
+            <h2>Wardley Mapping</h2>
+            <p>Start a new diagram, or open the example.</p>
+            <div class="empty-actions">
+              <button id="btn-new" type="button" class="primary">New diagram</button>
+              <button id="btn-example" type="button" class="ghost">Show example</button>
+            </div>
             <span class="empty-hint"
-              >Drag&nbsp;&amp;&nbsp;drop: .wmap · .owm · .json · .svg · .png</span
+              >or drag&nbsp;&amp;&nbsp;drop a .wmap · .owm · .json · .svg · .png</span
             >
           </div>
         </div>
@@ -70,7 +74,6 @@
               <option value="1760x720">Wide</option>
             </select>
           </label>
-          <div class="menu-sep" role="separator"></div>
           <button id="m-axis" type="button" class="menu-item" role="menuitem">
             X-axis labels…
           </button>

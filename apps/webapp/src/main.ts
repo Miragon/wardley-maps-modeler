@@ -1,7 +1,7 @@
-// Self-hosted fonts (GDPR-compliant, offline-capable) instead of the Google Fonts CDN.
-// Fraunces 'standard' = opsz+wght axes (optical sizing); Spline Sans = wght axis.
-import '@fontsource-variable/fraunces/standard.css';
-import '@fontsource-variable/spline-sans/index.css';
+// Geist (Miragon corporate typeface — Vercel, SIL OFL), self-hosted variable font (all weights in one
+// file), no Google Fonts CDN (offline & GDPR). Geist Mono for the export/code textarea.
+import '@fontsource-variable/geist/wght.css';
+import '@fontsource-variable/geist-mono/wght.css';
 import '@miragon/wardley-renderer/assets/wardley.css';
 import './style.css';
 import {
@@ -28,6 +28,7 @@ import {
 } from '@miragon/wardley-schema-model';
 import { readHashMap, writeHashMap, shareUrl } from './share.js';
 import { openFile, embedSvg, svgToEmbeddedPng, downloadBlob, downloadText } from './io.js';
+import { showToast } from './toast.js';
 
 const TEA_SHOP = `title Tea Shop
 component Cup of Tea [0.79, 0.61]
@@ -133,8 +134,20 @@ function onMenu(id: string, action: () => void): void {
   });
 }
 
-// --- Empty state + URL sync (central: what happens when the model changes) ---
+/*
+ * Landing / empty state + URL sync (central: what happens when the model changes).
+ * The "landing" is the start screen (empty map, user hasn't started yet): it shows only the start
+ * card and hides the working chrome (palette, menu, share, zoom). Picking "New diagram" or "Show
+ * example" — or loading any map — leaves it for good this session.
+ */
 const emptyState = document.getElementById('empty-state');
+const appEl = document.getElementById('app');
+let hasStarted = false;
+function updateLanding(): void {
+  const landing = !hasStarted && isEmptyMap();
+  if (emptyState) emptyState.hidden = !landing;
+  appEl?.classList.toggle('app--landing', landing);
+}
 function isEmptyMap(): boolean {
   const map = viewer.exportMap();
   return map.elements.length === 0 && map.edges.length === 0;
@@ -159,8 +172,7 @@ function syncUrlNow(): void {
  * debounced.
  */
 function onModelChanged(debounce = false): void {
-  const empty = isEmptyMap();
-  if (emptyState) emptyState.hidden = !empty;
+  updateLanding();
   clearTimeout(urlTimer);
   if (debounce) urlTimer = setTimeout(syncUrlNow, 350);
   else syncUrlNow();
@@ -175,9 +187,13 @@ const flushUrl = (): void => {
 window.addEventListener('beforeunload', flushUrl);
 window.addEventListener('pagehide', flushUrl);
 
-/** Surface parser/import findings (console; no modal — the import proceeds anyway). */
+/** Surface parser/import findings: console detail + a single non-blocking info toast (import
+ *  proceeds regardless). Silent-until-now warnings become visible without a modal. */
 function logWarnings(warnings: ReadonlyArray<{ message: string }>): void {
   for (const w of warnings) console.warn(`[wardley-import] ${w.message}`);
+  if (warnings.length) {
+    showToast(`Imported with ${warnings.length} warning(s) — see console`, 'info');
+  }
 }
 
 // --- Actions ---
@@ -206,7 +222,7 @@ async function load(file: File): Promise<void> {
   try {
     logWarnings(await openFile(file, viewer));
   } catch (err) {
-    alert(`Could not open file: ${(err as Error).message}`);
+    showToast(`Could not open file: ${(err as Error).message}`, 'error');
   }
 }
 
@@ -336,8 +352,16 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && axisOverlay && !axisOverlay.hidden) closeAxisDialog();
 });
 
-// --- Empty-state button ---
-document.getElementById('btn-example')?.addEventListener('click', showExample);
+// --- Landing (start-screen) buttons ---
+document.getElementById('btn-new')?.addEventListener('click', () => {
+  /* Canvas is already empty here — just leave the landing and reveal the working chrome. */
+  hasStarted = true;
+  updateLanding();
+});
+document.getElementById('btn-example')?.addEventListener('click', () => {
+  hasStarted = true;
+  showExample();
+});
 
 // --- Close/copy the output panel ---
 document.getElementById('output-close')?.addEventListener('click', () => {
@@ -350,17 +374,21 @@ document.getElementById('output-copy')?.addEventListener('click', () => {
   if (!outText) return;
   void navigator.clipboard?.writeText(outText.value);
   outText.select();
+  showToast('Copied to clipboard', 'success');
 });
 
 // --- Share ---
 document.getElementById('btn-share')?.addEventListener('click', () => {
   void (async () => {
-    const dsl = viewer.exportDSL();
-    const url = await shareUrl(dsl);
-    await writeHashMap(dsl);
-    await navigator.clipboard?.writeText(url);
-    setLabel('btn-share', ICON_SHARE, 'Link copied!');
-    setTimeout(() => setLabel('btn-share', ICON_SHARE, 'Share'), 1600);
+    try {
+      const dsl = viewer.exportDSL();
+      const url = await shareUrl(dsl);
+      await writeHashMap(dsl);
+      await navigator.clipboard?.writeText(url);
+      showToast('Share link copied to clipboard', 'success');
+    } catch {
+      showToast('Could not create the share link', 'error');
+    }
   })();
 });
 
