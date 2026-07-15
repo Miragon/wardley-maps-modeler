@@ -384,11 +384,10 @@ body {
   letter-spacing: 0.01em;
 }
 
-/* Landing (empty & not yet started): only the start card — hide the working chrome. */
-#app.app--landing .app-menu,
-#app.app--landing .app-toolbar,
-#app.app--landing .app-zoom,
-#app.app--landing .djs-palette {
+/* Landing (empty & not yet started): keep the Menu, Share and palette so a user can already open
+ * another file or drag an element onto the canvas to start. Only the zoom control is hidden — it
+ * has nothing to act on yet. */
+#app.app--landing .app-zoom {
   display: none;
 }
 
