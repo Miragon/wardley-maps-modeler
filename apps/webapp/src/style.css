@@ -1,7 +1,8 @@
 /* Webapp chrome — Miragon corporate identity (official CI: Miragon/corporate-identity, brand/tokens.json).
    Blue leads (buttons/links/focus), green accents (brand mark/gradient/highlights), Geist typeface.
    A single mode (the CI defines no dark theme); tokens mirror the renderer's `--wardley-*` where they
-   overlap. See docs/branding/. */
+   overlap. See the Miragon design system (the `miragon-brand:modeler-tool-design` skill;
+   CLAUDE.md § "Design system"). */
 :root {
   /* neutrals (grau = warm off-white surface) */
   --paper: #f9f7f7;

@@ -1,8 +1,10 @@
 /**
  * Miragon design tokens — the single source of truth for every colour in the renderer.
  *
- * Values mirror the official Miragon corporate identity (`Miragon/corporate-identity`,
- * `brand/tokens.json` → the `--cd-*` variables). WHY this file exists: colours used to live in three
+ * Values mirror the Miragon design system — the `miragon-brand:modeler-tool-design` skill in
+ * `Miragon/corporate-identity` (its vendored `cd-tokens.generated.css` defines the `--cd-*`
+ * variables, generated from `brand/tokens.json`). Re-copy from the skill to update; never fork the
+ * hex values by hand. WHY this file exists: colours used to live in three
  * hand-duplicated places (the SVG `COLORS` object, the `--wardley-*` CSS variables, and the webapp's
  * own `:root`). Here they are declared once. `draw/styles.ts` derives the public `COLORS`/`FONT`/…
  * from `MIRAGON`; `assets/wardley.css` mirrors the `CHROME_VARS` / `DARK_MAP_VARS` maps (a unit test,
