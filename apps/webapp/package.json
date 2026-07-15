@@ -10,8 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@fontsource-variable/fraunces": "5.2.9",
-    "@fontsource-variable/spline-sans": "5.2.8",
+    "@fontsource-variable/geist": "5.2.9",
+    "@fontsource-variable/geist-mono": "5.2.8",
     "@miragon/wardley-dsl": "0.4.0",
     "@miragon/wardley-renderer": "0.4.0",
     "@miragon/wardley-schema-model": "0.4.0"

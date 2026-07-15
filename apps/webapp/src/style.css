@@ -1,9 +1,48 @@
+/* Webapp chrome — Miragon corporate identity (official CI: Miragon/corporate-identity, brand/tokens.json).
+   Blue leads (buttons/links/focus), green accents (brand mark/gradient/highlights), Geist typeface.
+   A single mode (the CI defines no dark theme); tokens mirror the renderer's `--wardley-*` where they
+   overlap. See docs/branding/. */
 :root {
-  --paper: #fbfaf7;
-  --ink: #1b1b1a;
-  --ink-soft: #6b6459;
-  --accent: #0e7c74;
-  --line: #e7e2d8;
+  /* neutrals (grau = warm off-white surface) */
+  --paper: #f9f7f7;
+  --surface: #ffffff;
+  --surface-2: #f9f7f7;
+  --ink: #1d1d1d;
+  --ink-soft: #5b5b5b;
+  --ink-faint: #8c8c8c;
+  --line: #e6e2e2;
+
+  /* brand: blue leads, green accents */
+  --accent: #335de5; /* blau — primary fill (buttons, active) */
+  --accent-hover: #2b50d4; /* blau-link — button hover */
+  --accent-ink: #2b50d4; /* interactive text / links / focus (AA on white) */
+  --accent-soft: rgba(51, 93, 229, 0.12);
+  --brand: #00e676; /* gruen — accent / highlight */
+  --gradient-brand: linear-gradient(120deg, #335de5 30%, #00e676);
+
+  /* functional (status) layer */
+  --success: #0b7a55;
+  --warning: #92610a;
+  --danger: #c92a2a;
+  --info: #2b50d4;
+
+  /* radius (CI: md = standard for buttons/inputs/cards) */
+  --radius-sm: 6px;
+  --radius: 12px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+
+  /* elevation (CI, tinted with brand black) */
+  --shadow-1: 0 1px 2px rgba(29, 29, 29, 0.06), 0 1px 3px rgba(29, 29, 29, 0.1);
+  --shadow-2: 0 4px 12px rgba(29, 29, 29, 0.1);
+  --shadow-3: 0 12px 32px rgba(29, 29, 29, 0.16);
+
+  /* motion (CI) */
+  --motion-fast: 150ms;
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+
+  color-scheme: light;
 }
 
 html,
@@ -17,22 +56,21 @@ body {
   background: var(--paper);
   color: var(--ink);
   font-family:
-    'Spline Sans Variable',
-    'Spline Sans',
+    'Geist',
     ui-sans-serif,
     system-ui,
     -apple-system,
     'Segoe UI',
     sans-serif;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 #app {
   position: relative;
 }
 
-/* --- Floating chrome over the canvas (no header bar, Excalidraw style) ---
-   Menu on the left, Share on the right, tool palette (from the renderer) centered at the top. */
+/* --- Floating chrome over the canvas (no header bar, Excalidraw style) --- */
 .app-menu {
   position: absolute;
   top: 12px;
@@ -45,17 +83,20 @@ body {
   align-items: center;
   gap: 6px;
   font: inherit;
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 500;
   color: var(--ink);
-  padding: 7px 11px;
+  padding: 8px 13px;
   border: 1px solid var(--line);
-  border-radius: 9px;
-  background: #fff;
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
   cursor: pointer;
   transition:
-    background 120ms ease,
-    border-color 120ms ease;
+    background var(--motion-fast) var(--ease),
+    border-color var(--motion-fast) var(--ease),
+    color var(--motion-fast) var(--ease),
+    transform 60ms var(--ease);
 }
 .icon-btn svg {
   display: block;
@@ -64,8 +105,11 @@ body {
 .icon-btn:hover,
 .icon-btn[aria-expanded='true'] {
   border-color: var(--accent);
-  color: var(--accent);
-  background: rgba(14, 124, 116, 0.06);
+  color: var(--accent-ink);
+  background: var(--accent-soft);
+}
+.icon-btn:active {
+  transform: translateY(1px);
 }
 
 .menu-dropdown[hidden] {
@@ -76,13 +120,13 @@ body {
   top: calc(100% + 8px);
   left: 0;
   z-index: 40;
-  min-width: 232px;
+  min-width: 236px;
   padding: 6px;
-  background: #fff;
+  background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 12px;
-  box-shadow: 0 14px 40px rgba(27, 27, 26, 0.16);
-  animation: menu-pop 120ms ease;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-3);
+  animation: menu-pop var(--motion-fast) var(--ease-out);
 }
 @keyframes menu-pop {
   from {
@@ -102,20 +146,23 @@ body {
   text-align: left;
   padding: 8px 10px;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: transparent;
   cursor: pointer;
+  transition:
+    background 120ms var(--ease),
+    color 120ms var(--ease);
 }
 .menu-item svg {
   flex: none;
   color: var(--ink-soft);
 }
 .menu-item:hover {
-  background: rgba(14, 124, 116, 0.1);
-  color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-ink);
 }
 .menu-item:hover svg {
-  color: var(--accent);
+  color: var(--accent-ink);
 }
 
 .menu-sep {
@@ -146,14 +193,14 @@ body {
   font: inherit;
   font-size: 12.5px;
   color: var(--ink);
-  padding: 4px 8px;
+  padding: 5px 8px;
   border: 1px solid var(--line);
-  border-radius: 7px;
-  background: var(--paper);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
   cursor: pointer;
 }
 
-/* --- Toolbar (floating top-right: Share only) --- */
+/* --- Toolbar (floating top-right: Share) --- */
 .app-toolbar {
   position: absolute;
   top: 12px;
@@ -168,33 +215,37 @@ body {
   align-items: center;
   gap: 6px;
   font: inherit;
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 600;
-  padding: 7px 14px;
-  border-radius: 9px;
+  padding: 9px 16px;
+  border-radius: var(--radius);
   cursor: pointer;
   transition:
-    background 120ms ease,
-    transform 80ms ease;
+    background var(--motion-fast) var(--ease),
+    box-shadow var(--motion-fast) var(--ease),
+    transform 80ms var(--ease);
 }
 .app-toolbar button svg {
   display: block;
   flex: none;
 }
-.app-toolbar button:active {
-  transform: translateY(1px);
-}
 .app-toolbar button.primary {
   border: 1px solid var(--accent);
   background: var(--accent);
   color: #fff;
-  box-shadow: 0 2px 10px rgba(14, 124, 116, 0.22);
+  box-shadow: var(--shadow-1);
 }
 .app-toolbar button.primary:hover {
-  background: #0c6a63;
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+  box-shadow: var(--shadow-2);
+  transform: translateY(-1px);
+}
+.app-toolbar button.primary:active {
+  transform: translateY(0);
 }
 
-/* --- Stage (canvas + empty state): fills #app, chrome floats over it --- */
+/* --- Stage (canvas + empty state) --- */
 .app-stage {
   position: absolute;
   inset: 0;
@@ -204,7 +255,6 @@ body {
   inset: 0;
 }
 
-/* Drag & drop hint at the webapp level (DnD lives on the stage, not in the renderer) */
 .app-stage.drag-over::after {
   content: 'Drop Wardley map here';
   position: absolute;
@@ -214,9 +264,9 @@ body {
   align-items: center;
   justify-content: center;
   border: 2px dashed var(--accent);
-  border-radius: 14px;
-  background: rgba(14, 124, 116, 0.07);
-  color: var(--accent);
+  border-radius: var(--radius-lg);
+  background: var(--accent-soft);
+  color: var(--accent-ink);
   font-size: 15px;
   font-weight: 600;
   pointer-events: none;
@@ -226,8 +276,6 @@ body {
 .empty-state[hidden] {
   display: none;
 }
-/* While the draw tool is active, every click belongs to the canvas — hide the card
-   (drawing on an empty map would otherwise be blocked by it). */
 .app-canvas.wardley-draw-mode + .empty-state {
   display: none;
 }
@@ -237,7 +285,6 @@ body {
   z-index: 5;
   display: grid;
   place-items: center;
-  /* Clicks/drops pass through to the canvas; only the card is interactive. */
   pointer-events: none;
 }
 .empty-card {
@@ -247,29 +294,30 @@ body {
   align-items: center;
   text-align: center;
   gap: 12px;
-  max-width: 360px;
-  padding: 34px 38px;
-  background: rgba(255, 255, 255, 0.78);
+  max-width: 380px;
+  padding: 36px 40px;
+  background: color-mix(in srgb, var(--surface) 84%, transparent);
   border: 1px solid var(--line);
-  border-radius: 18px;
-  box-shadow: 0 18px 50px rgba(27, 27, 26, 0.1);
-  backdrop-filter: blur(3px);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-3);
+  backdrop-filter: blur(8px);
+  animation: card-in 200ms var(--ease-out);
 }
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+/* The Miragon app icon (green Komet on blue) — the brand mark. */
 .empty-mark {
-  display: grid;
-  place-items: center;
-  width: 46px;
-  height: 46px;
-  border-radius: 13px;
-  background: var(--ink);
-  color: var(--paper);
-  font-size: 25px;
-  transform: rotate(8deg);
+  width: 60px;
+  height: 60px;
+  border-radius: 15px;
+  box-shadow: 0 8px 22px rgba(51, 93, 229, 0.3);
 }
 .empty-card h2 {
-  margin: 4px 0 0;
-  font-family: 'Fraunces Variable', 'Fraunces', Georgia, serif;
-  font-optical-sizing: auto;
+  margin: 8px 0 0;
   font-weight: 600;
   font-size: 22px;
   letter-spacing: -0.01em;
@@ -277,34 +325,70 @@ body {
 .empty-card p {
   margin: 0;
   color: var(--ink-soft);
-  font-size: 13.5px;
+  font-size: 14px;
   line-height: 1.5;
 }
-.empty-card .primary {
+.empty-actions {
+  display: flex;
+  gap: 10px;
   margin-top: 4px;
+}
+.empty-card .primary,
+.empty-card .ghost {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   font: inherit;
   font-size: 13px;
   font-weight: 600;
-  color: #fff;
-  padding: 9px 18px;
-  border: 1px solid var(--accent);
-  border-radius: 10px;
-  background: var(--accent);
+  padding: 10px 20px;
+  border-radius: var(--radius);
   cursor: pointer;
-  box-shadow: 0 2px 12px rgba(14, 124, 116, 0.24);
-  transition: background 120ms ease;
+  transition:
+    background var(--motion-fast) var(--ease),
+    border-color var(--motion-fast) var(--ease),
+    color var(--motion-fast) var(--ease),
+    transform 80ms var(--ease),
+    box-shadow var(--motion-fast) var(--ease);
+}
+.empty-card .primary {
+  color: #fff;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  box-shadow: var(--shadow-1);
 }
 .empty-card .primary:hover {
-  background: #0c6a63;
+  background: var(--accent-hover);
+  box-shadow: var(--shadow-2);
+  transform: translateY(-1px);
+}
+.empty-card .ghost {
+  color: var(--ink);
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+.empty-card .ghost:hover {
+  border-color: var(--accent);
+  color: var(--accent-ink);
+  background: var(--accent-soft);
+}
+.empty-card .primary:active,
+.empty-card .ghost:active {
+  transform: translateY(0);
 }
 .empty-hint {
   margin-top: 2px;
-  color: var(--ink-soft);
-  font-size: 11.5px;
+  color: var(--ink-faint);
+  font-size: 12px;
   letter-spacing: 0.01em;
+}
+
+/* Landing (empty & not yet started): only the start card — hide the working chrome. */
+#app.app--landing .app-menu,
+#app.app--landing .app-toolbar,
+#app.app--landing .app-zoom,
+#app.app--landing .djs-palette {
+  display: none;
 }
 
 /* --- Export-Panel (JSON/DSL) --- */
@@ -317,28 +401,32 @@ body {
   z-index: 50;
   display: grid;
   place-items: center;
-  background: rgba(27, 27, 26, 0.32);
-  backdrop-filter: blur(2px);
+  background: rgba(8, 10, 32, 0.42);
+  backdrop-filter: blur(3px);
+  animation: overlay-in 140ms var(--ease-out);
+}
+@keyframes overlay-in {
+  from {
+    opacity: 0;
+  }
 }
 .output-panel {
   display: flex;
   flex-direction: column;
   width: min(720px, 92vw);
   height: min(70vh, 640px);
-  background: #fff;
+  background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 12px;
-  box-shadow: 0 24px 64px rgba(27, 27, 26, 0.25);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-3);
   overflow: hidden;
 }
 .output-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 14px;
+  padding: 12px 16px;
   border-bottom: 1px solid var(--line);
-  font-family: 'Fraunces Variable', 'Fraunces', Georgia, serif;
-  font-optical-sizing: auto;
   font-weight: 600;
   font-size: 15px;
 }
@@ -348,17 +436,23 @@ body {
 }
 .output-actions button {
   font: inherit;
-  font-family: 'Spline Sans Variable', 'Spline Sans', sans-serif;
   font-size: 12.5px;
-  padding: 5px 11px;
+  font-weight: 500;
+  padding: 6px 12px;
   border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #fff;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
   cursor: pointer;
+  transition:
+    border-color 120ms var(--ease),
+    color 120ms var(--ease),
+    background 120ms var(--ease);
 }
 .output-actions button:hover {
   border-color: var(--accent);
-  color: var(--accent);
+  color: var(--accent-ink);
+  background: var(--accent-soft);
 }
 .output-panel textarea {
   flex: 1;
@@ -366,23 +460,23 @@ body {
   outline: 0;
   resize: none;
   padding: 14px;
-  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: 'Geist Mono', ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 12.5px;
   line-height: 1.5;
   color: var(--ink);
-  background: #fbfaf7;
+  background: var(--surface-2);
   white-space: pre;
 }
 
-/* --- X-axis labels (modal: preset + free-form stage labels) --- */
+/* --- X-axis labels (modal) --- */
 .axis-panel {
   display: flex;
   flex-direction: column;
   width: min(440px, 92vw);
-  background: #fff;
+  background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 12px;
-  box-shadow: 0 24px 64px rgba(27, 27, 26, 0.25);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-3);
   overflow: hidden;
 }
 .axis-body {
@@ -406,10 +500,10 @@ body {
   font: inherit;
   font-size: 12.5px;
   color: var(--ink);
-  padding: 6px 9px;
+  padding: 7px 9px;
   border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--paper);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
   cursor: pointer;
 }
 .axis-hint {
@@ -419,7 +513,7 @@ body {
   color: var(--ink-soft);
 }
 .axis-hint a {
-  color: var(--accent);
+  color: var(--accent-ink);
 }
 .axis-stages {
   display: grid;
@@ -437,15 +531,16 @@ body {
   font: inherit;
   font-size: 13px;
   color: var(--ink);
-  padding: 7px 9px;
+  padding: 8px 9px;
   border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--paper);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
 }
 .axis-stage input:focus {
-  outline: 0;
+  outline: 2px solid var(--accent-soft);
+  outline-offset: 0;
   border-color: var(--accent);
-  background: #fff;
+  background: var(--surface);
 }
 .axis-foot {
   display: flex;
@@ -453,21 +548,91 @@ body {
 }
 .axis-foot .ghost {
   font: inherit;
-  font-family: 'Spline Sans Variable', 'Spline Sans', sans-serif;
   font-size: 12.5px;
-  padding: 6px 12px;
+  font-weight: 500;
+  padding: 7px 13px;
   border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #fff;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
   color: var(--ink);
   cursor: pointer;
+  transition:
+    border-color 120ms var(--ease),
+    color 120ms var(--ease),
+    background 120ms var(--ease);
 }
 .axis-foot .ghost:hover {
   border-color: var(--accent);
-  color: var(--accent);
+  color: var(--accent-ink);
+  background: var(--accent-soft);
 }
 
-/* --- Zoom controls (bottom right, Excalidraw style) --- */
+/* --- Toaster (transient feedback, bottom-center) --- */
+.toaster {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+}
+.toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: min(420px, 90vw);
+  padding: 11px 15px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--info);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-3);
+  font-size: 13px;
+  font-weight: 500;
+  animation: toast-in 180ms var(--ease-out);
+}
+.toast.is-leaving {
+  animation: toast-out 160ms var(--ease) forwards;
+}
+.toast__dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--info);
+}
+.toast--success {
+  border-left-color: var(--success);
+}
+.toast--success .toast__dot {
+  background: var(--success);
+}
+.toast--error {
+  border-left-color: var(--danger);
+}
+.toast--error .toast__dot {
+  background: var(--danger);
+}
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@keyframes toast-out {
+  to {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* --- Zoom controls (bottom right) --- */
 .app-zoom {
   position: absolute;
   bottom: 14px;
@@ -476,9 +641,9 @@ body {
   display: flex;
   align-items: stretch;
   border: 1px solid var(--line);
-  border-radius: 9px;
-  background: #fff;
-  box-shadow: 0 4px 16px rgba(27, 27, 26, 0.08);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
   overflow: hidden;
 }
 .app-zoom button {
@@ -488,12 +653,14 @@ body {
   background: transparent;
   border: none;
   cursor: pointer;
-  padding: 6px 10px;
-  transition: background 120ms ease;
+  padding: 6px 11px;
+  transition:
+    background 120ms var(--ease),
+    color 120ms var(--ease);
 }
 .app-zoom button:hover {
-  background: rgba(14, 124, 116, 0.08);
-  color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-ink);
 }
 .app-zoom .zoom-level {
   min-width: 52px;
@@ -502,7 +669,7 @@ body {
   border-right: 1px solid var(--line);
 }
 
-/* --- Legal notice (bottom left, subtle — kept clear of the bottom-right zoom widget) --- */
+/* --- Legal notice (bottom left) --- */
 .app-legal {
   position: absolute;
   bottom: 16px;
@@ -512,23 +679,32 @@ body {
   align-items: center;
   gap: 6px;
   font-size: 11.5px;
-  color: var(--ink-soft);
+  color: var(--ink-faint);
 }
 .app-legal a {
-  color: var(--ink-soft);
+  color: var(--ink-faint);
   text-decoration: none;
 }
 .app-legal a:hover {
-  color: var(--accent);
+  color: var(--accent-ink);
   text-decoration: underline;
 }
 
-/* On narrow viewports the empty-state card sits centered low; keep the legal
-   notice from colliding with the zoom widget by letting it wrap out of the way. */
 @media (max-width: 540px) {
   .app-legal {
     bottom: 8px;
     left: 8px;
     font-size: 11px;
+  }
+}
+
+/* Respect users who prefer less motion. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
   }
 }

@@ -1,9 +1,31 @@
 @import 'diagram-js/assets/diagram-js.css';
 
+/* Miragon design tokens for the in-canvas chrome. The VALUES here are hand-mirrored from the single
+   source of truth in `src/theme/palette.ts` (CHROME_LIGHT_VARS / CHROME_DARK_VARS); a unit test
+   (`test/theme.sync.test.ts`) fails if they drift. See docs/branding/. */
 :root {
-  --wardley-paper: #fbfaf7;
-  --wardley-ink: #1b1b1a;
-  --wardley-accent: #0e7c74;
+  --wardley-paper: #f9f7f7;
+  --wardley-ink: #1d1d1d;
+  --wardley-ink-soft: #5b5b5b;
+  --wardley-surface: #ffffff;
+  --wardley-border: #e6e2e2;
+  --wardley-accent: #335de5;
+  --wardley-accent-soft: rgba(51, 93, 229, 0.12);
+  --wardley-brand: #00e676;
+  --wardley-danger: #c92a2a;
+  --wardley-shadow: rgba(29, 29, 29, 0.1);
+
+  --wardley-radius-sm: 6px;
+  --wardley-radius: 12px;
+  --wardley-radius-lg: 16px;
+}
+
+/* Per-document `style dark` map directive (serialized in the DSL). This is the ONLY dark surface —
+   there is no app-level dark mode (the Miragon CI defines no dark theme). It turns the surround navy;
+   the plot area itself stays "paper" (SVG presentation attrs) so exports stay stable, and the
+   in-canvas floating chrome (palette, context-pad, colour-picker, label input) stays light too. */
+.wardley-container.wardley-dark {
+  --wardley-paper: #080a20;
 }
 
 .wardley-container {
@@ -11,11 +33,10 @@
   width: 100%;
   height: 100%;
   background-color: var(--wardley-paper);
-  background-image: radial-gradient(rgba(27, 27, 26, 0.04) 0.6px, transparent 0.6px);
+  background-image: radial-gradient(rgba(29, 29, 29, 0.045) 0.6px, transparent 0.6px);
   background-size: 22px 22px;
   font-family:
-    'Spline Sans Variable',
-    'Spline Sans',
+    'Geist',
     ui-sans-serif,
     system-ui,
     -apple-system,
@@ -41,31 +62,30 @@
   pointer-events: all;
 }
 
-/* Hover / selection: NEUTRAL feedback — slightly darker, never a color change (elements keep
-   their own (possibly user-picked) color). Dims the WHOLE visual group: targeting only the
-   first child misses evolving components (movement line first) and fill-less frames. */
+/* Hover / selection emphasis: darken+saturate the WHOLE visual group so elements keep their own
+   (possibly user-picked) colour; the branded blue outline (below) signals the actual selection. */
 .wardley-container .djs-element.hover > .djs-visual,
 .wardley-container .djs-element.selected > .djs-visual {
   filter: brightness(0.72) saturate(1.15);
 }
 
 .wardley-container .djs-outline {
-  stroke: rgba(0, 0, 0, 0.45);
+  stroke: var(--wardley-accent);
   stroke-dasharray: 3 3;
 }
-/* diagram-js drives selection/lasso outlines via CSS variables (default: blue), scoped on
-   `.djs-parent` — override there to keep them neutral too. */
+/* diagram-js drives selection/lasso outlines via CSS variables (default: its own blue), scoped on
+   `.djs-parent` — override there with the Miragon interactive blue. */
 .wardley-container .djs-parent {
-  --element-hover-outline-fill-color: rgba(0, 0, 0, 0.45);
-  --element-selected-outline-stroke-color: rgba(0, 0, 0, 0.45);
-  --element-selected-outline-secondary-stroke-color: rgba(0, 0, 0, 0.3);
-  --lasso-fill-color: rgba(0, 0, 0, 0.04);
-  --lasso-stroke-color: rgba(0, 0, 0, 0.45);
+  --element-hover-outline-fill-color: var(--wardley-accent-soft);
+  --element-selected-outline-stroke-color: var(--wardley-accent);
+  --element-selected-outline-secondary-stroke-color: var(--wardley-accent-soft);
+  --lasso-fill-color: var(--wardley-accent-soft);
+  --lasso-stroke-color: var(--wardley-accent);
 }
 
 .wardley-container .djs-resizer-visual {
-  fill: #fff;
-  stroke: rgba(0, 0, 0, 0.55);
+  fill: var(--wardley-surface);
+  stroke: var(--wardley-accent);
 }
 .wardley-container .djs-resizer-hit {
   fill: none;
@@ -82,10 +102,12 @@
   display: flex;
   align-items: center;
   padding: 5px 7px;
-  background: #ffffff;
-  border: 1px solid #e7e2d8;
-  border-radius: 13px;
-  box-shadow: 0 8px 26px rgba(27, 27, 26, 0.1);
+  background: var(--wardley-surface);
+  border: 1px solid var(--wardley-border);
+  border-radius: var(--wardley-radius);
+  box-shadow:
+    0 1px 2px var(--wardley-shadow),
+    0 10px 26px var(--wardley-shadow);
 }
 .djs-palette .djs-palette-entries,
 .djs-palette .group {
@@ -98,12 +120,15 @@
   width: 40px;
   height: 40px;
   line-height: normal;
-  border-radius: 9px;
+  border-radius: var(--wardley-radius-sm);
   color: var(--wardley-ink);
-  transition: background 120ms ease;
+  transition:
+    background 150ms ease,
+    color 150ms ease;
 }
 .djs-palette .entry:hover {
-  background: rgba(0, 0, 0, 0.05);
+  background: var(--wardley-accent-soft);
+  color: var(--wardley-accent);
 }
 /* Draw mode: crosshair over the whole canvas. */
 .wardley-container.wardley-draw-mode,
@@ -117,10 +142,10 @@
   pointer-events: all;
 }
 
-/* Active tool (e.g. the lasso): neutral, just a bit darker than hover — no color. */
+/* Active tool (e.g. the lasso): branded — the interactive blue, so the "armed" tool is obvious. */
 .djs-palette .entry.highlighted-entry {
-  background: rgba(0, 0, 0, 0.1);
-  color: var(--wardley-ink);
+  background: var(--wardley-accent);
+  color: #fff;
 }
 
 /* Subtle vertical separator between the groups (diagram-js does not separate groups on its own). */
@@ -136,7 +161,7 @@
   bottom: 6px;
   left: 0;
   width: 1px;
-  background: rgba(27, 27, 26, 0.1);
+  background: var(--wardley-border);
 }
 
 /* Palette icons (custom HTML icons) — unscoped, travel along with the relocated palette. */
@@ -170,13 +195,19 @@
 }
 
 .wardley-container .djs-context-pad .entry {
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(27, 27, 26, 0.12);
-  background: #ffffff;
-  transition: background 120ms ease;
+  border-radius: var(--wardley-radius-sm);
+  box-shadow:
+    0 1px 2px var(--wardley-shadow),
+    0 2px 8px var(--wardley-shadow);
+  background: var(--wardley-surface);
+  color: var(--wardley-ink);
+  transition:
+    background 150ms ease,
+    color 150ms ease;
 }
 .wardley-container .djs-context-pad .entry:hover {
-  background: rgba(0, 0, 0, 0.06);
+  background: var(--wardley-accent-soft);
+  color: var(--wardley-accent);
 }
 
 .wardley-container .wardley-label-input {
@@ -184,10 +215,11 @@
   font-size: 13px;
   padding: 2px 6px;
   border: 1.5px solid var(--wardley-accent);
-  border-radius: 4px;
-  background: #fff;
+  border-radius: 6px;
+  background: var(--wardley-surface);
+  color: var(--wardley-ink);
   outline: none;
-  box-shadow: 0 2px 10px rgba(14, 124, 116, 0.18);
+  box-shadow: 0 2px 12px var(--wardley-accent-soft);
   z-index: 100;
   min-width: 90px;
 }
@@ -208,29 +240,17 @@
   align-items: center;
   justify-content: center;
   border: 2px dashed var(--wardley-accent);
-  border-radius: 12px;
-  background: rgba(14, 124, 116, 0.06);
+  border-radius: var(--wardley-radius-lg);
+  background: var(--wardley-accent-soft);
   color: var(--wardley-accent);
   font-size: 15px;
   font-weight: 600;
   pointer-events: none;
 }
 
-/* Style variant: dark — set by the viewer from the DSL directive `style dark`.
-   Deliberate design: the surroundings turn dark, while the plot area itself stays "paper"
-   (map contents are SVG presentation attributes and thus theme-stable/printable). */
+/* Dark surround dot-grid: light dots on navy (the plot area stays paper — see the token block). */
 .wardley-container.wardley-dark {
-  --wardley-paper: #11151b;
-  --wardley-ink: #e8eaed;
-  background-color: var(--wardley-paper);
   background-image: radial-gradient(rgba(255, 255, 255, 0.05) 0.6px, transparent 0.6px);
-}
-.wardley-container.wardley-dark .djs-palette {
-  background: #1a2028;
-  border-color: #2a323d;
-}
-.wardley-container.wardley-dark .djs-palette .entry {
-  color: var(--wardley-ink);
 }
 
 /* Note color picker (bpmn.io style): compact 3x3 grid of small color squares, no text.
@@ -242,17 +262,19 @@
   grid-template-columns: repeat(3, 22px);
   gap: 6px;
   padding: 8px;
-  background: #ffffff;
-  border: 1px solid rgba(0, 0, 0, 0.15);
-  border-radius: 10px;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.22);
+  background: var(--wardley-surface);
+  border: 1px solid var(--wardley-border);
+  border-radius: var(--wardley-radius-sm);
+  box-shadow:
+    0 1px 2px var(--wardley-shadow),
+    0 6px 24px var(--wardley-shadow);
 }
 .wardley-container .wardley-cp-swatch {
   width: 22px;
   height: 22px;
   padding: 0;
   border-radius: 5px;
-  border: 1px solid rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--wardley-border);
   cursor: pointer;
   transition: transform 0.08s ease;
 }
@@ -260,16 +282,16 @@
   transform: scale(1.1);
 }
 .wardley-container .wardley-cp-active {
-  outline: 2px solid var(--wardley-ink, #1b1b1a);
+  outline: 2px solid var(--wardley-accent);
   outline-offset: 1px;
 }
 .wardley-container .wardley-cp-none {
-  background: #ffffff;
+  background: var(--wardley-surface);
   background-image: linear-gradient(
     45deg,
     transparent 44%,
-    #d11a2a 45%,
-    #d11a2a 55%,
+    var(--wardley-danger) 45%,
+    var(--wardley-danger) 55%,
     transparent 56%
   );
 }

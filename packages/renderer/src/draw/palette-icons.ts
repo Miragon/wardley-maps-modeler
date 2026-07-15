@@ -65,7 +65,7 @@ export const PALETTE_ICONS: Record<string, string> = {
 };
 
 export function attitudeIcon(kind: string): string {
-  const c = ATTITUDE_COLORS[kind] ?? { fill: 'rgba(0,0,0,0.05)', stroke: '#666666' };
+  const c = ATTITUDE_COLORS[kind] ?? { fill: COLORS.band, stroke: COLORS.dependency };
   return wrap(
     `<rect x="2" y="6" width="20" height="12" rx="3" fill="${c.fill}" stroke="${c.stroke}" stroke-width="1.5" stroke-dasharray="3 2"/>`,
   );

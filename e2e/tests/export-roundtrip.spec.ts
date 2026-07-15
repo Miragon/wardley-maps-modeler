@@ -32,9 +32,9 @@ test.describe('webapp export round-trip', () => {
   });
 
   test('loads the Tea Shop example and exports stable DSL + SVG', async ({ page }) => {
-    // Real UI: the app starts on an empty canvas; load the example via the floating menu.
-    await page.locator('#btn-menu').click();
-    await page.locator('#m-example').click();
+    // Real UI: the app opens on the landing (empty canvas), which hides the working chrome and
+    // offers a start card — load the example from its "Show example" button.
+    await page.locator('#btn-example').click();
 
     // The renderer paints one .djs-element per node/edge once import.done fires.
     await expect(page.locator('#canvas .djs-element').first()).toBeVisible();

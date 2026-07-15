@@ -1,6 +1,7 @@
-/** Central rendering constants (geometry, colors, typography) — "Strategic Blueprint" aesthetic. */
+/** Central rendering constants (geometry, colors, typography) — Miragon corporate identity. */
 
 import { DEFAULT_PLOT_SIZE } from '@miragon/wardley-schema-model';
+import { MIRAGON } from '../theme/index.js';
 
 /** Default plot area in diagram px (interior without axis margins). Changeable at runtime via
  *  config.size. Width/height come from schema-model (single source, also used for migrations). */
@@ -46,32 +47,38 @@ export function noteMetrics(label: string): { lines: string[]; width: number; he
   };
 }
 
+/**
+ * Canvas colours — Miragon palette (blue = interactive/flow, green = accelerate/positive,
+ * red = movement/decelerate). Keys are the public contract; brand values come from the single source
+ * of truth in `theme/palette.ts` (`MIRAGON`). Referenced (not spread) so the literal-string types
+ * survive into the published `.d.ts`.
+ */
 export const COLORS = {
-  paper: '#fbfaf7',
-  ink: '#1b1b1a',
-  inkSoft: '#3a3a37',
-  axis: '#cdc7bb',
-  axisText: '#8c8475',
-  grid: '#ebe7de',
-  band: 'rgba(27,27,26,0.022)',
-  stroke: '#1b1b1a',
-  componentFill: '#ffffff',
-  anchorFill: '#1b1b1a',
-  dependency: '#a9a296',
-  accent: '#0e7c74',
-  accentSoft: 'rgba(14,124,116,0.12)',
-  flow: '#0e7c74',
-  movement: '#bf2f2a',
-  inertia: '#1b1b1a',
-  noteText: '#4a4640',
-  pipeline: '#1b1b1a',
+  paper: MIRAGON.grau,
+  ink: MIRAGON.schwarz,
+  inkSoft: '#5B5B5B',
+  axis: '#E0E0E0',
+  axisText: '#8C8C8C',
+  grid: '#ECECEC',
+  band: 'rgba(29,29,29,0.02)',
+  stroke: MIRAGON.schwarz,
+  componentFill: MIRAGON.weiss,
+  anchorFill: MIRAGON.schwarz,
+  dependency: '#9E9E9E',
+  accent: MIRAGON.blau,
+  accentSoft: 'rgba(51,93,229,0.12)',
+  flow: MIRAGON.blau,
+  movement: MIRAGON.danger,
+  inertia: MIRAGON.schwarz,
+  noteText: '#5B5B5B',
+  pipeline: MIRAGON.schwarz,
   /** Fill of the annotation marker (also used in the palette icons). */
-  annotationFill: '#fff8e6',
+  annotationFill: '#FBF3E0',
   /** Background of the plot area (deliberately white, lighter than paper). */
-  plotBackground: '#ffffff',
+  plotBackground: MIRAGON.weiss,
   /** Accelerator / deaccelerator (own semantic constants — not flow/movement). */
-  accelerator: '#0e7c74',
-  deaccelerator: '#bf2f2a',
+  accelerator: '#00C853',
+  deaccelerator: MIRAGON.danger,
 } as const;
 
 /**
@@ -81,34 +88,36 @@ export const COLORS = {
  * amber = watch, blue = info, purple = idea, slate = neutral.
  */
 export const NOTE_COLORS = [
-  { id: 'green', name: 'Green · good', value: '#15803d' },
-  { id: 'amber', name: 'Amber · watch', value: '#b45309' },
-  { id: 'red', name: 'Red · problem', value: '#b91c1c' },
-  { id: 'blue', name: 'Blue · info', value: '#1d4ed8' },
-  { id: 'teal', name: 'Teal', value: '#0e7c74' },
-  { id: 'purple', name: 'Purple · idea', value: '#7e22ce' },
-  { id: 'pink', name: 'Pink', value: '#be185d' },
-  { id: 'slate', name: 'Slate · neutral', value: '#475569' },
+  { id: 'green', name: 'Green · good', value: '#0B7A55' },
+  { id: 'amber', name: 'Amber · watch', value: '#92610A' },
+  { id: 'red', name: 'Red · problem', value: '#C92A2A' },
+  { id: 'blue', name: 'Blue · info', value: '#2B50D4' },
+  { id: 'teal', name: 'Teal', value: '#0E8181' },
+  { id: 'purple', name: 'Purple · idea', value: '#6A3DB8' },
+  { id: 'pink', name: 'Pink', value: '#C2185B' },
+  { id: 'slate', name: 'Slate · neutral', value: '#4A4A4A' },
 ] as const;
 
-/** Colors of the attitude regions per kind (shared by renderer + palette icons). */
+/**
+ * Colors of the attitude regions per kind (shared by renderer + palette icons). Miragon palette:
+ * pioneers = blue (explore), settlers = amber (stabilise), town planners = green (industrialise).
+ */
 export const ATTITUDE_COLORS: Record<string, { fill: string; stroke: string }> = {
-  pioneers: { fill: 'rgba(14,124,116,0.07)', stroke: '#0e7c74' },
-  settlers: { fill: 'rgba(180,131,30,0.08)', stroke: '#b4831e' },
-  townplanners: { fill: 'rgba(120,53,170,0.07)', stroke: '#7835aa' },
+  pioneers: { fill: 'rgba(51,93,229,0.07)', stroke: '#335DE5' },
+  settlers: { fill: 'rgba(146,97,10,0.10)', stroke: '#92610A' },
+  townplanners: { fill: 'rgba(0,200,83,0.08)', stroke: '#00C853' },
 };
 
 export const FONT = {
   /**
    * Set as the `font-family` attribute DIRECTLY on all SVG text elements (canvas labels,
    * axis/stage text and consequently the SVG export too) – not inherited from a CSS container.
-   * In EVERY context it reaches for the self-hosted 'Spline Sans Variable' if the consumer provides
-   * it; otherwise (e.g. an export SVG opened standalone) it falls back safely to a system sans.
-   * The library does NOT ship the font – consumers must include it themselves
-   * (e.g. via @fontsource-variable/spline-sans), see README.
+   * In EVERY context it reaches for the self-hosted 'Geist' (Miragon corporate typeface) if the
+   * consumer provides it; otherwise (e.g. an export SVG opened standalone) it falls back safely to a
+   * system sans. The library does NOT ship the font – consumers must self-host Geist themselves
+   * (e.g. via @fontsource-variable/geist), see README.
    */
-  family:
-    "'Spline Sans Variable', 'Spline Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif",
+  family: "'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif",
   label: 13,
   axis: 12,
   stage: 12,

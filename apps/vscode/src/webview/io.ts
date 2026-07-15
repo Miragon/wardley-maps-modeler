@@ -7,6 +7,7 @@
  * Only what the browser needs remains here (rasterization via canvas, Blob/FileReader).
  */
 
+import { COLORS } from '@miragon/wardley-renderer';
 import { EMBED_KEYWORD, encodeMap, pngInsertText } from '../png.js';
 
 const SVG_ATTR = 'data-wardley-map';
@@ -49,7 +50,7 @@ async function rasterize(
     canvas.height = Math.round(height * scale);
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('Canvas 2D context not available.');
-    ctx.fillStyle = '#fbfaf7';
+    ctx.fillStyle = COLORS.paper;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
