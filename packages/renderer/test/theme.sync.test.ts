@@ -6,7 +6,8 @@ import { CHROME_VARS, DARK_MAP_VARS } from '../src/theme/palette.js';
 /**
  * Drift guard: `assets/wardley.css` hand-mirrors the `--wardley-*` chrome tokens declared once in
  * `theme/palette.ts`. This test fails the moment the CSS and the TS source of truth diverge, so the
- * "keep these in sync" contract is enforced instead of hoped for. See docs/branding/.
+ * "keep these in sync" contract is enforced instead of hoped for. See the Miragon design system
+ * (the `miragon-brand:modeler-tool-design` skill; CLAUDE.md § "Design system").
  */
 const css = readFileSync(
   fileURLToPath(new URL('../src/assets/wardley.css', import.meta.url)),

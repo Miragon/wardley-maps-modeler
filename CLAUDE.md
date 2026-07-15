@@ -76,6 +76,26 @@ dep) entries when adding a whole new package.
   [`.claude/skills/wardley-mapping/`](.claude/skills/wardley-mapping/).
 - Contributor onboarding in [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
+## Design system (mandatory)
+
+All UI/visual work in this repo MUST follow the Miragon product design system. This is not optional.
+Source of truth: the `miragon-brand:modeler-tool-design` Claude skill in
+[Miragon/corporate-identity](https://github.com/Miragon/corporate-identity). If the plugin is
+installed, the skill auto-loads on UI work; otherwise read the guide directly:
+https://raw.githubusercontent.com/Miragon/corporate-identity/main/plugins/miragon-brand/skills/modeler-tool-design/assets/modeler-design-system.md
+
+Install once: `/plugin marketplace add Miragon/corporate-identity` then
+`/plugin install miragon-brand@miragon`.
+
+Brand tokens are vendored from that skill (`cd-tokens.generated.css`) — do not fork hex values;
+re-copy from the skill to update. Reference implementation in this repo: tokens
+[`packages/renderer/src/theme/palette.ts`](packages/renderer/src/theme/palette.ts) · drift test
+[`packages/renderer/test/theme.sync.test.ts`](packages/renderer/test/theme.sync.test.ts) · canvas
+colours [`packages/renderer/src/draw/styles.ts`](packages/renderer/src/draw/styles.ts) · in-canvas
+chrome [`packages/renderer/src/assets/wardley.css`](packages/renderer/src/assets/wardley.css) · app
+chrome + toast `apps/webapp/src/{style.css,toast.ts,main.ts}` · VS Code webview
+[`apps/vscode/src/webview/style.css`](apps/vscode/src/webview/style.css).
+
 ## Code Style
 
 - Write comments only when explicitly requested. Otherwise write self-explanatory code — descriptive

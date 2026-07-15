@@ -2,7 +2,8 @@
 
 /* Miragon design tokens for the in-canvas chrome. The VALUES here are hand-mirrored from the single
    source of truth in `src/theme/palette.ts` (CHROME_LIGHT_VARS / CHROME_DARK_VARS); a unit test
-   (`test/theme.sync.test.ts`) fails if they drift. See docs/branding/. */
+   (`test/theme.sync.test.ts`) fails if they drift. See the Miragon design system (the
+   `miragon-brand:modeler-tool-design` skill; CLAUDE.md § "Design system"). */
 :root {
   --wardley-paper: #f9f7f7;
   --wardley-ink: #1d1d1d;
