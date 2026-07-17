@@ -4,6 +4,15 @@ All notable changes to this project are documented here. From `0.2.1` onward the
 shares a single version, tag (`vX.Y.Z`) and release; entries below `0.2.1` were consolidated from the
 former per-package changelogs.
 
+## [0.5.0](https://github.com/Miragon/wardley-maps-modeler/compare/v0.4.0...v0.5.0) (2026-07-17)
+
+
+### Features
+
+* adopt Miragon corporate identity across the modeler ([#71](https://github.com/Miragon/wardley-maps-modeler/issues/71)) ([6566db0](https://github.com/Miragon/wardley-maps-modeler/commit/6566db021e04fc0385287c106f77b65ff1f4b654))
+* Miragon-tinted canvas background and copyright footer ([#76](https://github.com/Miragon/wardley-maps-modeler/issues/76)) ([b7b64ea](https://github.com/Miragon/wardley-maps-modeler/commit/b7b64ea90656501b3672f8fd5ba53c66ca579571))
+* **webapp:** show Menu, Share and palette on the empty start screen ([#75](https://github.com/Miragon/wardley-maps-modeler/issues/75)) ([130dde4](https://github.com/Miragon/wardley-maps-modeler/commit/130dde4c1bf4d14df1fab9fcf710a4ebc6f75de9))
+
 ## [0.4.0](https://github.com/Miragon/wardley-maps-modeler/compare/v0.3.0...v0.4.0) (2026-07-07)
 
 
