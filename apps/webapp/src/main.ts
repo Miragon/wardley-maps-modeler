@@ -109,6 +109,10 @@ setLabel('m-axis', ICON_EDIT, 'X-axis labels…');
 const sizeField = document.querySelector('.menu-field span');
 if (sizeField) sizeField.innerHTML = `${iconMarkup(ICON_ASPECT_RATIO, 16)}<span>Map size</span>`;
 
+// Keep the legal copyright year current without a yearly manual edit.
+const legalYear = document.getElementById('legal-year');
+if (legalYear) legalYear.textContent = String(new Date().getFullYear());
+
 // --- Hamburger menu (Excalidraw style): open/close ---
 const menuBtn = document.getElementById('btn-menu');
 const dropdown = document.getElementById('menu-dropdown');
