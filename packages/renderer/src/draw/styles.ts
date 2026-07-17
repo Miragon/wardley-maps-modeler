@@ -18,19 +18,14 @@ export const PLOT_MIN = { width: 480, height: 320 } as const;
 
 export const NODE_SIZE = 34;
 export const COMPONENT_RADIUS = 15;
-/** Inner ring for "evolving" (intermediate-event look). */
 export const COMPONENT_INNER_RADIUS = 12;
 export const ANCHOR_ICON_SIZE = 26;
 export const PIPELINE_HEIGHT = 30;
-/** Side length of the ■ anchor square drawn on the pipeline box's top edge. */
 export const PIPELINE_ANCHOR_SIZE = 16;
 
 export const NOTE_LINE_HEIGHT = 17;
 const NOTE_PAD_X = 8;
 const NOTE_PAD_Y = 6;
-// Rough, deliberately slightly generous character width (13px Spline Sans) — the hitbox should cover
-// the text reliably (better a bit too wide than too narrow). No DOM measurement -> deterministic
-// (holds for import/export/headless too).
 const NOTE_CHAR_W = 7.5;
 
 /**
@@ -57,10 +52,10 @@ export const COLORS = {
   paper: MIRAGON.grau,
   ink: MIRAGON.schwarz,
   inkSoft: '#5B5B5B',
-  axis: '#E0E0E0',
-  axisText: '#8C8C8C',
-  grid: '#ECECEC',
-  band: 'rgba(29,29,29,0.02)',
+  axis: 'rgba(51,93,229,0.22)',
+  axisText: '#6E7797',
+  grid: 'rgba(51,93,229,0.12)',
+  band: 'rgba(51,93,229,0.04)',
   stroke: MIRAGON.schwarz,
   componentFill: MIRAGON.weiss,
   anchorFill: MIRAGON.schwarz,
@@ -72,11 +67,8 @@ export const COLORS = {
   inertia: MIRAGON.schwarz,
   noteText: '#5B5B5B',
   pipeline: MIRAGON.schwarz,
-  /** Fill of the annotation marker (also used in the palette icons). */
   annotationFill: '#FBF3E0',
-  /** Background of the plot area (deliberately white, lighter than paper). */
   plotBackground: MIRAGON.weiss,
-  /** Accelerator / deaccelerator (own semantic constants — not flow/movement). */
   accelerator: '#00C853',
   deaccelerator: MIRAGON.danger,
 } as const;
