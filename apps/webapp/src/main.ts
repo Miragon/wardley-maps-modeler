@@ -191,8 +191,10 @@ const flushUrl = (): void => {
 window.addEventListener('beforeunload', flushUrl);
 window.addEventListener('pagehide', flushUrl);
 
-/** Surface parser/import findings: console detail + a single non-blocking info toast (import
- *  proceeds regardless). Silent-until-now warnings become visible without a modal. */
+/**
+ * Surface parser/import findings: console detail + a single non-blocking info toast (import
+ *  proceeds regardless). Silent-until-now warnings become visible without a modal.
+ */
 function logWarnings(warnings: ReadonlyArray<{ message: string }>): void {
   for (const w of warnings) console.warn(`[wardley-import] ${w.message}`);
   if (warnings.length) {

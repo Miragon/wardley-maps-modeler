@@ -53,8 +53,10 @@ export default class WardleyDrawTool {
     else this.activate();
   }
 
-  /** The OUTER viewer container — getContainer() returns the inner .djs-container, but the
-   *  mode class must sit on .wardley-container for the crosshair/empty-state CSS to match. */
+  /**
+   * The OUTER viewer container — getContainer() returns the inner .djs-container, but the
+   *  mode class must sit on .wardley-container for the crosshair/empty-state CSS to match.
+   */
   private outerContainer(): HTMLElement {
     const container = this.canvas.getContainer();
     return (container.closest('.wardley-container') as HTMLElement | null) ?? container;

@@ -47,8 +47,10 @@ function splitDependency(core: string): { left: string; right: string } | null {
   const right = core.slice(arrow + 2).trim();
   return left && right ? { left, right } : null;
 }
-/** Splits a flow line at the FIRST valid operator (`+>`, `+<>`, `+<`, `+'value'>`/`+'value'<>`)
- *  via a linear scan — same semantics as the previous lazy regex, but immune to backtracking. */
+/**
+ * Splits a flow line at the FIRST valid operator (`+>`, `+<>`, `+<`, `+'value'>`/`+'value'<>`)
+ *  via a linear scan — same semantics as the previous lazy regex, but immune to backtracking.
+ */
 function splitFlow(
   core: string,
 ): { left: string; right: string; op: string; value?: string } | null {

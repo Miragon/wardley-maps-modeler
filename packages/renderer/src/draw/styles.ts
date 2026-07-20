@@ -3,8 +3,10 @@
 import { DEFAULT_PLOT_SIZE } from '@miragon/wardley-schema-model';
 import { MIRAGON } from '../theme/index.js';
 
-/** Default plot area in diagram px (interior without axis margins). Changeable at runtime via
- *  config.size. Width/height come from schema-model (single source, also used for migrations). */
+/**
+ * Default plot area in diagram px (interior without axis margins). Changeable at runtime via
+ *  config.size. Width/height come from schema-model (single source, also used for migrations).
+ */
 export const PLOT = {
   width: DEFAULT_PLOT_SIZE.width,
   height: DEFAULT_PLOT_SIZE.height,
