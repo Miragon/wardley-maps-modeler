@@ -121,8 +121,10 @@ export default class WardleyEvolveDragging {
     });
   }
 
-  /** Starts the evolve drag for `shape` (from the context pad): set the target by dragging along
-   *  the axis, or move it afterwards, with live preview; commit on release. */
+  /**
+   * Starts the evolve drag for `shape` (from the context pad): set the target by dragging along
+   *  the axis, or move it afterwards, with live preview; commit on release.
+   */
   start(event: Event, shape: WardleyShape): void {
     const context: EvolveContext = {
       shape,

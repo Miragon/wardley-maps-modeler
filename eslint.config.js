@@ -2,6 +2,7 @@
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 import prettier from 'eslint-config-prettier';
+import jsdoc from 'eslint-plugin-jsdoc';
 import globals from 'globals';
 
 /**
@@ -54,14 +55,21 @@ export default tseslint.config(
       ],
     },
   },
-  // DOM-dependent packages/apps + E2E specs (page.evaluate runs in the browser): browser globals allowed.
+  {
+    files: ['**/*.{ts,tsx}'],
+    plugins: { jsdoc },
+    rules: {
+      'jsdoc/check-alignment': 'error',
+      'jsdoc/multiline-blocks': 'error',
+      'jsdoc/no-multi-asterisks': 'error',
+    },
+  },
   {
     files: ['packages/renderer/**/*.ts', 'apps/**/*.ts', 'e2e/**/*.ts'],
     languageOptions: {
       globals: { ...globals.browser },
     },
   },
-  // DOM-FREE packages: hard boundary.
   {
     files: ['packages/schema-model/**/*.ts', 'packages/dsl/**/*.ts', 'packages/transforms/**/*.ts'],
     languageOptions: {
@@ -76,7 +84,6 @@ export default tseslint.config(
       ],
     },
   },
-  // Tests may be more lenient.
   {
     files: ['**/*.{test,spec}.ts'],
     languageOptions: {

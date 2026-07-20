@@ -192,8 +192,10 @@ export function parseLabelOffset(line: string): {
 
 const URL_REF_RE = /\burl\s{0,8}\(([^()]*)\)/i;
 
-/** Reads an optional `url(Name)` reference (OWM) and returns it plus the stripped line.
- *  MUST run before parseDecorators — otherwise the word "url" would remain as junk in the suffix. */
+/**
+ * Reads an optional `url(Name)` reference (OWM) and returns it plus the stripped line.
+ *  MUST run before parseDecorators — otherwise the word "url" would remain as junk in the suffix.
+ */
 export function parseUrlRef(line: string): { urlRef: string | null; rest: string } {
   const m = URL_REF_RE.exec(line);
   if (!m) return { urlRef: null, rest: line };

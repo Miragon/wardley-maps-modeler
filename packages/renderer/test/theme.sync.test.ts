@@ -29,8 +29,10 @@ function readVars(selector: string): Record<string, string> {
   return vars;
 }
 
-/** Compare colours by meaning, not bytes: ignore hex case and `rgba(…)` whitespace (Prettier
- *  reformats the CSS, so a byte-exact match would be brittle). Real value drift still fails. */
+/**
+ * Compare colours by meaning, not bytes: ignore hex case and `rgba(…)` whitespace (Prettier
+ *  reformats the CSS, so a byte-exact match would be brittle). Real value drift still fails.
+ */
 function norm(value: string): string {
   return value.trim().toLowerCase().replace(/\s+/g, '');
 }

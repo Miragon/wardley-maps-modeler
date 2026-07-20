@@ -57,8 +57,10 @@ export interface MapElementBase {
   readonly label: string;
   readonly position: Coordinate;
   readonly labelOffset?: LabelOffset;
-  /** Optional element color (CSS color, typically hex from the renderer's palette).
-   *  Serialized as the project extension `(color …)` after the coordinates. */
+  /**
+   * Optional element color (CSS color, typically hex from the renderer's palette).
+   *  Serialized as the project extension `(color …)` after the coordinates.
+   */
   readonly color?: string;
 }
 
@@ -115,9 +117,11 @@ export interface AcceleratorElement extends MapElementBase {
 export type AttitudeKind = 'pioneers' | 'settlers' | 'townplanners';
 
 export interface AttitudeElement extends MapElementBase {
-  /** OWM syntax: `<kind> [vis1, mat1, vis2, mat2]` (two corner points, normalized).
+  /**
+   * OWM syntax: `<kind> [vis1, mat1, vis2, mat2]` (two corner points, normalized).
    *  `position` = anchor point at the top left (higher visibility, lower evolution),
-   *  `corner2` = opposite corner at the bottom right. */
+   *  `corner2` = opposite corner at the bottom right.
+   */
   readonly elementType: 'attitude';
   readonly kind: AttitudeKind;
   readonly corner2: Coordinate;
@@ -130,8 +134,10 @@ export interface SubmapElement extends MapElementBase {
 
 export type DrawingStrokeStyle = 'solid' | 'dashed' | 'dotted';
 
-/** Freeform polyline/polygon (project extension, Excalidraw-style annotation drawing).
- *  `position` mirrors the first point; `points` are absolute normalized coordinates. */
+/**
+ * Freeform polyline/polygon (project extension, Excalidraw-style annotation drawing).
+ *  `position` mirrors the first point; `points` are absolute normalized coordinates.
+ */
 export interface DrawingElement extends MapElementBase {
   readonly elementType: 'drawing';
   readonly points: readonly Coordinate[];
