@@ -148,8 +148,8 @@
     "package": "vsce package --no-dependencies -o wardley-mapping-modeler.vsix"
   },
   "dependencies": {
-    "@fontsource-variable/geist": "5.2.9",
-    "@fontsource-variable/geist-mono": "5.2.8",
+    "@fontsource-variable/geist": "5.3.0",
+    "@fontsource-variable/geist-mono": "5.3.0",
     "@miragon/wardley-dsl": "0.5.0",
     "@miragon/wardley-renderer": "0.5.0",
     "@miragon/wardley-schema-model": "0.5.0"
