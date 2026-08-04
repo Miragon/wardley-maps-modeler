@@ -4,6 +4,13 @@ All notable changes to this project are documented here. From `0.2.1` onward the
 shares a single version, tag (`vX.Y.Z`) and release; entries below `0.2.1` were consolidated from the
 former per-package changelogs.
 
+## [0.6.0](https://github.com/Miragon/wardley-maps-modeler/compare/v0.5.0...v0.6.0) (2026-08-04)
+
+
+### Features
+
+* **webapp:** add GitHub repo link to footer ([#81](https://github.com/Miragon/wardley-maps-modeler/issues/81)) ([45805f4](https://github.com/Miragon/wardley-maps-modeler/commit/45805f42e85d28b86ac65c597c5cc6c1421d3132))
+
 ## [0.5.0](https://github.com/Miragon/wardley-maps-modeler/compare/v0.4.0...v0.5.0) (2026-07-17)
 
 
