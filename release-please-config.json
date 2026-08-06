@@ -4,7 +4,6 @@
   "bump-minor-pre-major": true,
   "separate-pull-requests": false,
   "include-component-in-tag": true,
-  "bootstrap-sha": "249157e4ac2869f3f7b86d953a130f3bc3925235",
   "plugins": [{ "type": "node-workspace", "updatePeerDependencies": true }],
   "packages": {
     "packages/schema-model": { "component": "schema-model" },
