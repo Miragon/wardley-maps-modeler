@@ -1,6 +1,6 @@
 {
   "name": "@miragon/wardley-renderer",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "Render and display Wardley maps in the browser, with a viewer and modeler built on diagram-js.",
   "license": "MIT",
   "repository": {
@@ -36,7 +36,7 @@
     "test:browser": "npm --prefix ../.. run test:browser"
   },
   "dependencies": {
-    "@miragon/wardley-dsl": "0.5.0",
+    "@miragon/wardley-dsl": "0.5.1",
     "@miragon/wardley-schema-model": "0.5.0",
     "clsx": "2.1.1",
     "diagram-js": "15.23.0",

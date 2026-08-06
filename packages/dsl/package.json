@@ -1,6 +1,6 @@
 {
   "name": "@miragon/wardley-dsl",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Convert between the Online Wardley Maps text format and the Wardley map model, with lossless round-trips.",
   "license": "MIT",
   "repository": {
