@@ -14,6 +14,29 @@ module.exports = {
       to: { path: 'node_modules/(diagram-js|tiny-svg|min-dom)' },
     },
     {
+      name: 'schema-model-is-base',
+      comment: 'schema-model is the metamodel base layer and must not depend on any other internal package.',
+      severity: 'error',
+      from: { path: '^packages/schema-model/src' },
+      to: { path: '^packages/(?!schema-model)[^/]+/src' },
+    },
+    {
+      name: 'core-siblings-independent',
+      comment:
+        'dsl and transforms may only depend on schema-model internally — not on each other, not on renderer.',
+      severity: 'error',
+      from: { path: '^packages/(dsl|transforms)/src' },
+      to: { path: '^packages/(?!schema-model)[^/]+/src', pathNot: ['^packages/$1/src'] },
+    },
+    {
+      name: 'zod-only-in-schema-model',
+      comment:
+        'Zod validation is owned by schema-model; other packages consume validated types, not zod.',
+      severity: 'error',
+      from: { path: '^packages/(dsl|transforms|renderer)/src' },
+      to: { path: 'node_modules/zod' },
+    },
+    {
       name: 'dom-free-no-renderer',
       comment: 'DOM-free packages must not depend on the DOM-dependent renderer.',
       severity: 'error',
@@ -46,6 +69,29 @@ module.exports = {
       severity: 'error',
       from: {},
       to: { circular: true },
+    },
+    {
+      name: 'not-to-unresolvable',
+      comment: 'No broken imports.',
+      severity: 'error',
+      from: {},
+      to: { couldNotResolve: true },
+    },
+    {
+      name: 'no-dev-dep-in-src',
+      comment: 'Production source must not import devDependencies.',
+      severity: 'error',
+      from: { path: '^packages/[^/]+/src', pathNot: '\\.(test|spec)\\.ts$' },
+      to: { dependencyTypes: ['npm-dev'] },
+    },
+    {
+      name: 'no-orphans',
+      comment:
+        'Dead source modules (unimported, not an entrypoint). Scoped to package src — build ' +
+        'artifacts and standalone published barrels (e.g. transforms) are not orphans.',
+      severity: 'error',
+      from: { orphan: true, path: '^packages/[^/]+/src', pathNot: ['\\.d\\.ts$', '/index\\.ts$'] },
+      to: {},
     },
   ],
   options: {

@@ -103,6 +103,23 @@ export default tseslint.config(
         { name: 'window', message: 'DOM-free package: no window (P1).' },
         { name: 'document', message: 'DOM-free package: no document (P1).' },
       ],
+      // Determinism invariant (CLAUDE.md): JSON serialization must be deterministic, so the
+      // DOM-free core must not read wall-clock time or randomness.
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "NewExpression[callee.name='Date']",
+          message: 'Core must be deterministic: no new Date().',
+        },
+        {
+          selector: "CallExpression[callee.object.name='Date'][callee.property.name='now']",
+          message: 'Core must be deterministic: no Date.now().',
+        },
+        {
+          selector: "CallExpression[callee.object.name='Math'][callee.property.name='random']",
+          message: 'Core must be deterministic: no Math.random().',
+        },
+      ],
     },
   },
   {
