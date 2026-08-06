@@ -1,0 +1,24 @@
+# Changelog
+
+## [0.6.0](https://github.com/Miragon/wardley-maps-modeler/compare/webapp-v0.5.0...webapp-v0.6.0) (2026-08-06)
+
+
+### ⚠ BREAKING CHANGES
+
+* drop embedded-image feature; add app tests, guardrails, per-module releases ([#90](https://github.com/Miragon/wardley-maps-modeler/issues/90))
+
+### Features
+
+* **webapp:** add GitHub repo link to footer ([#81](https://github.com/Miragon/wardley-maps-modeler/issues/81)) ([45805f4](https://github.com/Miragon/wardley-maps-modeler/commit/45805f42e85d28b86ac65c597c5cc6c1421d3132))
+
+
+### Code Refactoring
+
+* drop embedded-image feature; add app tests, guardrails, per-module releases ([#90](https://github.com/Miragon/wardley-maps-modeler/issues/90)) ([e1229a3](https://github.com/Miragon/wardley-maps-modeler/commit/e1229a3bdaba6f735d01dc2e6776f3f74b1b2c79))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @miragon/wardley-renderer bumped from 0.5.0 to 0.6.0
