@@ -12,6 +12,11 @@
       "@miragon/wardley-renderer": ["./packages/renderer/src/index.ts"]
     }
   },
-  "include": ["packages/*/src/**/*.ts", "packages/*/test/**/*.ts", "apps/*/src/**/*.ts"],
+  "include": [
+    "packages/*/src/**/*.ts",
+    "packages/*/test/**/*.ts",
+    "apps/*/src/**/*.ts",
+    "apps/*/test/**/*.ts"
+  ],
   "exclude": ["**/dist/**", "**/node_modules/**", "apps/vscode/**"]
 }

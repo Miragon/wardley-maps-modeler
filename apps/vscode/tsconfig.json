@@ -12,5 +12,5 @@
       "@miragon/wardley-transforms": ["../../packages/transforms/src/index.ts"]
     }
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts", "test/**/*.ts"]
 }

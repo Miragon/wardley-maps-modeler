@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/github/license/Miragon/wardley-maps-modeler)](https://github.com/Miragon/wardley-maps-modeler/blob/main/LICENSE)
 
 A browser editor for [Wardley Maps](https://learnwardleymapping.com/): an Excalidraw-style canvas
-with URL sharing, drag-and-drop import, and PNG/SVG export (the scene is embedded for re-import).
+with URL sharing, drag-and-drop import of `.wmap`/`.owm`/`.json`, and PNG/SVG picture export.
 The demo app for the `@miragon/wardley-*` packages.
 
 **[Live demo](https://wardley-maps.netlify.app)**

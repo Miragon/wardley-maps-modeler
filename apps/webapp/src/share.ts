@@ -1,6 +1,7 @@
 /**
  * URL/sharing helpers: encode the map (OWM-DSL) compressed (deflate-raw, browser-native — no CDN, GDPR)
- * as URL-safe Base64 in the hash. Uncompressed legacy links (`#m=`) are still read.
+ * as URL-safe Base64 in the hash. Uncompressed legacy links (`#m=`) are still read. This is the
+ * webapp's way to share an editable map — a link, not an image.
  */
 
 /** Bytes -> URL-safe Base64 (A-Za-z0-9-_, no padding). */
@@ -23,7 +24,7 @@ async function pipe(bytes: Uint8Array, stream: ReadableWritablePair): Promise<Ui
   return new Uint8Array(await new Response(piped).arrayBuffer());
 }
 
-/** UTF-8 -> URL-safe Base64 (uncompressed). Also usable for the PNG tEXt / SVG attribute. */
+/** UTF-8 -> URL-safe Base64 (uncompressed, legacy `#m=` links). */
 export function encodeMap(text: string): string {
   return toBase64Url(new TextEncoder().encode(text));
 }

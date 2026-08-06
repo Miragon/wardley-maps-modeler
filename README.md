@@ -41,8 +41,7 @@ const { svg } = await viewer.saveSVG();
   labels, undo/redo, evolve-by-drag.
 - **Lossless [OWM-DSL](https://docs.onlinewardleymaps.com/) round-trip** and a deterministic JSON model.
 - **VS Code extension** — a custom editor for `.wmap` / `.owm` files.
-- **Web app** — an Excalidraw-style editor with URL sharing and PNG/SVG export (scene embedded for
-  re-import).
+- **Web app** — an Excalidraw-style editor with URL sharing and PNG/SVG picture export.
 - **Strict DOM-free core** (model, DSL, transforms) — usable in any JavaScript runtime.
 - **Self-hosted fonts** — no CDN, offline-capable.
 

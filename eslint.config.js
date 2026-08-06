@@ -65,6 +65,27 @@ export default tseslint.config(
     },
   },
   {
+    // Intra-module clean-code ratchet: caps set just above today's maxima, so they are green now and
+    // can only be tightened. Source only — tests/config have naturally long describe/setup blocks.
+    // max-params is intentionally omitted: diagram-js DI injects each service as a constructor
+    // parameter, so a high count is the framework idiom, not a smell.
+    files: ['packages/*/src/**/*.ts', 'apps/*/src/**/*.ts'],
+    rules: {
+      complexity: ['error', 40],
+      'max-depth': ['error', 6],
+      'max-lines-per-function': ['error', { max: 150, skipBlankLines: true, skipComments: true }],
+    },
+  },
+  {
+    // Grandfathered tech-debt: the hand-written OWM parser/serializer predate the caps and exceed
+    // them. Ceilings pin them at today's size so they cannot grow; splitting them is tracked debt.
+    files: ['packages/dsl/src/parser.ts', 'packages/dsl/src/serializer.ts'],
+    rules: {
+      complexity: ['error', 130],
+      'max-lines-per-function': ['error', { max: 600, skipBlankLines: true, skipComments: true }],
+    },
+  },
+  {
     files: ['packages/renderer/**/*.ts', 'apps/**/*.ts', 'e2e/**/*.ts'],
     languageOptions: {
       globals: { ...globals.browser },

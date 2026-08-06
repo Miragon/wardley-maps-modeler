@@ -1,26 +1,15 @@
 /**
- * Image export for the webview: SVG/PNG with the scene (OWM-DSL) EMBEDDED in the file, so exported
- * images can later be reopened as a Wardley map (idea from Excalidraw). Identical encoding to the
- * demo webapp (apps/webapp/src/io.ts + share.ts).
- *
- * The pure byte/encoding helpers live DOM-free in ../png.ts (also used by the extension host).
- * Only what the browser needs remains here (rasterization via canvas, Blob/FileReader).
+ * Image export for the webview: rasterize the SVG to a PNG (a picture — no embedded source). The
+ * host shows the save dialog and writes the bytes.
  */
 
 import { COLORS } from '@miragon/wardley-renderer';
-import { EMBED_KEYWORD, encodeMap, pngInsertText } from '../png.js';
 
-const SVG_ATTR = 'data-wardley-map';
-
-export function embedSvg(svg: string, dsl: string): string {
-  return svg.replace(/<svg\b/, `<svg ${SVG_ATTR}="${encodeMap(dsl)}"`);
-}
-
-export async function svgToEmbeddedPng(svg: string, dsl: string, scale = 2): Promise<Blob> {
+/** Rasterizes the SVG to a PNG picture. */
+export async function svgToPng(svg: string, scale = 2): Promise<Blob> {
   const { width, height } = svgSize(svg);
   const png = await rasterize(svg, width, height, scale);
-  const withScene = pngInsertText(png, EMBED_KEYWORD, encodeMap(dsl));
-  return new Blob([withScene as BlobPart], { type: 'image/png' });
+  return new Blob([png as BlobPart], { type: 'image/png' });
 }
 
 function svgSize(svg: string): { width: number; height: number } {

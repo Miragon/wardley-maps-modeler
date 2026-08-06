@@ -31,8 +31,7 @@
   "main": "./dist/extension.cjs",
   "type": "module",
   "activationEvents": [
-    "onCustomEditor:wardley.mapEditor",
-    "onCustomEditor:wardley.pngMapEditor"
+    "onCustomEditor:wardley.mapEditor"
   ],
   "contributes": {
     "languages": [
@@ -62,19 +61,6 @@
           }
         ],
         "priority": "default"
-      },
-      {
-        "viewType": "wardley.pngMapEditor",
-        "displayName": "Wardley Map (PNG)",
-        "selector": [
-          {
-            "filenamePattern": "*.wmap.png"
-          },
-          {
-            "filenamePattern": "*.owm.png"
-          }
-        ],
-        "priority": "default"
       }
     ],
     "commands": [
@@ -88,21 +74,12 @@
         "command": "wardley.newMapFromExample",
         "title": "New Map from Example",
         "category": "Wardley"
-      },
-      {
-        "command": "wardley.newPngMap",
-        "title": "New Empty Map (embedded PNG)",
-        "category": "Wardley"
       }
     ],
     "menus": {
       "file/newFile": [
         {
           "command": "wardley.newMap",
-          "group": "wardley"
-        },
-        {
-          "command": "wardley.newPngMap",
           "group": "wardley"
         }
       ]

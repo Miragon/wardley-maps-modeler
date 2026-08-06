@@ -27,7 +27,7 @@ import {
   DEFAULT_EVOLUTION_LABELS,
 } from '@miragon/wardley-schema-model';
 import { readHashMap, writeHashMap, shareUrl } from './share.js';
-import { openFile, embedSvg, svgToEmbeddedPng, downloadBlob, downloadText } from './io.js';
+import { openFile, svgToPng, downloadBlob, downloadText } from './io.js';
 import { showToast } from './toast.js';
 
 const TEA_SHOP = `title Tea Shop
@@ -56,7 +56,7 @@ if (!container) throw new Error('#canvas fehlt');
 const viewer = new Modeler({ container });
 Object.assign(globalThis as Record<string, unknown>, {
   __wardleyViewer: viewer,
-  __wardleyIo: { openFile, embedSvg, svgToEmbeddedPng },
+  __wardleyIo: { openFile, svgToPng },
 });
 
 // --- Default viewport after import/reload ---
@@ -247,13 +247,13 @@ function openOutput(title: string, text: string): void {
 function exportSvg(): void {
   deselect();
   void viewer.saveSVG().then(({ svg }) => {
-    downloadText(embedSvg(svg, viewer.exportDSL()), 'wardley-map.svg', 'image/svg+xml');
+    downloadText(svg, 'wardley-map.svg', 'image/svg+xml');
   });
 }
 function exportPng(options: { scale?: number; transparent?: boolean } = {}): void {
   deselect();
   void viewer.saveSVG().then(async ({ svg }) => {
-    downloadBlob(await svgToEmbeddedPng(svg, viewer.exportDSL(), options), 'wardley-map.png');
+    downloadBlob(await svgToPng(svg, options), 'wardley-map.png');
   });
 }
 
