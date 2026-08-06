@@ -40,7 +40,6 @@ const host = {
   platform: 'node',
   format: 'cjs',
   target: 'node18',
-  // `vscode` is only available at runtime (from the host) and must not be bundled.
   external: ['vscode'],
 };
 
@@ -53,7 +52,6 @@ const web = {
   format: 'iife',
   target: 'es2022',
   alias,
-  // Inline fonts (woff2) into the CSS as data: URLs -> no extra assets, simpler CSP.
   loader: { '.woff2': 'dataurl', '.woff': 'dataurl', '.ttf': 'dataurl' },
 };
 

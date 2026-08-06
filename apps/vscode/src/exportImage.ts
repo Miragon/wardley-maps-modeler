@@ -35,8 +35,8 @@ function exportDefaultUri(
   format: 'svg' | 'png',
 ): vscode.Uri | undefined {
   if (sourceUri && sourceUri.scheme === 'file') {
-    // Strip double extensions like `.wmap.png` too, so `map.wmap.png` -> `map.svg`.
-    const path = sourceUri.path.replace(/(\.(wmap|owm))?\.[^./]+$/i, '');
+    // Strip the map extension so `map.wmap` -> `map.svg`.
+    const path = sourceUri.path.replace(/\.[^./]+$/i, '');
     return sourceUri.with({ path: `${path}.${format}` });
   }
   const folder = vscode.workspace.workspaceFolders?.[0];

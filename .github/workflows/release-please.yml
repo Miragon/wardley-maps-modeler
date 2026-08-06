@@ -20,6 +20,11 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       releases_created: ${{ steps.release_please.outputs.releases_created }}
+      schema_model_released: ${{ steps.release_please.outputs['packages/schema-model--release_created'] }}
+      dsl_released: ${{ steps.release_please.outputs['packages/dsl--release_created'] }}
+      transforms_released: ${{ steps.release_please.outputs['packages/transforms--release_created'] }}
+      renderer_released: ${{ steps.release_please.outputs['packages/renderer--release_created'] }}
+      vscode_released: ${{ steps.release_please.outputs['apps/vscode--release_created'] }}
     steps:
       - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         id: app-token
@@ -35,7 +40,7 @@ jobs:
 
   publish-npm-schema-model:
     needs: release-please
-    if: needs.release-please.outputs.releases_created == 'true'
+    if: needs.release-please.outputs.schema_model_released == 'true'
     permissions:
       contents: read
       id-token: write
@@ -45,7 +50,7 @@ jobs:
 
   publish-npm-dsl:
     needs: release-please
-    if: needs.release-please.outputs.releases_created == 'true'
+    if: needs.release-please.outputs.dsl_released == 'true'
     permissions:
       contents: read
       id-token: write
@@ -55,7 +60,7 @@ jobs:
 
   publish-npm-transforms:
     needs: release-please
-    if: needs.release-please.outputs.releases_created == 'true'
+    if: needs.release-please.outputs.transforms_released == 'true'
     permissions:
       contents: read
       id-token: write
@@ -65,7 +70,7 @@ jobs:
 
   publish-npm-renderer:
     needs: release-please
-    if: needs.release-please.outputs.releases_created == 'true'
+    if: needs.release-please.outputs.renderer_released == 'true'
     permissions:
       contents: read
       id-token: write
@@ -75,7 +80,7 @@ jobs:
 
   publish-vscode:
     needs: release-please
-    if: needs.release-please.outputs.releases_created == 'true'
+    if: needs.release-please.outputs.vscode_released == 'true'
     runs-on: ubuntu-latest
     environment: vscode-marketplace
     permissions:
@@ -98,7 +103,7 @@ jobs:
 
   publish-open-vsx:
     needs: release-please
-    if: needs.release-please.outputs.releases_created == 'true'
+    if: needs.release-please.outputs.vscode_released == 'true'
     runs-on: ubuntu-latest
     environment: vscode-marketplace
     permissions:

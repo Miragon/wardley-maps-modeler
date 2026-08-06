@@ -46,12 +46,7 @@ Together they show _what_ you depend on and _how mature_ each piece is.
   (drag a component left or right along the maturity axis). Undo/redo via `Ctrl/Cmd+Z` and
   `Ctrl/Cmd+Shift+Z`.
 - **Collapsed menu** (top-right, Excalidraw-style): fit-to-view · map size · X-axis labels · export
-  SVG/PNG.
-- **Editable embedded-PNG maps (`*.wmap.png` / `*.owm.png`).** Exported PNGs store the map inside a
-  `tEXt` chunk, so the file stays a normal image you can drop into a wiki, README, or chat — and can
-  be reopened and edited graphically. To start one, run **Wardley: New Empty Map (embedded PNG)**
-  (also under **File > New File…**), pick a location, and press `Ctrl/Cmd+S` once to render the first
-  PNG.
+  SVG/PNG (as a picture).
 - **Self-hosted font** — no CDN, offline-capable.
 
 ## Development

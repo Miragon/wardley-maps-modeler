@@ -150,72 +150,10 @@ export default class WardleyRenderer extends BaseRenderer {
   private drawComponent(visuals: SVGElement, shape: WardleyShape): SVGElement {
     const cx = shape.width / 2;
     const cy = shape.height / 2;
-    const evolving = !!shape.movement;
     const dec = shape.decorators;
 
-    // Planned evolution (canon: DASHED red line with arrow, target label in red).
-    if (shape.movement) {
-      const mv = shape.movement;
-      const here = this.grid.toCanvas({ visibility: shape.visibility, evolution: shape.evolution });
-      const there = this.grid.toCanvas({
-        visibility: shape.visibility,
-        evolution: mv.targetEvolution,
-      });
-      const dx = there.x - here.x;
-      const tx = cx + dx;
-      // End the arrowhead BEFORE the target circle's edge — otherwise the circle hides it entirely.
-      const dir = Math.sign(dx) || 1;
-      const tipX = tx - dir * (COMPONENT_RADIUS + 2);
-      svgAppend(
-        visuals,
-        line(cx, cy, tipX, cy, {
-          stroke: COLORS.movement,
-          'stroke-width': 1.5,
-          'stroke-dasharray': '6 4',
-        }),
-      );
-      svgAppend(visuals, connectionArrow({ x: cx, y: cy }, { x: tipX, y: cy }, COLORS.movement));
-      // Target circle = direct drag handle: marked by class so the evolve module can intercept a
-      // mousedown on it and let the target be moved by dragging (see WardleyEvolveDragging).
-      svgAppend(
-        visuals,
-        circle(tx, cy, COMPONENT_RADIUS, {
-          fill: COLORS.paper,
-          stroke: COLORS.movement,
-          'stroke-width': 2,
-          class: 'wardley-evolve-handle',
-        }),
-      );
-      // Target label (evolve Old->New) or the component's name — canonically red at the target circle.
-      svgAppend(
-        visuals,
-        label(mv.newLabel ?? shape.wardleyLabel, tx + COMPONENT_RADIUS + 7, cy - 4, {
-          'font-weight': '500',
-          fill: COLORS.movement,
-        }),
-      );
-      if (mv.method) {
-        svgAppend(
-          visuals,
-          label(mv.method, tx + COMPONENT_RADIUS + 7, cy + 11, {
-            'font-size': 10.5,
-            fill: COLORS.movement,
-          }),
-        );
-      }
-    }
-
-    if (dec?.inertia) {
-      const bx = cx + COMPONENT_RADIUS + 3;
-      svgAppend(
-        visuals,
-        line(bx, cy - 13, bx, cy + 13, {
-          stroke: COLORS.inertia,
-          'stroke-width': 3,
-          'stroke-linecap': 'round',
-        }),
-      );
-    }
+    if (shape.movement) this.drawMovement(visuals, shape, cx, cy);
+    if (dec?.inertia) drawInertiaMarker(visuals, cx, cy);
 
     // User-picked element color tints stroke and label (default: ink-on-paper look).
     const tint = shape.color ?? COLORS.stroke;
@@ -227,62 +165,69 @@ export default class WardleyRenderer extends BaseRenderer {
     svgAppend(visuals, ring);
 
     // "evolving" = double ring (echoing the BPMN intermediate event).
-    if (evolving) {
+    if (shape.movement) {
       svgAppend(
         visuals,
-        circle(cx, cy, COMPONENT_INNER_RADIUS, {
-          fill: 'none',
-          stroke: tint,
-          'stroke-width': 1.5,
-        }),
+        circle(cx, cy, COMPONENT_INNER_RADIUS, { fill: 'none', stroke: tint, 'stroke-width': 1.5 }),
       );
     }
 
-    // Canon symbols: market = three dots in a triangle, ecosystem = dotted outer ring.
-    if (dec?.ecosystem) {
-      svgAppend(
-        visuals,
-        circle(cx, cy, COMPONENT_RADIUS + 3.5, {
-          fill: 'none',
-          stroke: tint,
-          'stroke-width': 1.25,
-          'stroke-dasharray': '1.5 3',
-          'stroke-linecap': 'round',
-        }),
-      );
-    }
-    if (dec?.market) {
-      for (const [mx, my] of [
-        [0, -3.8],
-        [-3.4, 2.4],
-        [3.4, 2.4],
-      ] as const) {
-        svgAppend(visuals, circle(cx + mx, cy + my, 1.7, { fill: tint }));
-      }
-    }
+    drawComponentSymbols(visuals, cx, cy, tint, dec);
+    drawComponentLabel(visuals, shape, cx, cy);
+    return ring;
+  }
 
-    // Honor the OWM `label [dx, dy]` offset (px relative to the default position).
-    // Sourcing (build/buy/outsource) stays a subtle text label below the name —
-    // deliberately no marker box around the node (product decision: keep the canvas calm).
-    const lx = cx + COMPONENT_RADIUS + 7 + (shape.labelOffset?.dx ?? 0);
-    const ly = cy - 4 + (shape.labelOffset?.dy ?? 0);
+  /** Planned evolution (canon: DASHED red line with arrow, target label in red). */
+  private drawMovement(visuals: SVGElement, shape: WardleyShape, cx: number, cy: number): void {
+    const mv = shape.movement;
+    if (!mv) return;
+    const here = this.grid.toCanvas({ visibility: shape.visibility, evolution: shape.evolution });
+    const there = this.grid.toCanvas({
+      visibility: shape.visibility,
+      evolution: mv.targetEvolution,
+    });
+    const dx = there.x - here.x;
+    const tx = cx + dx;
+    // End the arrowhead BEFORE the target circle's edge — otherwise the circle hides it entirely.
+    const dir = Math.sign(dx) || 1;
+    const tipX = tx - dir * (COMPONENT_RADIUS + 2);
     svgAppend(
       visuals,
-      label(shape.wardleyLabel, lx, ly, {
-        'font-weight': '500',
-        ...(shape.color ? { fill: shape.color } : {}),
+      line(cx, cy, tipX, cy, {
+        stroke: COLORS.movement,
+        'stroke-width': 1.5,
+        'stroke-dasharray': '6 4',
       }),
     );
-    if (dec?.method) {
+    svgAppend(visuals, connectionArrow({ x: cx, y: cy }, { x: tipX, y: cy }, COLORS.movement));
+    // Target circle = direct drag handle: marked by class so the evolve module can intercept a
+    // mousedown on it and let the target be moved by dragging (see WardleyEvolveDragging).
+    svgAppend(
+      visuals,
+      circle(tx, cy, COMPONENT_RADIUS, {
+        fill: COLORS.paper,
+        stroke: COLORS.movement,
+        'stroke-width': 2,
+        class: 'wardley-evolve-handle',
+      }),
+    );
+    // Target label (evolve Old->New) or the component's name — canonically red at the target circle.
+    svgAppend(
+      visuals,
+      label(mv.newLabel ?? shape.wardleyLabel, tx + COMPONENT_RADIUS + 7, cy - 4, {
+        'font-weight': '500',
+        fill: COLORS.movement,
+      }),
+    );
+    if (mv.method) {
       svgAppend(
         visuals,
-        label(dec.method, lx, ly + 15, {
+        label(mv.method, tx + COMPONENT_RADIUS + 7, cy + 11, {
           'font-size': 10.5,
-          fill: COLORS.axisText,
+          fill: COLORS.movement,
         }),
       );
     }
-    return ring;
   }
 
   private drawAnchor(visuals: SVGElement, shape: WardleyShape): SVGElement {
@@ -496,6 +441,77 @@ export default class WardleyRenderer extends BaseRenderer {
       }),
     );
     return outer;
+  }
+}
+
+function drawInertiaMarker(visuals: SVGElement, cx: number, cy: number): void {
+  const bx = cx + COMPONENT_RADIUS + 3;
+  svgAppend(
+    visuals,
+    line(bx, cy - 13, bx, cy + 13, {
+      stroke: COLORS.inertia,
+      'stroke-width': 3,
+      'stroke-linecap': 'round',
+    }),
+  );
+}
+
+/** Canon symbols: market = three dots in a triangle, ecosystem = dotted outer ring. */
+function drawComponentSymbols(
+  visuals: SVGElement,
+  cx: number,
+  cy: number,
+  tint: string,
+  dec: WardleyShape['decorators'],
+): void {
+  if (dec?.ecosystem) {
+    svgAppend(
+      visuals,
+      circle(cx, cy, COMPONENT_RADIUS + 3.5, {
+        fill: 'none',
+        stroke: tint,
+        'stroke-width': 1.25,
+        'stroke-dasharray': '1.5 3',
+        'stroke-linecap': 'round',
+      }),
+    );
+  }
+  if (dec?.market) {
+    for (const [mx, my] of [
+      [0, -3.8],
+      [-3.4, 2.4],
+      [3.4, 2.4],
+    ] as const) {
+      svgAppend(visuals, circle(cx + mx, cy + my, 1.7, { fill: tint }));
+    }
+  }
+}
+
+/**
+ * Name label (honoring the OWM `label [dx, dy]` offset) plus the optional sourcing method below it.
+ * Sourcing stays a subtle text label — deliberately no marker box (product decision: calm canvas).
+ */
+function drawComponentLabel(
+  visuals: SVGElement,
+  shape: WardleyShape,
+  cx: number,
+  cy: number,
+): void {
+  const dec = shape.decorators;
+  const lx = cx + COMPONENT_RADIUS + 7 + (shape.labelOffset?.dx ?? 0);
+  const ly = cy - 4 + (shape.labelOffset?.dy ?? 0);
+  svgAppend(
+    visuals,
+    label(shape.wardleyLabel, lx, ly, {
+      'font-weight': '500',
+      ...(shape.color ? { fill: shape.color } : {}),
+    }),
+  );
+  if (dec?.method) {
+    svgAppend(
+      visuals,
+      label(dec.method, lx, ly + 15, { 'font-size': 10.5, fill: COLORS.axisText }),
+    );
   }
 }
 

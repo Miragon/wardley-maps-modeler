@@ -13,7 +13,7 @@ import {
 } from '@miragon/wardley-renderer';
 import { EVOLUTION_PRESETS, DEFAULT_EVOLUTION_LABELS } from '@miragon/wardley-schema-model';
 import './style.css';
-import { embedSvg, svgToEmbeddedPng, blobToBase64 } from './io.js';
+import { svgToPng, blobToBase64 } from './io.js';
 import type { HostToWebview, WebviewToHost } from '../protocol.js';
 
 interface VsCodeApi {
@@ -107,28 +107,7 @@ window.addEventListener('message', (event: MessageEvent<HostToWebview>) => {
   const msg = event.data;
   if (msg.type === 'init') void enqueueImport(msg.text, true);
   else if (msg.type === 'update') void enqueueImport(msg.text, false);
-  else if (msg.type === 'requestPng') void respondPng(msg.id);
 });
-
-/**
- * PNG editor: the host requests the finished, embedded PNG (save/backup). We rasterize the current
- * state and send back Base64 — errors are reported as `error` so the host can cleanly abort the
- * save instead of writing a corrupt file.
- *
- * First wait for all imports queued up to this point (`importChain`), so a currently running
- * init/update doesn't rasterize a half-imported state into the PNG (otherwise data loss).
- */
-async function respondPng(id: number): Promise<void> {
-  try {
-    await importChain;
-    deselect();
-    const { svg } = await modeler.saveSVG();
-    const blob = await svgToEmbeddedPng(svg, modeler.exportDSL());
-    vscode.postMessage({ type: 'pngResponse', id, data: await blobToBase64(blob) });
-  } catch (err) {
-    vscode.postMessage({ type: 'pngResponse', id, error: (err as Error).message });
-  }
-}
 
 // ---------------------------------------------------------------------------
 // Viewport: fit the map, leaving room at the top for the floating toolbar
@@ -288,7 +267,7 @@ async function exportSvg(): Promise<void> {
   deselect();
   try {
     const { svg } = await modeler.saveSVG();
-    vscode.postMessage({ type: 'export', format: 'svg', data: embedSvg(svg, modeler.exportDSL()) });
+    vscode.postMessage({ type: 'export', format: 'svg', data: svg });
   } catch (err) {
     vscode.postMessage({ type: 'error', message: `SVG export failed: ${(err as Error).message}` });
   }
@@ -298,7 +277,7 @@ async function exportPng(): Promise<void> {
   deselect();
   try {
     const { svg } = await modeler.saveSVG();
-    const blob = await svgToEmbeddedPng(svg, modeler.exportDSL());
+    const blob = await svgToPng(svg);
     vscode.postMessage({ type: 'export', format: 'png', data: await blobToBase64(blob) });
   } catch (err) {
     vscode.postMessage({ type: 'error', message: `PNG export failed: ${(err as Error).message}` });
