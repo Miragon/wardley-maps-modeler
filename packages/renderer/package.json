@@ -39,14 +39,14 @@
     "@miragon/wardley-dsl": "0.5.1",
     "@miragon/wardley-schema-model": "0.5.0",
     "clsx": "2.1.1",
-    "diagram-js": "15.23.0",
+    "diagram-js": "15.23.2",
     "didi": "11.0.0",
     "tiny-svg": "4.1.4"
   },
   "devDependencies": {
     "jsdom": "30.0.1",
     "typescript": "6.0.3",
-    "vite": "8.1.5",
+    "vite": "8.2.1",
     "vite-plugin-dts": "5.0.3",
     "vitest": "4.1.10"
   }
