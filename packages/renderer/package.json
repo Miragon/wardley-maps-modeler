@@ -39,7 +39,7 @@
     "@miragon/wardley-dsl": "0.5.1",
     "@miragon/wardley-schema-model": "0.5.0",
     "clsx": "2.1.1",
-    "diagram-js": "15.23.2",
+    "diagram-js": "15.24.0",
     "didi": "11.0.0",
     "tiny-svg": "4.1.4"
   },
