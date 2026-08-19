@@ -52,7 +52,7 @@
     "dependency-cruiser": "18.2.0",
     "eslint": "10.8.1",
     "eslint-config-prettier": "10.1.8",
-    "eslint-plugin-jsdoc": "63.3.3",
+    "eslint-plugin-jsdoc": "64.2.0",
     "globals": "17.11.0",
     "husky": "9.1.7",
     "lint-staged": "17.3.0",
