@@ -30,23 +30,37 @@ jobs:
       - run: npm run build
       - run: npm test
 
+  playwright-version:
+    runs-on: ubuntu-latest
+    outputs:
+      value: ${{ steps.v.outputs.value }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # Exact-pinned (save-exact) so the manifest value is the resolved version — no node_modules needed.
+      - id: v
+        shell: bash
+        run: echo "value=$(node -p "require('./package.json').devDependencies.playwright")" >> "$GITHUB_OUTPUT"
+
   test-browser:
     runs-on: ubuntu-latest
-    needs: [lint, build]
+    needs: [lint, build, playwright-version]
+    # Browsers + system deps are baked into the image, so there is no per-run install/apt cost.
+    container:
+      image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.value }}-noble
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup
-      - uses: ./.github/actions/playwright
       - run: npm run build
       - run: npm run test:browser
 
   e2e:
     runs-on: ubuntu-latest
-    needs: [lint, build]
+    needs: [lint, build, playwright-version]
+    container:
+      image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.value }}-noble
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup
-      - uses: ./.github/actions/playwright
       - run: npm run test:e2e
       - if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
