@@ -68,9 +68,15 @@ dep) entries when adding a whole new package.
 
 - Keep core packages (`schema-model`, `dsl`, `transforms`) strictly DOM-free (P1, above).
 - The OWM-DSL round-trip must stay lossless; JSON serialization must be deterministic.
-- Pin **all** dependencies to exact versions — no version ranges (`^`/`~`/`>=`/`*`), internal
-  workspace deps included (pinned to the current shared version, kept in sync by release-please).
-  CI-enforced via `miragon/pin-npm-dependencies`. See
+- Pin `dependencies` and `devDependencies` to exact versions — no version ranges (`^`/`~`/`>=`/`*`),
+  internal workspace deps included (pinned to the current shared version, kept in sync by
+  release-please). CI-enforced via `miragon/pin-npm-dependencies` (which checks `dependencies` and
+  `devDependencies`, not `peerDependencies`). **`peerDependencies` are the exception: consumer-shared
+  runtime libs (`zod`, the `diagram-js`/`didi`/`tiny-svg` ecosystem) are declared as ranged peers so
+  they dedupe against the consumer's copy instead of installing a second — duplicate `zod`/diagram-js
+  instances break `instanceof`/schema identity and the DI injector. Each such peer is mirrored by an
+  exact `devDependency` for local build/test, and the bundling apps (`webapp`, `vscode`) provide them
+  as exact `dependencies`.** See
   [`.claude/rules/package-json-fixed-versions.md`](.claude/rules/package-json-fixed-versions.md).
 - For Wardley-map domain work, use the skill in
   [`.claude/skills/wardley-mapping/`](.claude/skills/wardley-mapping/).

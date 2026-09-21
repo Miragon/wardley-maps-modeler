@@ -35,9 +35,13 @@
   "dependencies": {
     "@miragon/wardley-schema-model": "0.5.0"
   },
+  "peerDependencies": {
+    "zod": "^4.6.0"
+  },
   "devDependencies": {
     "tsup": "8.5.1",
     "typescript": "6.0.3",
-    "vitest": "5.0.1"
+    "vitest": "5.0.1",
+    "zod": "4.6.5"
   }
 }
