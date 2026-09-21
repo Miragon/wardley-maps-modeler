@@ -33,11 +33,11 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "zod": "4.6.2"
+    "zod": "4.6.5"
   },
   "devDependencies": {
     "tsup": "8.5.1",
     "typescript": "6.0.3",
-    "vitest": "5.0.0"
+    "vitest": "5.0.1"
   }
 }
