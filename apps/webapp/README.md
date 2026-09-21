@@ -6,7 +6,7 @@ A browser editor for [Wardley Maps](https://learnwardleymapping.com/): an Excali
 with URL sharing, drag-and-drop import of `.wmap`/`.owm`/`.json`, and PNG/SVG picture export.
 The demo app for the `@miragon/wardley-*` packages.
 
-**[Live demo](https://wardley-maps.netlify.app)**
+**[Live demo](https://wardley-maps.modeler.miragon.io)**
 
 ![The web app](../../docs/screenshots/editor.png)
 

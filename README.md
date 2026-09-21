@@ -8,7 +8,7 @@
 Create, edit and embed [Wardley Maps](https://learnwardleymapping.com/) — a TypeScript library, a
 VS Code extension, and a web app, all built on [diagram-js](https://github.com/bpmn-io/diagram-js).
 
-**[Try the web app →](https://wardley-maps.netlify.app)**
+**[Try the web app →](https://wardley-maps.modeler.miragon.io)**
 
 ![The Wardley Maps editor](docs/screenshots/editor.png)
 
