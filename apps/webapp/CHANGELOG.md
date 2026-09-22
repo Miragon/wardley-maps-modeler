@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.6.2](https://github.com/Miragon/wardley-maps-modeler/compare/webapp-v0.6.1...webapp-v0.6.2) (2026-09-22)
+
+
+### Bug Fixes
+
+* **deps:** declare consumer-shared runtime libs as ranged peer dependencies ([#113](https://github.com/Miragon/wardley-maps-modeler/issues/113)) ([322523c](https://github.com/Miragon/wardley-maps-modeler/commit/322523ccf57cd3e8f4d4d235ee216400f3379ff1))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @miragon/wardley-dsl bumped from 0.5.1 to 0.5.2
+    * @miragon/wardley-renderer bumped from 0.6.1 to 0.6.2
+    * @miragon/wardley-schema-model bumped from 0.5.0 to 0.5.1
+
 ## [0.6.1](https://github.com/Miragon/wardley-maps-modeler/compare/webapp-v0.6.0...webapp-v0.6.1) (2026-08-06)
 
 
