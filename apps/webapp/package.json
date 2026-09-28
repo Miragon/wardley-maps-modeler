@@ -15,7 +15,7 @@
     "@miragon/wardley-dsl": "0.5.2",
     "@miragon/wardley-renderer": "0.6.2",
     "@miragon/wardley-schema-model": "0.5.1",
-    "diagram-js": "15.26.0",
+    "diagram-js": "15.27.1",
     "didi": "11.0.0",
     "tiny-svg": "4.1.4",
     "zod": "4.6.5"
@@ -23,6 +23,6 @@
   "devDependencies": {
     "portless": "0.15.6",
     "typescript": "6.0.3",
-    "vite": "8.3.0"
+    "vite": "8.3.1"
   }
 }
