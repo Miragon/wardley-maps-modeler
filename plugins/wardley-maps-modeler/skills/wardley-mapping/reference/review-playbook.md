@@ -18,14 +18,14 @@ none, transcribe it into a `.wmap` and confirm the positions before judging them
 ## 1. Parse and take inventory
 
 If Node is available, run `check-map.mjs` from the `owm-dsl` skill (`reference/api.md`) on the
-file. Diagnostics alone miss the silent defects, so collect all of these as findings:
+file and collect both of these as findings:
 
-- **The parse throws** — that is the first finding: the Modeler cannot open the file at all.
-- **Every diagnostic.**
+- **Every diagnostic.** The parser reports nearly every line it drops, ignores or rewrites: a
+  misspelt keyword (`Unknown statement "compnent"`), a dangling link, a duplicate name, words after
+  a note's coordinates.
 - **Every line reported as "not understood"** (a non-comment `rawPassthrough` entry) — it draws
-  nothing; usually a misspelt keyword (`compnent`, `evolv`) or a link whose left name contains `;`.
-- **A changed title** — compare the parsed `map.config.title` with the file's `title` line; a link
-  like `Title Search -> Index` silently replaces it.
+  nothing. Most carry a diagnostic too; a bare `pipeline X` next to a component `X` and a `url`
+  line that nothing references do not.
 
 Without Node, read the file against the `owm-dsl` skill's "Before handing a file back" checklist.
 Then list:
@@ -39,19 +39,20 @@ Then list:
 
 ## 2. Structural checks
 
-| Check                         | How to detect                                                                                                                                                             | Why it matters                                                                |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| **Anchor present**            | No `anchor` line; or the top element is a component called "User"/"Customer".                                                                                             | Without a user there is no need, and without a need no value chain.           |
-| **Need below the anchor**     | The anchor links straight to infrastructure ("Customer -> Database").                                                                                                     | The need is the point of the map; skipping it hides why anything exists.      |
-| **Links point down**          | A dependency `A -> B` where B has a **higher** visibility than A.                                                                                                         | Either the link is reversed or a component sits at the wrong height.          |
-| **Dangling links**            | Diagnostic `Link: "X" not found` — typo, case mismatch, renamed component, `;` in the right-hand name. A `;` in the left-hand name drops the link without any diagnostic. | The link **silently does not exist** on the canvas; the user thinks it does.  |
-| **Silent lines**              | Lines reported as "not understood" (non-comment `rawPassthrough`); a parsed title that differs from the `title` line.                                                     | The user thinks these elements or links are on the map; they are not.         |
-| **Dangling evolve**           | Diagnostic `evolve: component "X" not found`.                                                                                                                             | The movement arrow is not drawn.                                              |
-| **Orphans**                   | A component in no link at all (pipeline children excepted).                                                                                                               | It serves no need — remove it or connect it.                                  |
-| **Cycles**                    | `A -> B -> … -> A`.                                                                                                                                                       | A value chain is acyclic; a cycle usually hides a flow drawn as a dependency. |
-| **Chain reaches commodities** | Leaves (components nothing below them) still in Genesis or Custom-Built.                                                                                                  | The map stops before the things that will move fastest and cost least.        |
-| **Pipelines**                 | No block children (a range but no forms); the pipeline's component right above a child; an `evolve` that only restates the range.                                         | A pipeline is one component in several forms — suggest the forms as children. |
-| **Readability**               | More than ~25 components; same column under `0.06` visibility apart; same row under `(7n + 40) / 1080` maturity apart (n = characters of the left name).                  | Overlapping circles and labels; too much to discuss. Suggest submaps.         |
+| Check                         | How to detect                                                                                                                                                     | Why it matters                                                                |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| **Anchor present**            | No `anchor` line; or the top element is a component called "User"/"Customer".                                                                                     | Without a user there is no need, and without a need no value chain.           |
+| **Need below the anchor**     | The anchor links straight to infrastructure ("Customer -> Database").                                                                                             | The need is the point of the map; skipping it hides why anything exists.      |
+| **Links point down**          | A dependency `A -> B` where B has a **higher** visibility than A.                                                                                                 | Either the link is reversed or a component sits at the wrong height.          |
+| **Dangling links**            | Diagnostic `Link: "X" not found` — typo, case mismatch, renamed component, a pipeline without range, `;` in the right-hand name (left-hand: `Unknown statement`). | The link **does not exist** on the canvas; the user thinks it does.           |
+| **Lines not understood**      | Diagnostics `Unknown statement "…"` and `Line could not be interpreted …`; any non-comment `rawPassthrough` entry.                                                | The user thinks these elements or links are on the map; they are not.         |
+| **Duplicate names**           | Diagnostic `Duplicate name "X" — renamed to "X 2"; links bind to the first "X"`.                                                                                  | Every link to `X` reaches the first one; the second shows up as "X 2".        |
+| **Dangling evolve**           | Diagnostic `evolve: component "X" not found`.                                                                                                                     | The movement arrow is not drawn.                                              |
+| **Orphans**                   | A component in no link at all (pipeline children excepted).                                                                                                       | It serves no need — remove it or connect it.                                  |
+| **Cycles**                    | `A -> B -> … -> A`.                                                                                                                                               | A value chain is acyclic; a cycle usually hides a flow drawn as a dependency. |
+| **Chain reaches commodities** | Leaves (components nothing below them) still in Genesis or Custom-Built.                                                                                          | The map stops before the things that will move fastest and cost least.        |
+| **Pipelines**                 | No block children (a range but no forms); the pipeline's component right above a child; an `evolve` that only restates the range.                                 | A pipeline is one component in several forms — suggest the forms as children. |
+| **Readability**               | More than ~25 components; same column under `0.06` visibility apart; same row under `(7n + 40) / 1080` maturity apart (n = characters of the left name).          | Overlapping circles and labels; too much to discuss. Suggest submaps.         |
 
 Other diagnostics and what causes them:
 
@@ -62,11 +63,17 @@ Other diagnostics and what causes them:
 - `Line could not be interpreted (kept losslessly in rawPassthrough)` — syntax the modeler does not
   know, e.g. the legacy pixel form `pioneers [0.9, 0.1] 120 30`. The line survives but draws
   nothing.
-- A file that **fails to load at all** with `Edge … references no element` — a linked `pipeline`
-  with neither a `[start, end]` range nor a same-named component.
+- `Ignored text after the coordinates: "…"` — words, an unknown or misspelt decorator
+  (`(colour …)`, `(biuld)`), a `label [dx, dy]` on a note or pipeline, or a second tuple. The text
+  is dropped, so the colour, method or wording the user meant is not on the map.
+- `Pipeline "X" has no range — not drawn; add [start, end] or child components` — and every link to
+  `X` is `not found`.
+- `Repeated "title" — replaces the one on line N` — often a link whose left name starts with a
+  keyword (`Title Search -> Index`): it is read as a link only when both names are declared.
+- `Name "A->B" renamed to "A→B"` — a link operator (`->`, `+>`) or a leading `{` in a name; a link
+  _from_ that name breaks at its `->`.
 
-Duplicate names do not produce a diagnostic: links bind to the first declaration and the modeler
-renames the second to "Name 2" on its next save. Flag them.
+The `owm-dsl` skill's `reference/grammar.md` has the full catalogue.
 
 ## 3. Evolution checks
 
@@ -135,10 +142,10 @@ pink and slate are free or neutral.
 ("Payments is a commodity: buy", "Orphan: who needs it?"). The reasoning goes into the written
 assessment.
 
-- **Never put coordinates or `[…]` in note text** — write "move to ~0.8" or "evolve to 0.62". Any
-  `[n, n]` in a note becomes its position, without a diagnostic.
-- **Write `(color #hex)`, American spelling.** `(colour …)` is not recognised: it silently becomes
-  part of the note text and the note stays uncoloured.
+- **Never put coordinates or `[…]` in note text** — write "move to ~0.8" or "evolve to 0.62". The
+  first `[n, n]` on a note line becomes its position and ends the text.
+- **Write `(color #hex)` after the coordinates, American spelling.** `(colour …)` is dropped with a
+  diagnostic and the note stays uncoloured; a `(color …)` before the coordinates is note text.
 
 **Placement.** The modeler draws a note **centred** on its coordinates, about `0.007` maturity
 wide per character plus `0.015` (a 25-character note is ≈ `0.19` wide, ±0.095 around its centre)

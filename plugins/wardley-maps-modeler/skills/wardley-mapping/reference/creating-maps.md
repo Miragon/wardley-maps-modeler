@@ -64,8 +64,8 @@ Stage boundaries: Genesis `0–0.17`, Custom-Built `0.17–0.40`, Product `0.40�
   deserves a sentence in the commentary.
 - **`(market)` / `(ecosystem)`** for components that are a market or a platform others build on.
 - **Pipelines** when one need is served by several forms at different stages. Read the `owm-dsl`
-  skill first: give the pipeline a same-named component and a `[start, end]` range — a linked
-  pipeline with neither makes the whole file fail to load.
+  skill first: give the pipeline a same-named component and a `[start, end]` range — a pipeline
+  with neither a range nor block children is not drawn.
 - **One to three notes** for the key insights, in the palette colours from `SKILL.md`. Comments
   (`//`) are not a substitute — the modeler moves them to the end of the file on save.
 
@@ -107,14 +107,14 @@ hand (`owm-dsl` skill, "Editing an existing map").
 
 ## Step 7 — Validate
 
-An empty diagnostics list is **not** enough: a misspelt keyword (`componnet`, `noet`) or a link
-whose first word is a config keyword (`Title Search -> Index` replaces the map title) produce no
-diagnostic at all — the element or link simply is not on the map.
+An empty diagnostics list is necessary, not sufficient. The parser reports nearly every line it
+drops or rewrites — a misspelt keyword (`Unknown statement "componnet"`), a dangling link, a
+duplicate name, words after a note's coordinates — but swapped `[maturity, visibility]` pairs and a
+link to the wrong (existing) component look fine to it.
 
 **With Node available**, run `check-map.mjs` from the `owm-dsl` skill (`reference/api.md`, "As a
-script") on the file. It must not throw, report no diagnostics, report nothing as "not understood"
-(non-comment `rawPassthrough`), and a second serialize pass must change nothing. Also check that the
-parsed `map.config.title` is the title you wrote.
+script") on the file. It must report no diagnostics and nothing as "not understood" (non-comment
+`rawPassthrough`), and a second serialize pass must change nothing.
 
 **Without Node**, run the `owm-dsl` skill's "Before handing a file back" checklist, which includes:
 
@@ -123,12 +123,11 @@ parsed `map.config.title` is the title you wrote.
 - [ ] Every link endpoint matches a declared anchor or component name exactly.
 - [ ] Every `evolve` names a declared component, and its target is greater than its maturity.
 - [ ] Every `pipeline` has a `[start, end]` range or block children.
-- [ ] No duplicate names (the modeler renames the second one to "Name 2" on save).
-- [ ] No name whose first word is `title`, `style`, `size`, `evolution`, `evolve`, `annotation`,
-      `annotations`, `line` or `y-axis` — hyphenate instead (`Line Haul` → `Line-Haul`).
-- [ ] No `->`, `;`, `[`, `]` or `//` inside a name.
-- [ ] Nothing after a note's or pipeline's coordinates except `(color …)` / `(y …)` — American
-      spelling: `(colour …)` silently becomes note text — and no `[n, n]` inside note text.
+- [ ] No duplicate names (the parser renames the second one to "Name 2"; links bind to the first).
+- [ ] No `->`, `+>`, `;`, `//`, `/*` or `[n, n]` inside a name.
+- [ ] Nothing after a note's or pipeline's coordinates except `(color …)` (on a pipeline also
+      `(y …)` and a trailing `{`) — anything else, a misspelt `(colour …)` included, is dropped —
+      and no `[n, n]` inside note text.
 
 Then the method checks:
 

@@ -86,10 +86,10 @@ domain knowledge. If they want a quick draft anyway, state your assumptions in t
 
 1. **Read the file** and build a mental model: anchors, components, links, positions, `evolve`
    arrows, decorators, pipelines, existing notes. Run the check script from the `owm-dsl` skill if
-   you can — diagnostics like `Link: "X" not found`, lines the parser did not understand
-   (non-comment `rawPassthrough`), a parse that throws and a parsed title that differs from the
-   file's `title` line are all review findings, not noise.
-2. **Structure:** user and need at the top? Dependencies pointing down? Links that silently don't
+   you can — diagnostics like `Link: "X" not found`, `Duplicate name "X"` or
+   `Unknown statement "compnent"`, and lines the parser did not understand (non-comment
+   `rawPassthrough`) are all review findings, not noise.
+2. **Structure:** user and need at the top? Dependencies pointing down? Links to names that don't
    exist, orphans, cycles? Does the chain reach commodities?
 3. **Evolution:** is each stage realistic? Commodities placed too far left (compute, storage,
    payments, identity) are the classic error; differentiators drawn as commodities the dangerous
@@ -107,10 +107,10 @@ domain knowledge. If they want a quick draft anyway, state your assumptions in t
 
 ## Colour convention for feedback notes
 
-Notes take a colour override after the coordinates, spelt `(color #hex)` — American spelling.
-`(colour …)` is not recognised: it silently becomes part of the note text and the note stays
-uncoloured, without any diagnostic. Use exactly these values — they are the modeler's note
-palette, so the colour picker recognises them:
+Notes take a colour override **after** the coordinates, spelt `(color #hex)` — American spelling.
+`(colour …)` is not recognised: the parser drops it (`Ignored text after the coordinates`) and the
+note stays uncoloured. A `(color …)` before the coordinates is just note text. Use exactly these
+values — they are the modeler's note palette, so the colour picker recognises them:
 
 | Colour | Hex       | Meaning                                   |
 | ------ | --------- | ----------------------------------------- |
@@ -136,8 +136,9 @@ note Expose as API — platform play [0.57, 0.7] (color #6A3DB8)
 - **A few words per note**, centred ~0.06 above or below the component it comments on — notes
   are drawn centred on their coordinates, component labels to the right of the circle. One colour
   per intent; detail goes in the written assessment.
-- **No coordinates in note text.** Any `[n, n]` in a note becomes its position — write "move to
-  ~0.8", never "move to [0.6, 0.8]".
+- **No coordinates in note text.** The first `[n, n]` on a note line is its position and ends the
+  text; the real coordinates after it are dropped with a diagnostic. Write "move to ~0.8", never
+  "move to [0.6, 0.8]".
 
 ## Reference files (read on demand)
 

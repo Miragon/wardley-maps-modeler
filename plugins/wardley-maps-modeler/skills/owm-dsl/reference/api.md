@@ -17,15 +17,14 @@ const map = parseDSL(owmText); // WardleyMap
 const text = serializeDSL(map); // canonical text, trailing newline included
 ```
 
-`parseDSL` does not throw on malformed lines — they are kept in `map.rawPassthrough`. It **does**
-throw when the finished map is invalid: a link to a pipeline that has no range, or a pipeline that
-starts at maturity `1` (full list in `grammar.md`, "When parsing throws"). Wrap it in `try` /
-`catch` whenever the text is not your own.
+`parseDSL` never throws: every string yields a valid map. Lines it cannot use are kept verbatim
+in `map.rawPassthrough`, and `parseDSLWithDiagnostics` reports every line it did not use as
+written. Older releases could throw on a few malformed pipelines and numbers; keep a `try` /
+`catch` if you must support them.
 
 ## Checking generated text
 
-`diagnostics` alone is not enough: unknown keywords and several other mistakes are kept in
-`rawPassthrough` without a diagnostic. A check for diagnostics and unknown lines:
+A check for diagnostics and unknown lines:
 
 ```ts
 const { map, diagnostics } = parseDSLWithDiagnostics(text);
@@ -44,50 +43,41 @@ interface ParseDiagnostic {
 }
 ```
 
-No throw, `diagnostics` empty and `notUnderstood` empty is necessary, not sufficient. A non-empty
-result does not mean the parse failed — the map is still usable, some lines just did not become
-elements or links. The messages are catalogued in `grammar.md`. (The comment filter only
-recognises the first line of a multi-line `/* … */`; prefer `//` comments in generated files.)
+A non-empty result does not mean the parse failed. The map is still usable; some lines just did not
+become elements or links, or were changed. The messages are catalogued in `grammar.md`.
+`notUnderstood` also catches the two passthrough lines that carry no diagnostic: a `url` definition
+nothing references, and `pipeline X` without a range next to a `component X`. (The comment filter
+only recognises the first line of a multi-line `/* … */`; prefer `//` comments in generated files.)
 
-Some losses leave no trace in either list (`grammar.md`, "Silent cases"): `Title X -> Y` or
-`Y-axis X -> Y` replaces the title or y-axis label and drops the link, text after a block-opening
-`{` is deleted, words after a pipeline's coordinates join its name, and a `url(<Def>)` without a
-definition vanishes. Three cheap assertions catch the link, title and y-axis ones:
+A few mistakes leave no trace in either list (`grammar.md`, "Silent cases"). The likely ones:
+
+- a link line starting with `Title` whose left name is not declared replaces the title;
+- swapped or mistyped coordinates.
+
+Compare what was read with what you wrote:
 
 ```ts
-const lines = text.split(/\r?\n/).map((line) => line.trim());
-const firstWord = (line: string) => (/^[A-Za-z][\w-]*/.exec(line)?.[0] ?? '').toLowerCase();
-const linkLines = lines.filter((line) => {
-  const statement = line.split(';')[0]!;
-  return (
-    !['title', 'y-axis', 'evolution', 'evolve'].includes(firstWord(line)) &&
-    !/^(\/\/|\/\*)/.test(line) &&
-    !/\[\s*[-\d.]+\s*,\s*[-\d.]+\s*\]/.test(statement) &&
-    /->|\S\s*\+('[^']*')?(<>|>|<)/.test(statement)
-  );
-});
-const linksLost = linkLines.length !== map.edges.length;
-const titleHijacked = lines.filter((line) => firstWord(line) === 'title').length !== 1;
-const yAxisTruncated = lines.some(
-  (line) => firstWord(line) === 'y-axis' && line.split('->').length === 2,
-);
+console.log(`title "${map.config.title}", ${map.edges.length} links`);
 ```
 
-They assume the file has exactly one `title` line (canonical files always do) and `//` comments
-only — a link-like line inside a multi-line `/* … */` is counted as a link.
+The link count must equal the number of link lines you wrote, and the title must be yours.
 
 Round-trip self-test, useful after generating a map:
 
 ```ts
 const canonical = serializeDSL(parseDSL(text));
-const stable = serializeDSL(parseDSL(canonical)) === canonical; // true for a clean file
+const unchanged = canonical === text; // true when you wrote canonical text
 ```
 
-Comparing `canonical` with your own text shows exactly what the canonicaliser changed. Dropped
-blank lines, relocated comments, reordered suffixes, normalised spacing and legacy forms are
-harmless. Anything else on a link, `title`, `y-axis`, pipeline or element line — a missing line, a
-line moved to the end, words gone from a line or merged into a name — means content was **lost**,
-not reformatted.
+A second pass over `canonical` always returns `canonical` again, so the useful comparison is with
+your own text. It shows exactly what the canonicaliser changed. These are harmless:
+
+- dropped blank lines and relocated comments;
+- reordered suffixes and normalised spacing;
+- rewritten legacy forms.
+
+Anything else on a link, `title`, `y-axis`, pipeline or element line — a missing line, a line moved
+to the end, words gone from a line — means content was **lost**, not reformatted.
 
 ### As a script
 
@@ -101,57 +91,27 @@ mkdir -p /tmp/owm-check && cd /tmp/owm-check && npm install --silent @miragon/wa
 
 ```js
 import { readFileSync } from 'node:fs';
-import { parseDSL, parseDSLWithDiagnostics, serializeDSL } from '@miragon/wardley-dsl';
+import { parseDSLWithDiagnostics, serializeDSL } from '@miragon/wardley-dsl';
 
 const text = readFileSync(process.argv[2], 'utf8');
-let result;
-try {
-  result = parseDSLWithDiagnostics(text);
-} catch (error) {
-  console.log(`parse throws: ${error.message}`);
-  process.exit(1);
-}
-const { map, diagnostics } = result;
+const { map, diagnostics } = parseDSLWithDiagnostics(text);
 for (const { line, message, text: source } of diagnostics) {
   console.log(`line ${line}: ${message}\n    ${source}`);
 }
 for (const entry of map.rawPassthrough ?? []) {
   if (!/^\s*(\/\/|\/\*)/.test(entry)) console.log(`not understood: ${entry}`);
 }
-const lines = text.split(/\r?\n/).map((line) => line.trim());
-const firstWord = (line) => (/^[A-Za-z][\w-]*/.exec(line)?.[0] ?? '').toLowerCase();
-const linkLines = lines.filter((line) => {
-  const statement = line.split(';')[0];
-  return (
-    !['title', 'y-axis', 'evolution', 'evolve'].includes(firstWord(line)) &&
-    !/^(\/\/|\/\*)/.test(line) &&
-    !/\[\s*[-\d.]+\s*,\s*[-\d.]+\s*\]/.test(statement) &&
-    /->|\S\s*\+('[^']*')?(<>|>|<)/.test(statement)
-  );
-});
-if (linkLines.length !== map.edges.length) {
-  console.log(`${linkLines.length} link lines, but ${map.edges.length} links on the map`);
-}
-const titleLines = lines.filter((line) => firstWord(line) === 'title');
-if (titleLines.length !== 1) console.log(`${titleLines.length} title lines, expected 1`);
-for (const line of lines.filter((line) => firstWord(line) === 'y-axis')) {
-  if (line.split('->').length === 2) console.log(`y-axis drops its second part: ${line}`);
-}
-const canonical = serializeDSL(map);
-let stable = false;
-try {
-  stable = serializeDSL(parseDSL(canonical)) === canonical;
-} catch {
-  stable = false;
-}
-console.log(stable ? 'round-trip stable' : 'NOT round-trip stable');
-console.log(canonical === text ? 'already canonical' : 'differs from canonical text');
+console.log(
+  `title "${map.config.title}", ${map.elements.length} elements, ${map.edges.length} links`,
+);
+console.log(serializeDSL(map) === text ? 'already canonical' : 'differs from canonical text');
 ```
 
-Run it from that directory (so the bare import resolves): `node check-map.mjs /path/to/map.wmap`.
-A clean, canonical file prints only `round-trip stable` and `already canonical`. For
-`differs from canonical text`, diff your file against `serializeDSL` output and read the
-difference as described above — a changed link, title, pipeline or element line is lost content.
+Run it from that directory (so the bare import resolves): `node check-map.mjs /path/to/map.wmap`. A
+clean, canonical file prints only its title and counts, then `already canonical`. Check that the
+title and the link count are the ones you wrote. For `differs from canonical text`, diff your file
+against the `serializeDSL` output and read the difference as described above. A changed link,
+title, pipeline or element line is lost content.
 
 ## The map model
 
@@ -248,13 +208,13 @@ ids, edges pointing at existing elements) and throw on invalid input or an unkno
 
 Exported for tools and tests; generated text should go through `parseDSL` instead.
 
-| Function                  | Returns                                                                               |
-| ------------------------- | ------------------------------------------------------------------------------------- |
-| `parseCoords(line)`       | the first `[a, b]` tuple as `{ a, b }` in written order, or `null`                    |
-| `parseDecorators(suffix)` | `{ decorators, rest }` — every `( … )` group read as decorator tokens, plus `inertia` |
-| `parseLabelOffset(text)`  | `{ labelOffset: { dx, dy } \| null, rest }`                                           |
-| `keywordOf(line)`         | the first word, lowercased (`'component'`)                                            |
-| `slug(label)`             | the id slug (`'Hot Water!'` → `'hot_water'`)                                          |
+| Function                  | Returns                                                                                                                                                                         |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `parseCoords(line)`       | the first `[a, b]` tuple as `{ a, b }` in written order, or `null`                                                                                                              |
+| `parseDecorators(suffix)` | deprecated: `{ decorators, rest }` from every `( … )` group and `inertia` on the line; the parser itself reads decorators only after the coordinates and keeps the first method |
+| `parseLabelOffset(text)`  | `{ labelOffset: { dx, dy } \| null, rest, unreadable? }`; `unreadable` holds the matched text when a number cannot be read                                                      |
+| `keywordOf(line)`         | the first word, lowercased (`'component'`); `''` when a non-ASCII letter follows it                                                                                             |
+| `slug(label)`             | the id slug (`'Hot Water!'` → `'hot_water'`)                                                                                                                                    |
 
 ## Share links
 
