@@ -85,10 +85,11 @@ function listNoteSources(): string[] {
 }
 
 /**
- * Mirrors the parser: a `note` line takes its `(color …)` from anywhere on the line, before or
- * after the coordinates, so a statement is any line or inline code span that starts with `note`
- * and carries a `[v, e]` tuple. Prose that merely mentions a note keeps the stricter
- * note-tuple-colour order so ordinary sentences are not misread as statements.
+ * The parser reads a note's `(color …)` only after the coordinates, but this check scans the whole
+ * statement (any line or inline code span that starts with `note` and carries a `[v, e]` tuple),
+ * so a colour written in the wrong place is still held to the palette. Prose that merely mentions
+ * a note keeps the stricter note-tuple-colour order so ordinary sentences are not misread as
+ * statements.
  */
 function readNoteColors(source: string): NoteColorUsage[] {
   return source.split(/\r?\n/).flatMap((line, index) => {

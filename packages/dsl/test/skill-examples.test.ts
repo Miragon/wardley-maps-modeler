@@ -93,9 +93,9 @@ function collectMapFiles(): MapExample[] {
 }
 
 /**
- * The parser keeps comments and unknown statements in `rawPassthrough` without a diagnostic, so a
- * misspelled keyword would otherwise slip through as "valid". Comments are the only legitimate
- * passthrough content in an example.
+ * Some lines reach `rawPassthrough` without a diagnostic (comments, a url definition no element
+ * references), so an empty diagnostics list alone does not prove an example is fully understood.
+ * Comments are the only legitimate passthrough content in an example.
  */
 function nonCommentPassthrough(text: string): string[] {
   const leftovers: string[] = [];
