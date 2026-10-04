@@ -1,0 +1,37 @@
+title AI Coding Agent — 2026-10
+anchor Developer [0.96, 0.55]
+component Task Interface [0.86, 0.48]
+component Billing [0.78, 0.84] (buy)
+component Context Engine [0.74, 0.2] (build)
+component Identity [0.68, 0.8] (buy)
+component Code Generation [0.66, 0.32] (build)
+component Tool Orchestration [0.58, 0.24] (build)
+component Git Integration [0.52, 0.8] (buy)
+component Code Review Agent [0.5, 0.54]
+component RAG Pipeline [0.44, 0.36] inertia
+component Foundation Model [0.36, 0.64] (buy)
+component Vector Database [0.26, 0.6] (buy)
+component Cloud Compute [0.07, 0.92] (outsource)
+note Moat: context and tools [0.8, 0.2] (color #6A3DB8)
+note Shadow build: products exist [0.57, 0.62] (color #92610A)
+note Managed retrieval now exists [0.38, 0.27] (color #92610A)
+evolve Context Engine 0.32
+evolve Tool Orchestration 0.36
+evolve RAG Pipeline 0.55
+evolve Foundation Model 0.8
+Developer -> Task Interface
+Task Interface -> Billing
+Task Interface -> Context Engine
+Task Interface -> Code Generation
+Task Interface -> Identity
+Billing -> Identity
+Context Engine -> RAG Pipeline
+Code Generation -> Tool Orchestration
+Code Generation -> Code Review Agent
+Code Generation -> Foundation Model
+Tool Orchestration -> Git Integration
+RAG Pipeline -> Vector Database
+RAG Pipeline -> Foundation Model
+Code Review Agent -> Foundation Model
+Foundation Model -> Cloud Compute
+Vector Database -> Cloud Compute

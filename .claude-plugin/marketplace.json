@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-marketplace.json",
+  "name": "wardley-maps",
+  "owner": {
+    "name": "Miragon",
+    "url": "https://miragon.io"
+  },
+  "description": "Wardley Mapping skills for Claude Code — the strategy method after Simon Wardley and the OWM text DSL (`.wmap` / `.owm`) used by the Wardley Maps Modeler.",
+  "version": "0.1.0",
+  "plugins": [
+    {
+      "name": "wardley-maps-modeler",
+      "source": "./plugins/wardley-maps-modeler",
+      "description": "Wardley Mapping for Claude: the method (value chains, evolution, doctrine, gameplay, creating maps, map reviews with colour-coded feedback notes) plus the complete OWM text DSL — grammar, coordinates and layout, diagnostics, round-trip. Lets Claude read, write, review and generate Wardley Maps as plain text.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Miragon",
+        "url": "https://miragon.io"
+      },
+      "homepage": "https://github.com/Miragon/wardley-maps-modeler",
+      "repository": "https://github.com/Miragon/wardley-maps-modeler",
+      "license": "MIT",
+      "category": "modeling",
+      "keywords": [
+        "wardley-mapping",
+        "wardley-maps",
+        "owm",
+        "dsl",
+        "strategy",
+        "evolution",
+        "doctrine",
+        "modeling",
+        "miragon"
+      ]
+    }
+  ]
+}
