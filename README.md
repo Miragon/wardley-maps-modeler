@@ -74,6 +74,25 @@ const { svg } = await viewer.saveSVG();
 | [`apps/webapp`](apps/webapp)                             | Web editor (demo, deployed on Netlify)                   |
 | [`apps/vscode`](apps/vscode)                             | VS Code extension for `.wmap` / `.owm`                   |
 
+## Claude Code plugin
+
+Two Claude skills — the Wardley Mapping method and the OWM text format — ship from this repository
+as a Claude Code plugin, so you can use them in any project:
+
+```
+/plugin marketplace add Miragon/wardley-maps-modeler
+/plugin install wardley-maps-modeler@wardley-maps
+```
+
+| Skill             | Covers                                                                                                  |
+| ----------------- | ------------------------------------------------------------------------------------------------------- |
+| `wardley-mapping` | Simon Wardley's method: evolution, doctrine, gameplay, creating maps, reviews with colour-coded notes   |
+| `owm-dsl`         | The `.wmap` / `.owm` format: grammar, coordinates and layout, pipelines, notes, diagnostics, round-trip |
+
+Claude can then read, review, edit and generate `.wmap` / `.owm` maps anywhere — the modeler
+renders what Claude writes. Details in [`plugins/wardley-maps-modeler/`](plugins/wardley-maps-modeler/);
+the marketplace manifest is [`.claude-plugin/marketplace.json`](.claude-plugin/marketplace.json).
+
 ## Fonts
 
 The renderer ships no fonts and loads nothing from a CDN. The typeface is **Geist** (Miragon

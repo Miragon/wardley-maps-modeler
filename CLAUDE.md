@@ -78,8 +78,17 @@ dep) entries when adding a whole new package.
   exact `devDependency` for local build/test, and the bundling apps (`webapp`, `vscode`) provide them
   as exact `dependencies`.** See
   [`.claude/rules/package-json-fixed-versions.md`](.claude/rules/package-json-fixed-versions.md).
-- For Wardley-map domain work, use the skill in
-  [`.claude/skills/wardley-mapping/`](.claude/skills/wardley-mapping/).
+- The repo's Claude skills ship as the **`wardley-maps-modeler` plugin**
+  ([`plugins/wardley-maps-modeler/`](plugins/wardley-maps-modeler/)) via the marketplace in
+  [`.claude-plugin/marketplace.json`](.claude-plugin/marketplace.json): `wardley-mapping` for
+  domain work (method, doctrine, creating and reviewing maps), `owm-dsl` for the `.wmap`/`.owm`
+  text format (grammar, coordinates, round-trip, diagnostics). Install once with
+  `/plugin marketplace add Miragon/wardley-maps-modeler` and
+  `/plugin install wardley-maps-modeler@wardley-maps`; the skill files are readable directly under
+  `plugins/wardley-maps-modeler/skills/` either way. Keep the skills repo-independent — they also
+  run in other repositories and in Miragon AI Design, where Claude writes the map file directly and
+  the modeler renders it. Bump `version` in the plugin's `plugin.json` and the marketplace entry
+  together.
 - Contributor onboarding in [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ## Design system (mandatory)

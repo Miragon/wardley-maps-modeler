@@ -1,0 +1,36 @@
+title SaaS Analytics Platform
+anchor Customer [0.96, 0.55]
+component Dashboards [0.86, 0.5]
+component Subscription [0.86, 0.66]
+component Report Builder [0.8, 0.33]
+component Billing [0.76, 0.84] (buy)
+component API Gateway [0.68, 0.66] (buy)
+component Authentication [0.6, 0.8] (buy)
+component Analytics Engine [0.58, 0.28] (build)
+component ML Insights [0.52, 0.1] (build)
+component Data Connectors [0.4, 0.32] inertia
+component Data Warehouse [0.3, 0.74] (buy)
+component Monitoring [0.2, 0.72] (buy)
+component Cloud Compute [0.07, 0.92] (outsource)
+note Differentiator: pioneer team [0.46, 0.12] (color #6A3DB8)
+note Managed ELT exists: migrate [0.34, 0.32] (color #92610A)
+evolve ML Insights 0.3
+evolve Data Connectors 0.62
+Customer -> Dashboards
+Customer -> Report Builder
+Customer -> Subscription
+Dashboards -> API Gateway
+Dashboards -> Authentication
+Subscription -> Billing
+Report Builder -> API Gateway
+Report Builder -> Analytics Engine
+Billing -> Authentication
+API Gateway -> Authentication
+API Gateway -> Analytics Engine
+API Gateway -> Monitoring
+Analytics Engine -> ML Insights
+Analytics Engine -> Data Connectors
+ML Insights -> Data Warehouse
+Data Connectors -> Data Warehouse
+Data Warehouse -> Cloud Compute
+Monitoring -> Cloud Compute

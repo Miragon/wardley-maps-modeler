@@ -13,10 +13,9 @@ playwright-report/
 .vitest-attachments/
 __screenshots__/
 
-# Ignore only local Claude settings; skills + project guardrails (settings.json, rules/) stay tracked
+# Ignore only local Claude settings; project guardrails (settings.json, rules/) stay tracked
 .claude/settings.local.json
 .claude/logs/
-# Locally installed third-party skills (e.g. from plugins) must not get committed —
-# only the project's own wardley-mapping skill is tracked.
+# The repo's own skills ship from plugins/wardley-maps-modeler/; a local copy here would shadow
+# the plugin skill, so nothing under .claude/skills/ is tracked.
 .claude/skills/*
-!.claude/skills/wardley-mapping/
