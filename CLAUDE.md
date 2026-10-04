@@ -87,8 +87,14 @@ dep) entries when adding a whole new package.
   `/plugin install wardley-maps-modeler@wardley-maps`; the skill files are readable directly under
   `plugins/wardley-maps-modeler/skills/` either way. Keep the skills repo-independent — they also
   run in other repositories and in Miragon AI Design, where Claude writes the map file directly and
-  the modeler renders it. Bump `version` in the plugin's `plugin.json` and the marketplace entry
-  together.
+  the modeler renders it. Drift tests guard them:
+  [`packages/dsl/test/skill-examples.test.ts`](packages/dsl/test/skill-examples.test.ts) parses
+  every `owm`-tagged code block and every `*.wmap`/`*.owm` under `plugins/wardley-maps-modeler/`
+  (zero diagnostics, stable round-trip), and
+  [`packages/renderer/test/skill-note-colors.sync.test.ts`](packages/renderer/test/skill-note-colors.sync.test.ts)
+  keeps the documented note colours equal to `NOTE_COLORS` in
+  [`packages/renderer/src/draw/styles.ts`](packages/renderer/src/draw/styles.ts). Bump `version`
+  in the plugin's `plugin.json` and the marketplace entry together.
 - Contributor onboarding in [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ## Design system (mandatory)

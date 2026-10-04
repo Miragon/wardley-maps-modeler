@@ -90,7 +90,7 @@ Verified against the renderer's geometry:
 `label [dx, dy]` moves a label by pixels from its default place: `dx` to the right, `dy`
 **downwards** (screen coordinates). Supported on `anchor`, `component`, pipeline children and
 `evolve` (stored, but the Modeler does not yet use it for the evolve label). Not on notes,
-pipelines, accelerators or submaps — there it is dropped or, worse, becomes part of the text.
+pipelines, accelerators or submaps — there it is dropped on save, with a diagnostic.
 
 For a component name of `n` characters:
 

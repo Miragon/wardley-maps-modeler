@@ -93,4 +93,4 @@ Also keep the OWM-DSL round-trip lossless and JSON serialization deterministic.
 - Make sure local gates are green: `npm run lint`, `npm test`, `npm run depcruise`, `npm run build`.
 - Working on map/domain semantics? See the `wardley-mapping` and `owm-dsl` skills of the Claude Code
   plugin in [`plugins/wardley-maps-modeler/`](plugins/wardley-maps-modeler/). Changed the DSL? Keep
-  the `owm-dsl` skill and its examples in step.
+  the `owm-dsl` skill and its examples in step — `npm test` parses every example in the plugin.

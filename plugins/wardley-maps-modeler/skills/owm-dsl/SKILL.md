@@ -6,7 +6,7 @@ description: >-
   pipeline, note, annotation, pioneers / settlers / townplanners, accelerator, submap, url, axis
   config), `[visibility, maturity]` coordinates and stage boundaries, the `(build|buy|outsource)`
   `(market)` `(ecosystem)` `inertia` `(color …)` `label [dx, dy]` suffixes, layout and note
-  colours, parser diagnostics and the pitfalls that silently drop links, the round-trip guarantee
+  colours, parser diagnostics and the few mistakes they do not catch, the round-trip guarantee
   and web-app share links. Use whenever reading, writing, generating, editing, validating or
   debugging a `.wmap` / `.owm` file or map text, placing components, building a share link, or
   calling `parseDSL` / `serializeDSL`. For the mapping _method_ (creating a map from a strategic
@@ -29,24 +29,26 @@ Your job is to write correct text into the `.wmap` / `.owm` file. Never draw the
 
 Two properties make the format safe to generate — each with a sharp edge:
 
-- **Parsing keeps what it does not understand.** An unreadable or unknown line is kept verbatim
-  (`rawPassthrough`) and written back, so a mistake never destroys the rest of the map. But it is
-  _silent_ for unknown keywords — `compnent X [0.5, 0.5]` produces no diagnostic and no component —
-  a few mistakes lose text outright (anything after a `{` that opens a pipeline block is deleted,
-  not kept), and parsing **can throw**: a link to a pipeline that has no range kills the whole
-  file (see "Rules that bite"). A file that throws does not open in the Modeler at all.
-- **Serializing is deterministic and canonical text is a fixed point.** `serializeDSL(parseDSL(t))`
-  produces canonical text, and a second pass is byte-identical — for every clean file: zero
-  diagnostics, nothing but comments left in `rawPassthrough`, no stray text after the coordinates
-  of a `note` or `pipeline`, and no `(color …)` inside note or pipeline text. Text you write in
-  canonical form comes back unchanged.
+- **Parsing never fails, and it reports what it does not use.** Any text parses (`parseDSL` never
+  throws). An unreadable or unknown line is kept verbatim (`rawPassthrough`) and written back, so a
+  mistake never destroys the rest of the map. Whenever the parser cannot use a line, or drops,
+  ignores or renames text, it emits a diagnostic: `compnent X [0.5, 0.5]` gives
+  `Unknown statement "compnent"`. But diagnostics stop nothing. The Modeler opens the map anyway:
+  the web app only shows an "Imported with N warning(s)" toast, and VS Code shows nothing. A typo
+  therefore leaves a component or link off the map unless you read `diagnostics` yourself, and a
+  few mistakes give no diagnostic at all (see "Rules that bite").
+- **Serializing is deterministic, and one save reaches a fixed point.** `serializeDSL(parseDSL(t))`
+  produces canonical text. Parsing and serializing that text again gives byte-identical text and
+  the same map, for every input. Text you write in canonical form comes back unchanged. But the
+  first save drops whatever the diagnostics reported as ignored, and moves comments, unknown lines
+  and unresolved links to the end of the file.
 
 Scope: this skill is about the **format**. Where a component belongs, how evolved it is and what a
 good map says is the `wardley-mapping` skill's job.
 
 ## The grammar on one page
 
-### Config — at most one of each (a repeated line overrides the earlier one)
+### Config — at most one of each (a repeated line replaces the earlier one, with a diagnostic)
 
 | Line                                           | Meaning                                                                    |
 | ---------------------------------------------- | -------------------------------------------------------------------------- |
@@ -106,6 +108,11 @@ A pipeline named like a component is anchored to it and takes its height. Block 
 **one** number — their maturity — and inherit the pipeline's height. They are ordinary components:
 link to them, `evolve` them.
 
+`{` may also end the pipeline line, and a block may sit on one line
+(`{ component Campfire Kettle [0.3] }`). Canonical text puts `{`, each child and `}` on lines of
+their own. Inside a block only `component <Name> [maturity]` lines are children. Any other line is
+an ordinary statement and moves out of the block on save.
+
 ### Links
 
 ```text
@@ -123,8 +130,10 @@ never endpoints. One hop per line — `A -> B -> C` is not a chain.
 
 ### Suffixes
 
-Read **only after the coordinates**, so parentheses or the word `inertia` inside a name are just
-text.
+Read **only after the coordinates**, so parentheses, `(color …)` or the word `inertia` inside a
+name or text are just text. Anything a statement cannot hold is dropped with
+`Ignored text after the coordinates` — a `label [dx, dy]` on a note, `(buy)` on an anchor, a stray
+word. When a suffix is repeated, the first one counts.
 
 | Suffix                          | Allowed on                                  | Meaning                                                    |
 | ------------------------------- | ------------------------------------------- | ---------------------------------------------------------- |
@@ -234,50 +243,41 @@ Roast Selection -> Roastery
   not reach `User` / `Kettle`, and `A  B` (two spaces) is not `A B`. An unresolved link gives
   `Link: "…" not found`, is moved to the end of the file, and **does not exist on the map**. Linking
   to an undeclared or commented-out component is the most common defect in real-world maps.
-- **A pipeline without a range makes the parser throw.** `pipeline X` with neither `[start, end]`
-  nor block children is silently dropped — and if any link points at `X` (and no component is
-  named `X`), parsing fails with `Edge dep_1: target "pipeline_x" references no element.` The
-  Modeler then refuses the file. Commented-out coordinates (`pipeline X // [0.4, 0.7]`) and an empty
-  block `{ }` do the same. A pipeline starting at maturity `≥ 1` throws too.
-- **Nothing but `(color …)` may follow a note's or a pipeline's coordinates** (plus `(y …)` on a
-  pipeline). Notes and pipelines have no label offset: `label [10, 10]` becomes note text or part
-  of the pipeline name (which detaches the pipeline from its component), and once the file is
-  saved the next parse reads that tuple as the coordinates. A note then jumps to the offset values
-  (clamped, usually into a corner). A pipeline gets the offset as its range — `label [5, 5]` starts
-  it at `1`, so the saved file **no longer opens** (parsing throws). The first open shows no
-  diagnostic.
-- **The first `(color …)` on a note, annotation or pipeline line wins**, wherever it stands. Never
-  write `(color …)` inside their text (`note Legend: (color green) = good …`): the note takes that
-  colour, the words vanish from the text, and with a second `(color …)` after the coordinates the
-  two swap on every save.
-- **`{` and `}` stand alone on their lines** (`{` may also end the pipeline line). Anything after a
-  `{` that starts a line is deleted without a trace — `{ component Campfire [0.3] }` loses
-  `Campfire` _and_ leaves the block open, which swallows every following line.
-- **Typos and unknown words are silent.** A misspelled keyword is kept as an unknown line; an
-  unknown decorator `(foo)` or stray words after a component's coordinates are dropped; an
-  `evolution` line without exactly four labels and an `annotation` without coordinates are kept as
-  unknown lines — all without a diagnostic. Check `rawPassthrough`, not just diagnostics (see
-  `reference/api.md`).
-- **Duplicate names collapse.** Links bind to the _first_ element with a name; on save the later
-  ones become `Name 2`, `Name 3` — across anchors, components, pipeline children, accelerators and
-  submaps (an anchor `Tea` and a component `Tea` give `Tea 2`). Give every element its own name.
-- **A link's first word must not be a config keyword.** `Title Search -> X` silently **replaces the
-  map title** and `Y-axis Tool -> X` the y-axis label — the link is gone; `Line Manager -> X`,
-  `Style Guide -> X`, `Size Calc -> X` are unreadable lines. Avoid names whose first word is
-  `title`, `style`, `size`, `evolution`, `evolve`, `annotation`, `annotations`, `line` or `y-axis` —
-  or hyphenate (`Title-Search`). Names starting with `url` work, but a link from one must not carry
-  a trailing `//` comment (`url` lines are never comment-stripped, so `URL Shortener -> X // why`
-  looks for an element named `X // why`).
-- **Keep these out of names:** `->` (write `→`; the serializer rewrites `->` to `→` anyway), `;`
-  (starts a link annotation), `//` and `/*` (start a comment), `[n, n]` (read as coordinates),
-  `+>` / `+<`, and `'` (switches off comment detection for the rest of the line). The serializer
-  escapes none of these except `->`.
-- **`evolve` strips parentheses and the word `inertia` from the name** — `evolve Tea (green) 0.8`
-  looks for `Tea` and fails. Components you want to evolve need plain names. `evolve` works on
-  components only (not anchors), and a second `evolve` for the same component replaces the first.
-- **A `url(<Def>)` with no matching `url <Def> [address]` line is dropped** silently on save. An
-  address containing `->`, `+>` or `+<` is misread as a link and lost — percent-encode the `>` /
-  `<` (`%3E`, `%3C`).
+- **A pipeline needs a range or block children.** `pipeline X` with neither is not drawn, and links
+  to `X` are not found (both diagnosed). Commented-out coordinates (`pipeline X // [0.4, 0.7]`) and
+  an empty block `{ }` count as neither. An empty or reversed range (`[0.8, 0.2]`, `[1, 1]`) is
+  widened to a `0.05` wide range, with a diagnostic.
+- **Each statement reads only its own suffixes after the coordinates.** A note's text and a
+  pipeline's name end at the coordinates. Notes and pipelines have no label offset:
+  `note Risk [0.5, 0.3] label [10, 10]` loses `label [10, 10]` on save, with
+  `Ignored text after the coordinates`. `(color …)` counts only after the coordinates (on an
+  `annotation`, directly after the position). Inside a text it is plain text.
+- **Duplicate names are renamed when read.** A repeated name becomes `Name 2`, `Name 3`, with a
+  diagnostic, across anchors, components, pipeline children, accelerators and submaps: an anchor
+  `Tea` and a component `Tea` give `Tea 2`. Links bind to the first. A pipeline may share its
+  component's name. Give every element its own name.
+- **A link whose first word is a statement keyword needs both names declared.** `Title Search -> X`,
+  `Line Manager -> X` and `Y-axis Tool -> X` are links only when both endpoints are declared
+  somewhere in the file. Otherwise the line is that statement. Most such misreads are diagnosed,
+  but `Title Search -> X` without a declared `Title Search` **silently replaces the map title**. The
+  keywords are `title`, `style`, `size`, `evolution`, `evolve`, `annotation`, `annotations`, `line`
+  and `y-axis`.
+- **Keep these out of names:**
+  - `;` starts a link annotation;
+  - `//` and `/*` start a comment, so the line can no longer be read;
+  - `[n, n]` is read as the coordinates.
+
+  `->`, `+>`, `+<`, `+'` and a leading `{` would break link and block lines. They are rewritten
+  when read (`→`, `＋`, `｛`), with a diagnostic.
+
+- **`evolve` matches the component name exactly.** Parentheses and numbers stay part of the name
+  (`evolve Tea (green) 0.8`, `evolve Web 2.0 0.8`). Write the method after the target
+  (`evolve Tea 0.8 (buy)`). `evolve` works on components only (not anchors), and a second `evolve`
+  for the same component replaces the first.
+- **Some mistakes give no diagnostic.** Swapped coordinates (`[maturity, visibility]`) mirror the
+  map. A typo inside the coordinates (`[0.55. 0.18]`) makes a later tuple the position (a label
+  offset, say) and the rest part of the name. A `url <Def> [address]` line that nothing references
+  stays unused. Check these by eye.
 - **Blank lines are dropped and comments move to the end of the file.** Do not rely on either for
   structure; use a `note` for anything that must stay next to a component.
 - **Dependencies have no arrowhead.** Direction comes from the value chain: write `Parent -> Child`
@@ -291,7 +291,8 @@ instead of re-sorting existing ones; review notes go at the end of the element l
 at the end of the file).
 
 Renaming a component means updating **every** reference: its link lines, its `evolve` line, and a
-same-named `pipeline`. A missed reference does not fail loudly — the link just disappears.
+same-named `pipeline`. A missed reference does not fail loudly — the map still opens, the link
+just disappears, and only a `Link: "…" not found` diagnostic tells.
 
 When the user edits a map graphically, the Modeler rewrites the whole file: element lines grouped
 by kind (team regions, pipelines, notes, components, anchors, annotations), then `evolve` lines and
@@ -303,26 +304,31 @@ the old order by hand.
 - Every element line has its coordinates as `[visibility, maturity]`, both in `0…1`.
 - Every name is unique, and every link endpoint and `evolve` name matches a declared name exactly.
 - Every `pipeline` has `[start, end]` or block children; block children have one number.
-- `{` and `}` each stand alone on their own line (`{` may end the pipeline line instead).
-- Nothing follows a note's or pipeline's coordinates except `(color …)` / `(y …)`.
-- No `(color …)` inside note, annotation or pipeline text.
-- No name starts with a config keyword or contains `;`, `//`, `/*`, `[n, n]`, `+>` or `->`.
+- After the coordinates come only the statement's own suffixes (on a note `(color …)`, on a
+  pipeline `(color …)` and `(y …)`).
+- No name contains `;`, `//`, `/*`, `[n, n]`, `->`, `+>`, `+<` or `+'`. A link that starts with a
+  statement keyword has both names declared.
 - Review notes use the palette hexes from `reference/layout.md`.
-- If you can run Node: `parseDSLWithDiagnostics(text)` must not throw, `diagnostics` must be empty,
-  `rawPassthrough` must hold nothing but comments, the map must have as many links as you wrote
-  link lines, and a second `serializeDSL` pass must change nothing — the recipe is in
-  `reference/api.md`. A difference between your text and its canonical form on a link, title or
-  element line means content was lost, not reformatted.
+- If you can run Node, run the recipe in `reference/api.md`. It checks that:
+  - `diagnostics` is empty;
+  - `rawPassthrough` holds nothing but comments;
+  - the map has as many links as you wrote link lines;
+  - the title is the one you wrote.
+
+  A difference between your text and its canonical form on a link, title or element line means
+  content was lost, not reformatted.
 
 ## Opening the map
 
 - **Miragon AI Design** and the **VS Code extension** read the file you wrote — nothing else to do.
   In VS Code (`miragon-gmbh.wardley-mapping-modeler`) `.wmap` / `.owm` open in the graphical editor;
   **View: Reopen Editor With… → Text Editor** shows the text, and edits in a split text view
-  re-render live. A file that throws shows "Could not parse this Wardley map: …".
+  re-render live. VS Code does not show parser diagnostics, so check the file before you hand it
+  over.
 - **Web app** (https://wardley-maps.modeler.miragon.io): **Menu → Open…** or drag and drop the
-  file. Or hand the user a share link — the map itself, deflate-raw compressed and base64url-encoded
-  (no padding) behind `#mz=`:
+  file. Diagnostics appear as an "Imported with N warning(s) — see console" toast and are listed in
+  the browser console. Or hand the user a share link — the map itself, deflate-raw compressed and
+  base64url-encoded (no padding) behind `#mz=`:
 
   ```bash
   node -e "const fs=require('fs'),zlib=require('zlib');const text=fs.readFileSync(process.argv[1],'utf8');console.log('https://wardley-maps.modeler.miragon.io/#mz='+zlib.deflateRawSync(Buffer.from(text,'utf8')).toString('base64url'))" map.wmap
@@ -336,8 +342,7 @@ the old order by hand.
 
 - `reference/grammar.md` — the exhaustive spec: every statement and suffix with its model element,
   line classification and precedence, comments, escaping, id allocation, serializer order and
-  canonicalisation, when parsing throws, and the full diagnostics catalogue including the silent
-  cases.
+  canonicalisation, and the full diagnostics catalogue including the silent cases.
 - `reference/layout.md` — canvas geometry in pixels and map units, spacing rules, label offsets,
   pipelines and team regions, review-note placement, the note colour table and a full worked map.
 - `reference/api.md` — the programmatic API (`parseDSL`, `parseDSLWithDiagnostics`, `serializeDSL`,
