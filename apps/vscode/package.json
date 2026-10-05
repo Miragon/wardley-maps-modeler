@@ -130,13 +130,13 @@
     "@miragon/wardley-dsl": "0.5.2",
     "@miragon/wardley-renderer": "0.6.2",
     "@miragon/wardley-schema-model": "0.5.1",
-    "diagram-js": "15.27.1",
+    "diagram-js": "15.28.0",
     "didi": "11.0.0",
     "tiny-svg": "4.1.4",
     "zod": "4.6.5"
   },
   "devDependencies": {
-    "@types/node": "26.6.3",
+    "@types/node": "26.6.4",
     "@types/vscode": "1.96.0",
     "@vscode/vsce": "4.0.0",
     "esbuild": "0.28.2",
