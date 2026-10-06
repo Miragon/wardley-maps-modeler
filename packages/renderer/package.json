@@ -48,7 +48,7 @@
   },
   "devDependencies": {
     "diagram-js": "15.28.0",
-    "didi": "11.0.0",
+    "didi": "12.0.0",
     "jsdom": "30.1.1",
     "tiny-svg": "4.1.4",
     "typescript": "6.0.3",
