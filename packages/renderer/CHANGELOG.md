@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.6.3](https://github.com/Miragon/wardley-maps-modeler/compare/renderer-v0.6.2...renderer-v0.6.3) (2026-10-08)
+
+
+### Bug Fixes
+
+* **dsl:** never throw, keep round-trips stable and report what the parser drops ([#121](https://github.com/Miragon/wardley-maps-modeler/issues/121)) ([dbf52c2](https://github.com/Miragon/wardley-maps-modeler/commit/dbf52c281eb38a2747032ed175833f1e9a827acb))
+* **renderer:** keep connection hit areas behind nodes and on the drawn line ([#127](https://github.com/Miragon/wardley-maps-modeler/issues/127)) ([e849899](https://github.com/Miragon/wardley-maps-modeler/commit/e84989939586e5703372847b200f7e5b4eb43ec6))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @miragon/wardley-dsl bumped from 0.5.2 to 0.5.3
+
 ## [0.6.2](https://github.com/Miragon/wardley-maps-modeler/compare/renderer-v0.6.1...renderer-v0.6.2) (2026-09-22)
 
 

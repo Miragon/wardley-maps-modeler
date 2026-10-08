@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.6.3](https://github.com/Miragon/wardley-maps-modeler/compare/webapp-v0.6.2...webapp-v0.6.3) (2026-10-08)
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @miragon/wardley-dsl bumped from 0.5.2 to 0.5.3
+    * @miragon/wardley-renderer bumped from 0.6.2 to 0.6.3
+
 ## [0.6.2](https://github.com/Miragon/wardley-maps-modeler/compare/webapp-v0.6.1...webapp-v0.6.2) (2026-09-22)
 
 
