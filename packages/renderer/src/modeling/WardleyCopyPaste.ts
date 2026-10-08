@@ -12,6 +12,7 @@ import {
   type WardleyConnection,
   type WardleyShape,
 } from '../model/di-types.js';
+import { connectionAnchorOf } from '../layout/index.js';
 
 /** Offset (px) accumulated per paste operation. */
 const PASTE_OFFSET = 24;
@@ -177,7 +178,10 @@ export default class WardleyCopyPaste {
         ...structuredClone(c.props),
         source: shapes[c.sourceIdx]!,
         target: shapes[c.targetIdx]!,
-        waypoints: [center(shapes[c.sourceIdx]!), center(shapes[c.targetIdx]!)],
+        waypoints: [
+          connectionAnchorOf(shapes[c.sourceIdx]!),
+          connectionAnchorOf(shapes[c.targetIdx]!),
+        ],
       }),
     );
     return { shapes, connections: connections as Element[] };
@@ -212,13 +216,6 @@ export default class WardleyCopyPaste {
       return label;
     });
   }
-}
-
-function center(s: { x: number; y: number; width: number; height: number }): {
-  x: number;
-  y: number;
-} {
-  return { x: s.x + s.width / 2, y: s.y + s.height / 2 };
 }
 
 function groupBBox(shapes: Array<{ x: number; y: number; width: number; height: number }>): {

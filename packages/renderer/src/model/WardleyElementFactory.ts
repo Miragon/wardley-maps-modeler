@@ -16,6 +16,7 @@ import type {
 } from '@miragon/wardley-schema-model';
 import type EvolutionGrid from '../evolution-grid/EvolutionGrid.js';
 import { NODE_SIZE, PIPELINE_HEIGHT, noteMetrics } from '../draw/styles.js';
+import { connectionAnchorOf } from '../layout/index.js';
 import type { WardleyConnection, WardleyShape } from './di-types.js';
 
 export interface CreateNewExtra {
@@ -365,7 +366,7 @@ export default class WardleyElementFactory {
       id: edge.id,
       source,
       target,
-      waypoints: [centerOf(source), centerOf(target)],
+      waypoints: [connectionAnchorOf(source), connectionAnchorOf(target)],
       wardleyType: type,
       bidirectional,
       ...(flowValue ? { flowValue } : {}),
@@ -374,10 +375,4 @@ export default class WardleyElementFactory {
     });
     return conn as unknown as WardleyConnection;
   }
-}
-
-function centerOf(shape: WardleyShape): { x: number; y: number } {
-  // Pipelines dock at their ■ anchor (top-edge center), not at the box center.
-  if (shape.wardleyType === 'pipeline') return { x: shape.x + shape.width / 2, y: shape.y };
-  return { x: shape.x + shape.width / 2, y: shape.y + shape.height / 2 };
 }
