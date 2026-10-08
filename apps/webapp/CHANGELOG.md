@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/Miragon/wardley-maps-modeler/compare/webapp-v0.6.3...webapp-v0.7.0) (2026-10-08)
+
+
+### Features
+
+* use the Miragon modeler icon for app, favicon and VS Code file icons ([#128](https://github.com/Miragon/wardley-maps-modeler/issues/128)) ([afc7879](https://github.com/Miragon/wardley-maps-modeler/commit/afc7879eba8c1d27e660b78425e86f380d3c08bc))
+
 ## [0.6.3](https://github.com/Miragon/wardley-maps-modeler/compare/webapp-v0.6.2...webapp-v0.6.3) (2026-10-08)
 
 

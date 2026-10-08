@@ -3,6 +3,6 @@
   "packages/dsl": "0.5.3",
   "packages/transforms": "0.5.1",
   "packages/renderer": "0.6.3",
-  "apps/vscode": "0.6.3",
-  "apps/webapp": "0.6.3"
+  "apps/vscode": "0.7.0",
+  "apps/webapp": "0.7.0"
 }
