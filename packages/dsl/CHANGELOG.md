@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.3](https://github.com/Miragon/wardley-maps-modeler/compare/dsl-v0.5.2...dsl-v0.5.3) (2026-10-08)
+
+
+### Bug Fixes
+
+* **dsl:** never throw, keep round-trips stable and report what the parser drops ([#121](https://github.com/Miragon/wardley-maps-modeler/issues/121)) ([dbf52c2](https://github.com/Miragon/wardley-maps-modeler/commit/dbf52c281eb38a2747032ed175833f1e9a827acb))
+
 ## [0.5.2](https://github.com/Miragon/wardley-maps-modeler/compare/dsl-v0.5.1...dsl-v0.5.2) (2026-09-22)
 
 
