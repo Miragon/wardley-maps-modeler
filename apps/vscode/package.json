@@ -45,7 +45,11 @@
           ".wmap",
           ".owm"
         ],
-        "configuration": "./language-configuration.json"
+        "configuration": "./language-configuration.json",
+        "icon": {
+          "light": "./media/icons/wardley-map-light.svg",
+          "dark": "./media/icons/wardley-map-dark.svg"
+        }
       }
     ],
     "customEditors": [

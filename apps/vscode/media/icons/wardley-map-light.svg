@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" role="img">
+  <title>Miragon Modeler für Wardley Maps</title>
+  <path d="M2 3V19H21M18 16L21 19L18 22" fill="none" stroke="#1D1D1D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="9" cy="9" r="3" fill="none" stroke="#1D1D1D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="18.75" cy="9" r="3.75" fill="#335DE5"/>
+</svg>
