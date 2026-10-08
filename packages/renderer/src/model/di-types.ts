@@ -84,8 +84,17 @@ export function isWardleyShape(el: unknown): el is WardleyShape {
   return isObject(el) && typeof el['wardleyType'] === 'string' && 'evolution' in el;
 }
 
+const CONNECTION_TYPES: ReadonlySet<unknown> = new Set<WardleyConnectionType>([
+  'dependency',
+  'flow',
+]);
+
+/**
+ * Keyed on the type, not on `waypoints`: diagram-js lays out an interactively created connection only
+ * inside `connection.create`'s execute, so pre-execute hooks (e.g. ordering) see it without them.
+ */
 export function isWardleyConnection(el: unknown): el is WardleyConnection {
-  return isObject(el) && typeof el['wardleyType'] === 'string' && 'waypoints' in el;
+  return isObject(el) && CONNECTION_TYPES.has(el['wardleyType']);
 }
 
 export function isComponent(el: unknown): el is WardleyShape {

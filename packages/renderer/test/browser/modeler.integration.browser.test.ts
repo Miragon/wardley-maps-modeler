@@ -109,4 +109,84 @@ describe('Modeler integration (real browser DOM)', () => {
     expect(platform.x).toBeCloseTo(movedX, 1);
     expect(modeler.canUndo()).toBe(true);
   });
+
+  // Regression: an interactively drawn connection landed on top of the components, so its hit band
+  // covered the half of the component it leaves from — grabbing it there picked the line instead.
+  it('keeps an interactively drawn connection behind the components it connects', async () => {
+    await modeler.importDSL(`title Connect Fixture
+component Platform [0.55, 0.40]
+component Storage [0.35, 0.62]`);
+    const registry = modeler.get<ElementRegistry>('elementRegistry');
+    const modeling = modeler.get<Modeling>('modeling');
+    const platform = findByLabel(registry, 'Platform');
+    const storage = findByLabel(registry, 'Storage');
+
+    // Same call (and attrs from the `connection.create` rule) the connect tool / append entry make.
+    const connection = modeling.connect(platform, storage, { wardleyType: 'dependency' });
+
+    const platformHit = registry.getGraphics(platform).querySelector('.djs-hit')!;
+    const connectionGfx = registry.getGraphics(connection);
+    expect(
+      platformHit.compareDocumentPosition(connectionGfx) & Node.DOCUMENT_POSITION_PRECEDING,
+    ).toBeTruthy();
+
+    const box = platformHit.getBoundingClientRect();
+    const [start, end] = connection.waypoints.map((point) => ({ x: point.x, y: point.y }));
+    const length = Math.hypot(end!.x - start!.x, end!.y - start!.y);
+    const reach = box.width / 3;
+    const onComponentAlongLine = document.elementFromPoint(
+      box.x + box.width / 2 + ((end!.x - start!.x) / length) * reach,
+      box.y + box.height / 2 + ((end!.y - start!.y) / length) * reach,
+    );
+    expect(onComponentAlongLine).toBe(platformHit);
+  });
+
+  // The renderer draws to the pipeline's ■ anchor; the waypoints (= the hit band) used to end where
+  // the connect drag was released, and fall back to the box mid once the other end moved.
+  it('lays out a connection to a pipeline onto its ■ anchor', async () => {
+    await modeler.importDSL(`title Pipeline Fixture
+component Platform [0.75, 0.40]
+pipeline Hosting [0.30, 0.80] (y 0.40)`);
+    const registry = modeler.get<ElementRegistry>('elementRegistry');
+    const modeling = modeler.get<Modeling>('modeling');
+    const platform = findByLabel(registry, 'Platform');
+    const hosting = findByLabel(registry, 'Hosting');
+    const anchor = { x: hosting.x + hosting.width / 2, y: hosting.y };
+
+    const releasePoint = { x: hosting.x + hosting.width - 10, y: hosting.y + hosting.height - 5 };
+    const connection = modeling.connect(
+      platform,
+      hosting,
+      { wardleyType: 'dependency' },
+      { connectionEnd: releasePoint },
+    );
+    expect(connection.waypoints[connection.waypoints.length - 1]).toEqual(anchor);
+
+    modeling.moveShape(platform, { x: 60, y: 0 });
+    expect(connection.waypoints[connection.waypoints.length - 1]).toEqual(anchor);
+  });
+
+  it('re-lays the connections of a component glued onto a pipeline', async () => {
+    await modeler.importDSL(`title Glue Fixture
+component Platform [0.75, 0.40]
+component Storage [0.20, 0.10]
+pipeline Hosting [0.30, 0.80] (y 0.40)
+Platform -> Storage`);
+    const registry = modeler.get<ElementRegistry>('elementRegistry');
+    const modeling = modeler.get<Modeling>('modeling');
+    const storage = findByLabel(registry, 'Storage');
+    const hosting = findByLabel(registry, 'Hosting');
+    const connection = storage.incoming[0]!;
+
+    // Drop the center into the lower part of the box, so the glue pulls it up onto the line.
+    const dropCenter = { x: hosting.x + hosting.width / 2, y: hosting.y + hosting.height - 4 };
+    modeling.moveShape(storage, {
+      x: dropCenter.x - (storage.x + storage.width / 2),
+      y: dropCenter.y - (storage.y + storage.height / 2),
+    });
+
+    const storageCenter = { x: storage.x + storage.width / 2, y: storage.y + storage.height / 2 };
+    expect(storageCenter.y).toBeCloseTo(hosting.y + hosting.height / 2, 5);
+    expect(connection.waypoints[connection.waypoints.length - 1]).toEqual(storageCenter);
+  });
 });

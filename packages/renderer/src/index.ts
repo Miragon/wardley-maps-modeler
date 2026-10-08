@@ -19,6 +19,7 @@ export { COLORS, PLOT } from './draw/styles.js';
 export { MIRAGON } from './theme/index.js';
 export { ioModule, WardleyImporter, WardleyExporter, saveSVG, ROOT_ID } from './io/index.js';
 export { wardleyModelingModule, WardleyModeling } from './modeling/index.js';
+export { wardleyLayoutModule, WardleyLayouter } from './layout/index.js';
 export type { EvolveOptions } from './modeling/index.js';
 export { wardleyRulesModule, WardleyRules } from './rules/index.js';
 export { stageSnappingModule } from './snapping/index.js';

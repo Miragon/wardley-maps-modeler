@@ -22,6 +22,7 @@ import {
   type WardleyShape,
 } from '../model/di-types.js';
 import type EvolutionGrid from '../evolution-grid/EvolutionGrid.js';
+import { connectionAnchorOf } from '../layout/index.js';
 
 /** BaseRenderer default is 1000; 1500 wins the render.shape/render.connection event. */
 const WARDLEY_RENDER_PRIORITY = 1500;
@@ -566,12 +567,6 @@ function radiusOf(s: WardleyShape): number {
   if (s.wardleyType === 'anchor') return ANCHOR_ICON_SIZE / 2 + 1;
   if (s.wardleyType === 'pipeline') return PIPELINE_ANCHOR_SIZE / 2 + 2;
   return Math.min(s.width, s.height) / 2;
-}
-
-/** Docking point of a node: pipelines dock at their ■ anchor (top-edge center), not the box. */
-function connectionAnchorOf(s: WardleyShape): Point {
-  if (s.wardleyType === 'pipeline') return { x: s.x + s.width / 2, y: s.y };
-  return { x: s.x + s.width / 2, y: s.y + s.height / 2 };
 }
 
 /**

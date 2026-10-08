@@ -14,6 +14,7 @@ import PopupMenuModule from 'diagram-js/lib/features/popup-menu';
 
 import { NavigatedViewer } from './NavigatedViewer.js';
 import { wardleyModelingModule } from './modeling/index.js';
+import { wardleyLayoutModule } from './layout/index.js';
 import { wardleyLassoModule } from './lasso/index.js';
 import { wardleyRulesModule } from './rules/index.js';
 import { evolutionConstraintModule } from './evolution-grid/index.js';
@@ -38,6 +39,7 @@ export class Modeler extends NavigatedViewer {
     return [
       ...super._getModules(),
       ModelingModule,
+      wardleyLayoutModule,
       RulesModule,
       MoveModule,
       CreateModule,

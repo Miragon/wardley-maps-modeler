@@ -1,6 +1,7 @@
 import CommandInterceptor from 'diagram-js/lib/command/CommandInterceptor';
 import type EventBus from 'diagram-js/lib/core/EventBus';
 import type ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
+import type BaseLayouter from 'diagram-js/lib/layout/BaseLayouter';
 import { isWardleyShape, isPipeline, type WardleyShape } from '../model/di-types.js';
 import type EvolutionGrid from './EvolutionGrid.js';
 
@@ -28,12 +29,13 @@ interface CommandContextLike {
  * the membership. When the pipeline moves, its children follow vertically.
  */
 export default class EvolutionConstraintBehavior extends CommandInterceptor {
-  static override $inject = ['eventBus', 'evolutionGrid', 'elementRegistry'];
+  static override $inject = ['eventBus', 'evolutionGrid', 'elementRegistry', 'layouter'];
 
   constructor(
     private readonly eventBus: EventBus,
     private readonly grid: EvolutionGrid,
     private readonly elementRegistry: ElementRegistry,
+    private readonly layouter: BaseLayouter,
   ) {
     super(eventBus);
     const sync = (event: { context?: CommandContextLike }) => this.syncAll(event.context);
@@ -207,10 +209,14 @@ export default class EvolutionConstraintBehavior extends CommandInterceptor {
     }
   }
 
-  /** Triggers a re-render for programmatically moved shapes plus their connections. */
+  /**
+   * Triggers a re-render for programmatically moved shapes plus their connections. The waypoints are
+   * re-laid out too: the drawn line follows the shape on its own, but its hit band is built from them.
+   */
   private fireChanged(shape: WardleyShape): void {
     this.eventBus.fire('element.changed', { element: shape });
     for (const conn of [...(shape.incoming ?? []), ...(shape.outgoing ?? [])]) {
+      conn.waypoints = this.layouter.layoutConnection(conn);
       this.eventBus.fire('element.changed', { element: conn });
     }
   }
