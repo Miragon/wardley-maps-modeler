@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.8.0](https://github.com/Miragon/wardley-maps-modeler/compare/vscode-v0.7.0...vscode-v0.8.0) (2026-10-17)
+
+
+### Features
+
+* UX overhaul of the modeler and undoable, DSL-safe map resizing ([#131](https://github.com/Miragon/wardley-maps-modeler/issues/131)) ([4416f8f](https://github.com/Miragon/wardley-maps-modeler/commit/4416f8f8840b90f1b17ce5692b8496364b4e3dcb))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @miragon/wardley-dsl bumped from 0.5.3 to 0.6.0
+    * @miragon/wardley-renderer bumped from 0.6.3 to 0.7.0
+    * @miragon/wardley-schema-model bumped from 0.5.1 to 0.6.0
+
 ## [0.7.0](https://github.com/Miragon/wardley-maps-modeler/compare/vscode-v0.6.3...vscode-v0.7.0) (2026-10-08)
 
 
