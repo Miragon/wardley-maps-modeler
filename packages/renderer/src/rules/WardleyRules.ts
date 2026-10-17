@@ -6,6 +6,8 @@ import { isWardleyShape, isPipeline, isAttitude, type WardleyShape } from '../mo
 // pipelines connect via their ■ anchor.
 const CONNECTABLE: ReadonlySet<string> = new Set(['component', 'anchor', 'submap', 'pipeline']);
 
+const HORIZONTAL_RESIZE_DIRECTIONS: ReadonlySet<string> = new Set(['e', 'w']);
+
 function isConnectable(el: unknown): el is WardleyShape {
   return isWardleyShape(el) && CONNECTABLE.has(el.wardleyType);
 }
@@ -45,13 +47,21 @@ export default class WardleyRules extends RuleProvider {
       return { wardleyType: 'dependency' };
     });
 
-    this.addRule(['shape.move', 'elements.move'], () => true);
+    this.addRule('shape.move', () => true);
+    // Shapes never nest: hovering another element during a drag must neither re-parent the moved
+    // shapes under it nor mark it as a drop target, so such hovers are ignored (null), not refused.
+    this.addRule('elements.move', (context: { target?: { parent?: unknown } | null }) =>
+      context.target?.parent ? null : true,
+    );
     this.addRule('shape.create', () => true);
     // Group create (paste preview): diagram-js Create checks this rule for element arrays.
     this.addRule('elements.create', () => true);
-    this.addRule(
-      'shape.resize',
-      (context: { shape?: unknown }) => isPipeline(context.shape) || isAttitude(context.shape),
-    );
+    // Pipelines only stretch along the evolution axis — their height is not part of the model.
+    this.addRule('shape.resize', (context: { shape?: unknown; direction?: string }) => {
+      if (isPipeline(context.shape)) {
+        return !context.direction || HORIZONTAL_RESIZE_DIRECTIONS.has(context.direction);
+      }
+      return isAttitude(context.shape);
+    });
   }
 }

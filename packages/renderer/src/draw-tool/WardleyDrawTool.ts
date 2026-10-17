@@ -11,6 +11,8 @@ import type Selection from 'diagram-js/lib/features/selection/Selection';
 import type { Element, Shape } from 'diagram-js/lib/model/Types';
 import { COLORS } from '../draw/styles.js';
 import type WardleyElementFactory from '../model/WardleyElementFactory.js';
+import type EvolutionGrid from '../evolution-grid/EvolutionGrid.js';
+import type { WardleyShape } from '../model/di-types.js';
 
 interface Point {
   x: number;
@@ -27,7 +29,14 @@ const CLOSE_RADIUS = 12;
  * two points cancels. The result is ONE undoable `drawing` shape that moves as a whole.
  */
 export default class WardleyDrawTool {
-  static $inject = ['canvas', 'eventBus', 'modeling', 'selection', 'wardleyElementFactory'];
+  static $inject = [
+    'canvas',
+    'eventBus',
+    'modeling',
+    'selection',
+    'wardleyElementFactory',
+    'evolutionGrid',
+  ];
 
   private active = false;
   private points: Point[] = [];
@@ -40,6 +49,7 @@ export default class WardleyDrawTool {
     private readonly modeling: Modeling,
     private readonly selection: Selection,
     private readonly factory: WardleyElementFactory,
+    private readonly grid: EvolutionGrid,
   ) {
     eventBus.on('diagram.destroy', () => this.cancel());
   }
@@ -83,13 +93,7 @@ export default class WardleyDrawTool {
     const pts = [...this.points];
     this.deactivate();
     if (pts.length < 2) return;
-    const shape = this.factory.drawingFromCanvasPoints(pts);
-    const created = this.modeling.createShape(
-      shape as unknown as Shape,
-      { x: shape.x + shape.width / 2, y: shape.y + shape.height / 2 },
-      this.canvas.getRootElement() as Shape,
-    );
-    this.selection.select(created as unknown as Element);
+    this.create(this.factory.drawingFromCanvasPoints(pts));
   }
 
   /** Closes the shape (polygon) using the collected points. */
@@ -97,10 +101,19 @@ export default class WardleyDrawTool {
     const pts = [...this.points];
     this.deactivate();
     if (pts.length < 3) return;
-    const shape = this.factory.drawingFromCanvasPoints(pts, { closed: true });
+    this.create(this.factory.drawingFromCanvasPoints(pts, { closed: true }));
+  }
+
+  /**
+   * Created at its exact bounds: a centre position would be rounded by diagram-js and could push
+   * points that sit on the plot edge half a pixel outside.
+   */
+  private create(shape: WardleyShape): void {
+    const { x, y, width, height } = shape;
+    const bounds = { x, y, width, height };
     const created = this.modeling.createShape(
       shape as unknown as Shape,
-      { x: shape.x + shape.width / 2, y: shape.y + shape.height / 2 },
+      bounds,
       this.canvas.getRootElement() as Shape,
     );
     this.selection.select(created as unknown as Element);
@@ -125,14 +138,20 @@ export default class WardleyDrawTool {
     this.eventBus.fire('tool-manager.update', { tool: null });
   }
 
+  /**
+   * Clamped into the plot: drawings are saved as normalized [0,1] points, so the preview must not
+   * show anything the saved shape cannot hold.
+   */
   private toCanvasPoint(e: MouseEvent): Point {
     const rect = this.canvas.getContainer().getBoundingClientRect();
     const vb = this.canvas.viewbox();
     const scale = this.canvas.zoom();
-    return {
-      x: (e.clientX - rect.left) / scale + vb.x,
-      y: (e.clientY - rect.top) / scale + vb.y,
-    };
+    return this.grid.toCanvas(
+      this.grid.fromCanvas({
+        x: (e.clientX - rect.left) / scale + vb.x,
+        y: (e.clientY - rect.top) / scale + vb.y,
+      }),
+    );
   }
 
   /** Palette/context-pad/menus live INSIDE the container — let their clicks through. */

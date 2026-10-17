@@ -2,9 +2,10 @@
 //   1. Extension host  (Node/CJS, `vscode` external)  -> dist/extension.cjs
 //   2. Webview          (Browser/IIFE, Modeler+CSS)    -> dist/webview.js (+ dist/webview.css)
 //
-// Like the demo webapp, we bundle the @miragon/wardley-* packages straight from SOURCE (aliased to
-// src/index.ts). That makes the build self-contained: no prior lib build needed, and the
-// diagram-js imports resolve relative to the renderer source (packages/renderer/node_modules).
+// Like the demo webapp, both bundles take the @miragon/wardley-* packages straight from SOURCE
+// (aliased to src/index.ts). That makes the build self-contained: no prior lib build needed, and the
+// diagram-js imports resolve relative to the renderer source (packages/renderer/node_modules). The
+// host only pulls in the DOM-free DSL (diagnostics).
 import * as esbuild from 'esbuild';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
@@ -41,6 +42,7 @@ const host = {
   format: 'cjs',
   target: 'node18',
   external: ['vscode'],
+  alias,
 };
 
 /** @type {import('esbuild').BuildOptions} */

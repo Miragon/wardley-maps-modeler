@@ -207,6 +207,9 @@ export interface MapConfig {
  */
 export const DEFAULT_PLOT_SIZE = { width: 1080, height: 680 } as const;
 
+/** Title of a map that names none (parser default, new maps, a cleared title). */
+export const DEFAULT_MAP_TITLE = 'Untitled Map';
+
 /** Root object. Domain and layout are separated logically (not physically). */
 export interface WardleyMap {
   readonly schemaVersion: number;

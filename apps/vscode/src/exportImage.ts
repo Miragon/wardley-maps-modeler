@@ -1,9 +1,8 @@
 import * as vscode from 'vscode';
 
 /**
- * Image export (SVG/PNG) to disk via a save dialog — the scene (OWM-DSL) is embedded in the file,
- * so exported images can later be reopened as a map. Shared by the text and PNG editor (hence
- * generic over the source URI rather than a document type).
+ * Image export (SVG/PNG) to disk via a save dialog. Exports are pictures: they carry no map source,
+ * the `.wmap`/`.owm` file stays the editable original.
  */
 export async function exportImageToFile(
   sourceUri: vscode.Uri | undefined,

@@ -1,10 +1,16 @@
 import type CommandStack from 'diagram-js/lib/command/CommandStack';
-import type { Method } from '@miragon/wardley-schema-model';
+import type Canvas from 'diagram-js/lib/core/Canvas';
+import type { MapConfig, MapSize, Method } from '@miragon/wardley-schema-model';
 import type { WardleyConnection, WardleyShape } from '../model/di-types.js';
 import { noteMetrics } from '../draw/styles.js';
+import { wardleyRootOf } from '../map-resize/index.js';
 import UpdatePropertiesHandler from './cmd/UpdatePropertiesHandler.js';
+import ResizeMapHandler from './cmd/ResizeMapHandler.js';
+import UpdateConfigHandler, { type MapConfigUpdate } from './cmd/UpdateConfigHandler.js';
 
 const UPDATE_PROPERTIES = 'element.updateProperties';
+export const RESIZE_MAP = 'wardley.map.resize';
+export const UPDATE_CONFIG = 'wardley.config.update';
 
 function compact<T extends Record<string, unknown>>(obj: T): T {
   const out: Record<string, unknown> = {};
@@ -22,10 +28,44 @@ export interface EvolveOptions {
  * Registers the generic UpdatePropertiesHandler at bootstrap.
  */
 export default class WardleyModeling {
-  static $inject = ['commandStack'];
+  static $inject = ['commandStack', 'canvas'];
 
-  constructor(private readonly commandStack: CommandStack) {
+  constructor(
+    private readonly commandStack: CommandStack,
+    private readonly canvas: Canvas,
+  ) {
     commandStack.registerHandler(UPDATE_PROPERTIES, UpdatePropertiesHandler);
+    commandStack.registerHandler(RESIZE_MAP, ResizeMapHandler);
+    commandStack.registerHandler(UPDATE_CONFIG, UpdateConfigHandler);
+  }
+
+  /**
+   * Sets the plot size (`undefined` removes the `size` line) as one undoable step that re-projects
+   * the shapes in place. Pass an already normalized size (see `normalizeMapSize`). Does nothing
+   * when the config would not change.
+   */
+  resizeMap(size: MapSize | undefined): void {
+    const config = this.currentConfig();
+    if (!config || sameSize(config.size, size)) return;
+    this.commandStack.execute(RESIZE_MAP, { size });
+  }
+
+  /** Changes config fields (title, labels, …) as one undoable step; `undefined` removes a field. */
+  updateConfig(properties: MapConfigUpdate): void {
+    const config = this.currentConfig();
+    if (!config) return;
+    const current = config as unknown as Record<string, unknown>;
+    const changed = Object.fromEntries(
+      Object.entries(properties).filter(
+        ([key, value]) => key !== 'size' && JSON.stringify(current[key]) !== JSON.stringify(value),
+      ),
+    ) as MapConfigUpdate;
+    if (Object.keys(changed).length === 0) return;
+    this.commandStack.execute(UPDATE_CONFIG, { properties: changed });
+  }
+
+  private currentConfig(): MapConfig | undefined {
+    return wardleyRootOf(this.canvas)?.businessObject?.config;
   }
 
   updateProperties(
@@ -57,11 +97,12 @@ export default class WardleyModeling {
     const target = clamp01(targetEvolution);
     // Evolution only moves forward (canon) — silently ignore targets left of the current position.
     if (target <= element.evolution) return;
+    // Retargeting keeps what the user already gave the evolve line (new name, method, label offset).
     this.updateProperties(element, {
       movement: compact({
+        ...element.movement,
         targetEvolution: target,
-        newLabel: opts.newLabel,
-        method: opts.method,
+        ...compact({ newLabel: opts.newLabel, method: opts.method }),
       }),
     });
   }
@@ -97,6 +138,11 @@ export default class WardleyModeling {
   setColor(element: WardleyShape, color: string | undefined): void {
     this.updateProperties(element, { color });
   }
+}
+
+function sameSize(a: MapSize | undefined, b: MapSize | undefined): boolean {
+  if (!a || !b) return a === b;
+  return a.width === b.width && a.height === b.height;
 }
 
 function clamp01(n: number): number {

@@ -1,7 +1,14 @@
 import * as vscode from 'vscode';
 import { getWebviewHtml } from './webviewHtml.js';
 import { exportImageToFile } from './exportImage.js';
-import type { HostToWebview, WebviewToHost } from './protocol.js';
+import { minimalLineEdit } from './minimalEdit.js';
+import type { WardleyDiagnostics } from './diagnostics.js';
+import type { HostToWebview, WebviewCommand, WebviewToHost } from './protocol.js';
+
+/** Echo keys ignore the line break style: VS Code writes inserted '\n' as the document's EOL. */
+function echoKey(text: string): string {
+  return text.replace(/\r\n/g, '\n');
+}
 
 /**
  * CustomTextEditor for `.wmap` / `.owm`. The document (OWM-DSL text) remains the source of truth —
@@ -11,19 +18,48 @@ import type { HostToWebview, WebviewToHost } from './protocol.js';
 export class WardleyEditorProvider implements vscode.CustomTextEditorProvider {
   public static readonly viewType = 'wardley.mapEditor';
 
-  public static register(context: vscode.ExtensionContext): vscode.Disposable {
-    return vscode.window.registerCustomEditorProvider(
+  public static register(
+    context: vscode.ExtensionContext,
+    diagnostics?: WardleyDiagnostics,
+  ): { provider: WardleyEditorProvider; registration: vscode.Disposable } {
+    const provider = new WardleyEditorProvider(context, diagnostics);
+    const registration = vscode.window.registerCustomEditorProvider(
       WardleyEditorProvider.viewType,
-      new WardleyEditorProvider(context),
+      provider,
       {
         // Diagram editor: preserve state (zoom/selection) across tab switches.
         webviewOptions: { retainContextWhenHidden: true },
         supportsMultipleEditorsPerDocument: false,
       },
     );
+    return { provider, registration };
   }
 
-  private constructor(private readonly context: vscode.ExtensionContext) {}
+  /** Open diagram panels by document URI (one per document). */
+  private readonly panels = new Map<string, vscode.WebviewPanel>();
+  private activePanelKey: string | undefined;
+
+  private constructor(
+    private readonly context: vscode.ExtensionContext,
+    private readonly diagnostics?: WardleyDiagnostics,
+  ) {}
+
+  /** The document of the focused diagram editor, if any. */
+  public activeDocumentUri(): vscode.Uri | undefined {
+    return this.activePanelKey ? vscode.Uri.parse(this.activePanelKey) : undefined;
+  }
+
+  /**
+   * Runs a diagram action in the editor of `uri` (default: the focused diagram). Returns false when
+   * no such diagram is open.
+   */
+  public runCommand(name: WebviewCommand, uri?: vscode.Uri): boolean {
+    const key = uri?.toString() ?? this.activePanelKey;
+    const panel = key ? this.panels.get(key) : undefined;
+    if (!panel) return false;
+    void panel.webview.postMessage({ type: 'command', name } satisfies HostToWebview);
+    return true;
+  }
 
   public async resolveCustomTextEditor(
     document: vscode.TextDocument,
@@ -38,6 +74,9 @@ export class WardleyEditorProvider implements vscode.CustomTextEditorProvider {
     webview.html = getWebviewHtml(webview, this.context.extensionUri);
 
     const post = (msg: HostToWebview): Thenable<boolean> => webview.postMessage(msg);
+    const key = document.uri.toString();
+    this.panels.set(key, webviewPanel);
+    if (webviewPanel.active) this.activePanelKey = key;
 
     // Texts the webview itself produced — to suppress the echo (an own change comes back as
     // onDidChangeTextDocument) and NOT reset the canvas. A SET (not a single value): for edits A,B
@@ -45,26 +84,58 @@ export class WardleyEditorProvider implements vscode.CustomTextEditorProvider {
     // change events arrive.
     const suppressEcho = new Set<string>();
 
+    // Edits are written one at a time, each diffed against the document as it is by then: a range
+    // computed before the previous edit landed would point at the wrong lines, and VS Code rejects
+    // an edit made against an older document version. Every edit carries the whole text, so edits
+    // that queue up behind a running write collapse into the newest one.
+    let queuedText: string | undefined;
+    let writes: Promise<void> = Promise.resolve();
+    const queueEdit = (text: string): Promise<void> => {
+      queuedText = text;
+      writes = writes.then(async () => {
+        if (queuedText === undefined) return;
+        const latest = queuedText;
+        queuedText = undefined;
+        const written = await this.applyMinimalEdit(document, latest, suppressEcho);
+        // The canvas already shows the change; when the document refused it (read-only), show the
+        // document again — unless a newer edit is queued, whose outcome decides instead.
+        if (!written && queuedText === undefined) {
+          void post({ type: 'update', text: document.getText() });
+        }
+      });
+      return writes;
+    };
+
     const changeSub = vscode.workspace.onDidChangeTextDocument((e) => {
-      if (e.document.uri.toString() !== document.uri.toString()) return;
+      if (e.document.uri.toString() !== key) return;
       const text = document.getText();
-      if (suppressEcho.has(text)) {
-        suppressEcho.delete(text);
-        return;
-      }
+      if (suppressEcho.delete(echoKey(text))) return;
       void post({ type: 'update', text });
+    });
+
+    const viewStateSub = webviewPanel.onDidChangeViewState(() => {
+      if (webviewPanel.active) this.activePanelKey = key;
+      else if (this.activePanelKey === key) this.activePanelKey = undefined;
+    });
+
+    const diagnosticsSub = this.diagnostics?.onDidChange(({ uri, count }) => {
+      if (uri.toString() === key) void post({ type: 'diagnostics', count });
     });
 
     const messageSub = webview.onDidReceiveMessage(async (msg: WebviewToHost) => {
       switch (msg.type) {
         case 'ready':
           await post({ type: 'init', text: document.getText() });
+          this.diagnostics?.refresh(document);
           break;
         case 'edit':
-          await this.replaceWholeDocument(document, msg.text, suppressEcho);
+          await queueEdit(msg.text);
           break;
         case 'export':
           await exportImageToFile(document.uri, msg.format, msg.data);
+          break;
+        case 'showProblems':
+          void vscode.commands.executeCommand('workbench.actions.view.problems');
           break;
         case 'info':
           void vscode.window.showInformationMessage(msg.message);
@@ -75,29 +146,52 @@ export class WardleyEditorProvider implements vscode.CustomTextEditorProvider {
       }
     });
 
+    this.diagnostics?.refresh(document);
+
     webviewPanel.onDidDispose(() => {
       changeSub.dispose();
+      viewStateSub.dispose();
+      diagnosticsSub?.dispose();
       messageSub.dispose();
+      if (this.panels.get(key) === webviewPanel) this.panels.delete(key);
+      if (this.activePanelKey === key) this.activePanelKey = undefined;
     });
   }
 
-  private async replaceWholeDocument(
+  /**
+   * Writes `text` into the document, touching only the lines that differ, so the cursor of a
+   * side-by-side text editor stays where it is. Resolves to false when the document refused it.
+   */
+  private async applyMinimalEdit(
     document: vscode.TextDocument,
     text: string,
     suppressEcho: Set<string>,
-  ): Promise<void> {
-    if (document.getText() === text) return;
+  ): Promise<boolean> {
+    if (document.getText() === text) return true;
+    const lines: string[] = [];
+    for (let i = 0; i < document.lineCount; i++) lines.push(document.lineAt(i).text);
+    const change = minimalLineEdit(lines, text);
+    if (!change) return true;
     // Register first (synchronously, before applyEdit), so the resulting change event is reliably
-    // recognized as an echo. Only add when a write actually happens (not a no-op above) -> no
-    // orphaned set entries.
-    suppressEcho.add(text);
+    // recognized as an echo. Only add when a write actually happens -> no orphaned set entries.
+    const key = echoKey(text);
+    suppressEcho.add(key);
     const edit = new vscode.WorkspaceEdit();
-    const fullRange = new vscode.Range(
-      document.positionAt(0),
-      document.positionAt(document.getText().length),
+    edit.replace(
+      document.uri,
+      new vscode.Range(
+        change.start.line,
+        change.start.character,
+        change.end.line,
+        change.end.character,
+      ),
+      change.text,
     );
-    edit.replace(document.uri, fullRange, text);
-    const ok = await vscode.workspace.applyEdit(edit);
-    if (!ok) suppressEcho.delete(text); // write failed (e.g. read-only) -> no echo
+    const ok = await vscode.workspace.applyEdit(edit).then(
+      (applied) => applied,
+      () => false,
+    );
+    if (!ok) suppressEcho.delete(key); // write failed (e.g. read-only) -> no echo
+    return ok;
   }
 }

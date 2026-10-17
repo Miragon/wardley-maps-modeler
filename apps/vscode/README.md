@@ -38,16 +38,53 @@ Together they show _what_ you depend on and _how mature_ each piece is.
 ## Editing a map
 
 - **Custom editor for `.wmap` / `.owm`.** Open a map file and you get the full graphical editor,
-  backed by the plain-text file. Editing the text in a split view re-renders the canvas live
-  (two-way sync), and VS Code tracks dirty state as you go. To reopen a map as raw text, use
-  **View: Reopen Editor With…**, then pick **Text Editor**.
-- **Full modeler:** the tool palette on the side and the context pad on a selected component (add,
-  connect, append, delete), move, resize, inline label editing, set component colors, and evolve
-  (drag a component left or right along the maturity axis). Undo/redo via `Ctrl/Cmd+Z` and
-  `Ctrl/Cmd+Shift+Z`.
-- **Collapsed menu** (top-right, Excalidraw-style): fit-to-view · map size · X-axis labels · export
-  SVG/PNG (as a picture).
+  backed by the plain-text file. VS Code tracks dirty state, saving and undo as for any text file.
+- **Text and diagram side by side.** The **Open Source to the Side** button in the editor title bar
+  opens the text next to the diagram; in the text editor, **Open Diagram to the Side** does the
+  reverse. Typing re-renders the canvas live, and a canvas edit rewrites only the lines it changes:
+  comments, blank lines, statement order and number formatting stay as you wrote them, and the text
+  editor's cursor stays where it is.
+- **Problems and highlighting.** Lines the parser cannot read (a typo, a link to a missing
+  component) are underlined in the text and listed in the **Problems** view; the diagram shows how
+  many there are in its bottom-left corner. The text has syntax highlighting, and
+  `Ctrl/Cmd+/` toggles `//` comments.
+- **Full modeler:** the floating tool palette at the top and the context pad on a selected element
+  (append, connect, evolve, settings, color, delete). Double-click an element to rename it; placing
+  a new one opens its name field right away. Drag a component left or right to evolve it, drag its
+  label to move just the label (`Alt`+double-click puts it back).
+- **Map size:** drag the plot's right or bottom edge or its corner to resize it (`Shift` keeps the
+  ratio, `Alt` turns off snapping, double-click the corner to reset), or pick a preset or exact
+  width × height in the menu.
+- **Collapsed menu** (top left): fit to view · map size · X-axis labels · export SVG, PNG (2×) or
+  PNG (4×, transparent). Exports are pictures; the `.wmap` / `.owm` file stays the editable source.
+- **Zoom** (bottom right): `−`, the zoom level (click to fit the map) and `+`.
 - **Self-hosted font** — no CDN, offline-capable.
+
+## Commands
+
+Run these from the Command Palette (type _"Wardley"_) or the editor title bar:
+
+| Command                                      | What it does                                        |
+| -------------------------------------------- | --------------------------------------------------- |
+| **Wardley: Open Source to the Side**         | Opens the map's text next to the diagram.           |
+| **Wardley: Open Diagram to the Side**        | Opens the diagram next to the map's text.           |
+| **Wardley: Fit Map to View**                 | Zooms the diagram to show the whole map.            |
+| **Wardley: Export as SVG / PNG**             | Opens a save dialog (defaults to next to the file). |
+| **Wardley: Export as PNG (4×, Transparent)** | High-resolution PNG without background, for slides. |
+
+## Keyboard shortcuts on the canvas
+
+| Keys                                | Action                                        |
+| ----------------------------------- | --------------------------------------------- |
+| `C` · `U` · `N` · `P`               | Add a component · user · note · pipeline      |
+| `A`                                 | Connect from the selected element             |
+| `L`                                 | Lasso selection                               |
+| Arrow keys (`Shift` = bigger steps) | Nudge the selection                           |
+| `Delete` / `Backspace`              | Delete the selection                          |
+| `Ctrl/Cmd+C` · `V` · `D` · `A`      | Copy · paste · duplicate · select all         |
+| `Ctrl/Cmd+Z` · `Ctrl/Cmd+Shift+Z`   | Undo · redo (the file's undo history)         |
+| `Ctrl/Cmd+=` · `-` · `0`            | Zoom in · zoom out · fit the map              |
+| `Esc`                               | Clear the selection, close the menu or dialog |
 
 ## Development
 

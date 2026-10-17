@@ -4,7 +4,13 @@ export { Viewer } from './Viewer.js';
 export { NavigatedViewer } from './NavigatedViewer.js';
 export { Modeler } from './Modeler.js';
 export { WardleyBaseViewer } from './WardleyBaseViewer.js';
-export type { WardleyViewerOptions, EventCallback } from './WardleyBaseViewer.js';
+export type {
+  WardleyViewerOptions,
+  EventCallback,
+  MapSizeInfo,
+  SetEvolutionLabelsOptions,
+  WardleyConfigChangedEvent,
+} from './WardleyBaseViewer.js';
 
 export { wardleyModelModule, WardleyElementFactory } from './model/index.js';
 export {
@@ -14,20 +20,68 @@ export {
 } from './evolution-grid/index.js';
 export { wardleyDrawModule, WardleyRenderer } from './draw/index.js';
 export { COLORS, PLOT } from './draw/styles.js';
+export {
+  PLOT_MIN,
+  PLOT_MAX,
+  MAP_SIZE_PRESETS,
+  normalizeMapSize,
+  presetIdForSize,
+} from '@miragon/wardley-schema-model';
+export type { MapSize, MapSizePreset, MapSizePresetId } from '@miragon/wardley-schema-model';
 
 /* Miragon brand tokens (single source of truth for colour) — for consumers theming their own chrome. */
 export { MIRAGON } from './theme/index.js';
-export { ioModule, WardleyImporter, WardleyExporter, saveSVG, ROOT_ID } from './io/index.js';
+export {
+  ioModule,
+  WardleyImporter,
+  WardleyExporter,
+  WardleySourceOrder,
+  saveSVG,
+  exportBounds,
+  svgToPng,
+  blobToBase64,
+  ROOT_ID,
+} from './io/index.js';
+export type { SvgBounds, SvgToPngOptions } from './io/index.js';
 export { wardleyModelingModule, WardleyModeling } from './modeling/index.js';
 export { wardleyLayoutModule, WardleyLayouter } from './layout/index.js';
-export type { EvolveOptions } from './modeling/index.js';
+export type { EvolveOptions, MapConfigUpdate } from './modeling/index.js';
+export { RESIZE_MAP, UPDATE_CONFIG } from './modeling/index.js';
+export {
+  mapResizeModule,
+  MapResizeHandles,
+  MapProjection,
+  ResizeAwareAutoScroll,
+} from './map-resize/index.js';
+export { pipelineGroupModule, PipelineGroupBehavior } from './pipeline/index.js';
+export {
+  linkEditingModule,
+  WardleyLinkEditing,
+  canHaveLink,
+  linkOf,
+} from './link-editing/index.js';
+export { wardleyLabelDragModule, WardleyLabelDragging } from './label-drag/index.js';
+export type { LabelRole } from './label-drag/index.js';
+export { canvasAccessibilityModule } from './a11y/index.js';
+export { wardleyLassoModule, WardleyLassoBehavior } from './lasso/index.js';
+export { wardleyOrderingModule, WardleyOrderingProvider } from './ordering/index.js';
+export { wardleyDrawToolModule, WardleyDrawTool } from './draw-tool/index.js';
 export { wardleyRulesModule, WardleyRules } from './rules/index.js';
 export { stageSnappingModule } from './snapping/index.js';
 export { PanConstraintModule, PanConstraint } from './pan-constraint/index.js';
 export { wardleyPaletteModule } from './palette/index.js';
 export { wardleyContextPadModule } from './context-pad/index.js';
 export { labelEditingModule, WardleyLabelEditing } from './label-editing/index.js';
+export type {
+  ActiveLabelEdit,
+  ActivateOptions,
+  FieldSelection,
+  LabelDeduplicatedEvent,
+} from './label-editing/WardleyLabelEditing.js';
+export { restoreEditorState, setAsideEditorState } from './editor-state.js';
+export type { EditorState } from './editor-state.js';
 export { wardleyKeyboardModule } from './keyboard/index.js';
+export type { WardleyKeyboardConfig } from './keyboard/WardleyKeyboard.js';
 export { wardleyEvolveModule, WardleyEvolveDragging } from './evolve/index.js';
 export {
   wardleyPopupModule,

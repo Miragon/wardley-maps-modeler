@@ -53,11 +53,74 @@ export class CancellationTokenSource {
   }
 }
 
-export class Range {
+export class Position {
   constructor(
-    readonly start: unknown,
-    readonly end: unknown,
+    readonly line: number,
+    readonly character: number,
   ) {}
+}
+
+/** Supports both real constructors: `(start, end)` and `(startLine, startChar, endLine, endChar)`. */
+export class Range {
+  readonly start: Position;
+  readonly end: Position;
+  constructor(
+    startOrLine: Position | number,
+    endOrCharacter: Position | number,
+    endLine?: number,
+    endCharacter?: number,
+  ) {
+    if (typeof startOrLine === 'number') {
+      this.start = new Position(startOrLine, endOrCharacter as number);
+      this.end = new Position(endLine ?? startOrLine, endCharacter ?? (endOrCharacter as number));
+    } else {
+      this.start = startOrLine;
+      this.end = endOrCharacter as Position;
+    }
+  }
+}
+
+export enum DiagnosticSeverity {
+  Error = 0,
+  Warning = 1,
+  Information = 2,
+  Hint = 3,
+}
+
+export class Diagnostic {
+  source?: string;
+  constructor(
+    readonly range: Range,
+    readonly message: string,
+    readonly severity: DiagnosticSeverity = DiagnosticSeverity.Error,
+  ) {}
+}
+
+export enum ViewColumn {
+  Active = -1,
+  Beside = -2,
+  One = 1,
+  Two = 2,
+}
+
+/** In-memory DiagnosticCollection keyed by `uri.toString()`. */
+export class MockDiagnosticCollection {
+  readonly entries = new Map<string, readonly Diagnostic[]>();
+  disposed = false;
+  constructor(readonly name: string) {}
+  set(uri: { toString(): string }, diagnostics: readonly Diagnostic[]): void {
+    this.entries.set(uri.toString(), diagnostics);
+  }
+  get(uri: { toString(): string }): readonly Diagnostic[] | undefined {
+    return this.entries.get(uri.toString());
+  }
+  delete(uri: { toString(): string }): void {
+    this.entries.delete(uri.toString());
+  }
+  dispose(): void {
+    this.disposed = true;
+    this.entries.clear();
+  }
 }
 
 export class WorkspaceEdit {
@@ -94,13 +157,22 @@ export class Uri {
   }
 }
 
-// The document-change bus the host subscribes to; tests fire it via `vscodeMock`.
+// The document buses the host subscribes to; tests fire them via `vscodeMock`.
 const docChangeEmitter = new EventEmitter<{ document: unknown }>();
+const docOpenEmitter = new EventEmitter<unknown>();
+const docCloseEmitter = new EventEmitter<unknown>();
 
 export const workspace = {
   workspaceFolders: undefined as ReadonlyArray<{ uri: Uri }> | undefined,
+  textDocuments: [] as unknown[],
   onDidChangeTextDocument(listener: (e: { document: unknown }) => void): Disposable {
     return docChangeEmitter.event(listener);
+  },
+  onDidOpenTextDocument(listener: (document: unknown) => void): Disposable {
+    return docOpenEmitter.event(listener);
+  },
+  onDidCloseTextDocument(listener: (document: unknown) => void): Disposable {
+    return docCloseEmitter.event(listener);
   },
   applyEdit(_edit: WorkspaceEdit): Promise<boolean> {
     return Promise.resolve(true);
@@ -128,9 +200,23 @@ interface RegisteredEditor {
 }
 
 const registeredEditors: RegisteredEditor[] = [];
+const diagnosticCollections: MockDiagnosticCollection[] = [];
+const registeredCommands = new Map<string, (...args: unknown[]) => unknown>();
+const executedCommands: Array<{ command: string; args: unknown[] }> = [];
+const informationMessages: string[] = [];
+
+export const languages = {
+  createDiagnosticCollection(name: string): MockDiagnosticCollection {
+    const collection = new MockDiagnosticCollection(name);
+    diagnosticCollections.push(collection);
+    return collection;
+  },
+};
 
 export const window = {
-  showInformationMessage(_message: string, ..._items: string[]): Promise<string | undefined> {
+  activeTextEditor: undefined as { document: { uri: Uri } } | undefined,
+  showInformationMessage(message: string, ..._items: string[]): Promise<string | undefined> {
+    informationMessages.push(message);
     return Promise.resolve(undefined);
   },
   showErrorMessage(_message: string, ..._items: string[]): Promise<string | undefined> {
@@ -146,11 +232,14 @@ export const window = {
 };
 
 export const commands = {
-  registerCommand(_command: string, _callback: (...args: unknown[]) => unknown): Disposable {
-    return new Disposable(() => {});
+  registerCommand(command: string, callback: (...args: unknown[]) => unknown): Disposable {
+    registeredCommands.set(command, callback);
+    return new Disposable(() => registeredCommands.delete(command));
   },
-  executeCommand(_command: string, ..._rest: unknown[]): Promise<unknown> {
-    return Promise.resolve(undefined);
+  executeCommand(command: string, ...args: unknown[]): Promise<unknown> {
+    executedCommands.push({ command, args });
+    const callback = registeredCommands.get(command);
+    return Promise.resolve(callback?.(...args));
   },
 };
 
@@ -162,6 +251,26 @@ export const vscodeMock = {
   /** Simulate an editor change event (echo or external edit) for the given document. */
   fireDidChangeTextDocument(document: unknown): void {
     docChangeEmitter.fire({ document });
+  },
+  fireDidOpenTextDocument(document: unknown): void {
+    docOpenEmitter.fire(document);
+  },
+  fireDidCloseTextDocument(document: unknown): void {
+    docCloseEmitter.fire(document);
+  },
+  /** The collections `languages.createDiagnosticCollection` handed out (newest last). */
+  diagnosticCollections(): readonly MockDiagnosticCollection[] {
+    return diagnosticCollections;
+  },
+  registeredCommandIds(): string[] {
+    return [...registeredCommands.keys()];
+  },
+  /** Every `commands.executeCommand` call, including the ones the host made itself. */
+  executedCommands(): ReadonlyArray<{ command: string; args: unknown[] }> {
+    return executedCommands;
+  },
+  informationMessages(): readonly string[] {
+    return informationMessages;
   },
   /** The provider instance a `register(...)` call handed to `registerCustomEditorProvider`. */
   lastRegisteredProvider<T>(): T {
@@ -175,7 +284,15 @@ export const vscodeMock = {
   /** Reset shared state between tests. */
   reset(): void {
     registeredEditors.length = 0;
+    diagnosticCollections.length = 0;
+    registeredCommands.clear();
+    executedCommands.length = 0;
+    informationMessages.length = 0;
     docChangeEmitter.dispose();
+    docOpenEmitter.dispose();
+    docCloseEmitter.dispose();
     workspace.workspaceFolders = undefined;
+    workspace.textDocuments = [];
+    window.activeTextEditor = undefined;
   },
 };

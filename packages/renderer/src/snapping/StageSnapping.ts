@@ -1,7 +1,9 @@
+import type Canvas from 'diagram-js/lib/core/Canvas';
 import type EventBus from 'diagram-js/lib/core/EventBus';
 import type EvolutionGrid from '../evolution-grid/EvolutionGrid.js';
 
-const SNAP_TOLERANCE = 8;
+/** Snap distance in SCREEN px, so the pull feels the same at every zoom level. */
+export const SNAP_TOLERANCE_SCREEN_PX = 8;
 
 interface DragMoveEvent {
   x?: number;
@@ -12,15 +14,17 @@ interface DragMoveEvent {
 }
 
 /**
- * Snaps the X position (evolution) during move/create/resize to the stage boundaries.
+ * Snaps the X position (evolution) during move/create/resize to the stage boundaries, within
+ * `SNAP_TOLERANCE_SCREEN_PX` on screen (converted to diagram units with the current zoom).
  * Disabled while the Shift key is held. Important: `x` and `dx` must be adjusted TOGETHER
  * (like diagram-js' `setSnapped`) — move takes the final position from `dx`, so a mutated
  * `x` alone would have no effect.
  */
 export default class StageSnapping {
-  static $inject = ['eventBus', 'evolutionGrid'];
+  static $inject = ['eventBus', 'evolutionGrid', 'canvas'];
 
-  constructor(eventBus: EventBus, grid: EvolutionGrid) {
+  constructor(eventBus: EventBus, grid: EvolutionGrid, canvas: Canvas) {
+    const tolerance = () => SNAP_TOLERANCE_SCREEN_PX / (canvas.zoom() || 1);
     const boundaryXs = () =>
       grid.getBoundaries().map((b) => grid.toCanvas({ visibility: 0.5, evolution: b }).x);
 
@@ -38,8 +42,9 @@ export default class StageSnapping {
       const shape = event.context?.shape;
       if (!shape) return;
       const mid = shape.x + shape.width / 2 + event.dx;
+      const maxDistance = tolerance();
       for (const sx of boundaryXs()) {
-        if (Math.abs(mid - sx) <= SNAP_TOLERANCE) {
+        if (Math.abs(mid - sx) <= maxDistance) {
           const d = sx - mid;
           event.dx += d;
           event.x += d;
@@ -55,8 +60,9 @@ export default class StageSnapping {
       (event: DragMoveEvent) => {
         if (event.originalEvent?.shiftKey) return;
         if (typeof event.x !== 'number') return;
+        const maxDistance = tolerance();
         for (const sx of boundaryXs()) {
-          if (Math.abs(event.x - sx) <= SNAP_TOLERANCE) {
+          if (Math.abs(event.x - sx) <= maxDistance) {
             setSnappedX(event, sx);
             break;
           }

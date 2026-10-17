@@ -54,7 +54,7 @@ good map says is the `wardley-mapping` skill's job.
 | ---------------------------------------------- | -------------------------------------------------------------------------- |
 | `title <free text>`                            | Map title. Absent ⇒ `Untitled Map`.                                        |
 | `style wardley\|handwritten\|colour\|dark`     | Visual style. Optional.                                                    |
-| `size [width, height]`                         | Plot size in px. Default `1080 × 680`, minimum `480 × 320`.                |
+| `size [width, height]`                         | Plot size in whole px. Default `1080 × 680`, `480 × 320` to `5000 × 5000`. |
 | `evolution <g>-><c>-><p>-><u>`                 | Exactly four x-axis stage labels, renaming the four stage bands.           |
 | `y-axis <label>` or `<label>-><bottom>-><top>` | Y-axis label, optionally with its end labels.                              |
 | `annotations [vis, mat]`                       | Position of the annotation legend (kept; the Modeler draws no legend box). |

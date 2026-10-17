@@ -16,7 +16,8 @@ export const PLOT = {
   marginBottom: 58,
 } as const;
 
-export const PLOT_MIN = { width: 480, height: 320 } as const;
+/** Smallest drawn plot — the size policy lives in schema-model (shared with the DSL parser). */
+export { PLOT_MIN } from '@miragon/wardley-schema-model';
 
 export const NODE_SIZE = 34;
 export const COMPONENT_RADIUS = 15;
@@ -53,25 +54,25 @@ export function noteMetrics(label: string): { lines: string[]; width: number; he
 export const COLORS = {
   paper: MIRAGON.grau,
   ink: MIRAGON.schwarz,
-  inkSoft: '#5B5B5B',
-  axis: 'rgba(51,93,229,0.22)',
-  axisText: '#6E7797',
-  grid: 'rgba(51,93,229,0.12)',
-  band: 'rgba(51,93,229,0.04)',
+  inkSoft: MIRAGON.textLeise,
+  axis: MIRAGON.kontur,
+  axisText: MIRAGON.textLeise,
+  grid: MIRAGON.linie,
+  band: 'rgba(29,29,29,0.025)',
   stroke: MIRAGON.schwarz,
   componentFill: MIRAGON.weiss,
   anchorFill: MIRAGON.schwarz,
-  dependency: '#9E9E9E',
+  dependency: MIRAGON.kontur,
   accent: MIRAGON.blau,
   accentSoft: 'rgba(51,93,229,0.12)',
   flow: MIRAGON.blau,
   movement: MIRAGON.danger,
   inertia: MIRAGON.schwarz,
-  noteText: '#5B5B5B',
+  noteText: MIRAGON.textLeise,
   pipeline: MIRAGON.schwarz,
   annotationFill: '#FBF3E0',
   plotBackground: MIRAGON.weiss,
-  accelerator: '#00C853',
+  accelerator: MIRAGON.success,
   deaccelerator: MIRAGON.danger,
 } as const;
 
@@ -82,10 +83,10 @@ export const COLORS = {
  * amber = watch, blue = info, purple = idea, slate = neutral.
  */
 export const NOTE_COLORS = [
-  { id: 'green', name: 'Green · good', value: '#0B7A55' },
-  { id: 'amber', name: 'Amber · watch', value: '#92610A' },
-  { id: 'red', name: 'Red · problem', value: '#C92A2A' },
-  { id: 'blue', name: 'Blue · info', value: '#2B50D4' },
+  { id: 'green', name: 'Green · good', value: MIRAGON.success },
+  { id: 'amber', name: 'Amber · watch', value: MIRAGON.warning },
+  { id: 'red', name: 'Red · problem', value: MIRAGON.danger },
+  { id: 'blue', name: 'Blue · info', value: MIRAGON.info },
   { id: 'teal', name: 'Teal', value: '#0E8181' },
   { id: 'purple', name: 'Purple · idea', value: '#6A3DB8' },
   { id: 'pink', name: 'Pink', value: '#C2185B' },
@@ -97,21 +98,29 @@ export const NOTE_COLORS = [
  * pioneers = blue (explore), settlers = amber (stabilise), town planners = green (industrialise).
  */
 export const ATTITUDE_COLORS: Record<string, { fill: string; stroke: string }> = {
-  pioneers: { fill: 'rgba(51,93,229,0.07)', stroke: '#335DE5' },
-  settlers: { fill: 'rgba(146,97,10,0.10)', stroke: '#92610A' },
-  townplanners: { fill: 'rgba(0,200,83,0.08)', stroke: '#00C853' },
+  pioneers: { fill: 'rgba(51,93,229,0.07)', stroke: MIRAGON.blau },
+  settlers: { fill: 'rgba(146,97,10,0.10)', stroke: MIRAGON.warning },
+  // Bright brand green only as the fill; the title and outline need the darker success value (AA).
+  townplanners: { fill: 'rgba(0,230,118,0.10)', stroke: MIRAGON.success },
+};
+
+/** Canonical region titles (Wardley's Pioneers / Settlers / Town Planners), keyed by kind. */
+export const ATTITUDE_TITLES: Record<string, string> = {
+  pioneers: 'Pioneers',
+  settlers: 'Settlers',
+  townplanners: 'Town Planners',
 };
 
 export const FONT = {
   /**
    * Set as the `font-family` attribute DIRECTLY on all SVG text elements (canvas labels,
    * axis/stage text and consequently the SVG export too) – not inherited from a CSS container.
-   * In EVERY context it reaches for the self-hosted 'Geist' (Miragon corporate typeface) if the
-   * consumer provides it; otherwise (e.g. an export SVG opened standalone) it falls back safely to a
-   * system sans. The library does NOT ship the font – consumers must self-host Geist themselves
-   * (e.g. via @fontsource-variable/geist), see README.
+   * 'Geist Variable' comes first because that is the family name `@fontsource-variable/geist`
+   * registers; 'Geist' matches a locally installed (static) Geist. Without either it falls back to a
+   * system sans. The library does NOT ship the font – consumers self-host it, see README.
    */
-  family: "'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif",
+  family:
+    "'Geist Variable', 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif",
   label: 13,
   axis: 12,
   stage: 12,

@@ -3,7 +3,7 @@ import type ElementFactory from 'diagram-js/lib/core/ElementFactory';
 import type ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
 import type EventBus from 'diagram-js/lib/core/EventBus';
 import type { Root } from 'diagram-js/lib/model/Types';
-import type { MapElement, WardleyMap } from '@miragon/wardley-schema-model';
+import type { MapEdge, MapElement, WardleyMap } from '@miragon/wardley-schema-model';
 import type EvolutionGrid from '../evolution-grid/EvolutionGrid.js';
 import type WardleyElementFactory from '../model/WardleyElementFactory.js';
 import type { WardleyShape } from '../model/di-types.js';
@@ -105,6 +105,7 @@ export default class WardleyImporter {
       shapeById.set(el.id, shape);
     }
 
+    const resolvedEdges: { edge: MapEdge; source: WardleyShape; target: WardleyShape }[] = [];
     for (const edge of map.edges) {
       const source = shapeById.get(edge.from);
       const target = shapeById.get(edge.to);
@@ -112,12 +113,24 @@ export default class WardleyImporter {
         warnings.push({ message: `Edge ${edge.id}: endpoint missing.`, elementId: edge.id });
         continue;
       }
+      resolvedEdges.push({ edge, source, target });
+    }
+
+    // Flows sit above dependencies so a dependency on the same pair cannot strike through the flow
+    // value; within each group, a later declaration paints on top (like interactive creation).
+    const connectionPaintOrder = [
+      ...resolvedEdges.filter(({ edge }) => edge.edgeType !== 'flow'),
+      ...resolvedEdges.filter(({ edge }) => edge.edgeType === 'flow'),
+    ];
+    let insertedConnections = 0;
+    for (const { edge, source, target } of connectionPaintOrder) {
       const conn =
         edge.edgeType === 'flow'
           ? this.factory.createFlow(edge, source, target)
           : this.factory.createDependency(edge, source, target);
-      // Insert directly behind the frames, before all nodes.
-      this.canvas.addConnection(conn, root, frameCount);
+      // Behind all nodes, in front of the frames and the connections inserted so far.
+      this.canvas.addConnection(conn, root, frameCount + insertedConnections);
+      insertedConnections++;
     }
 
     // Frames render BEFORE the nodes exist, but pipeline visuals depend on whether a
@@ -135,37 +148,16 @@ export default class WardleyImporter {
   }
 
   private createShape(el: MapElement): WardleyShape | undefined {
-    switch (el.elementType) {
-      case 'component':
-        return this.factory.createComponent(el);
-      case 'anchor':
-        return this.factory.createAnchor(el);
-      case 'note':
-        return this.factory.createNote(el);
-      case 'pipeline':
-        return this.factory.createPipeline(el);
-      case 'annotation':
-        return this.factory.createAnnotation(el);
-      case 'attitude':
-        return this.factory.createAttitude(el);
-      case 'accelerator':
-        return this.factory.createAccelerator(el);
-      case 'submap':
-        return this.factory.createSubmap(el);
-      case 'drawing':
-        return this.factory.createDrawing(el);
-      default: {
-        const exhaustive: never = el;
-        void exhaustive;
-        return undefined;
-      }
-    }
+    return this.factory.createFromModel(el);
   }
 
   clear(): void {
+    // Root elements are planes, not shapes: removing diagram-js's implicit root (created by any canvas
+    // access before the first import) as a shape corrupts the canvas and breaks setRootElement.
+    const roots = new Set<unknown>(this.canvas.getRootElements());
     for (const el of [...this.elementRegistry.getAll()]) {
       const e = el as { waypoints?: unknown; id: string };
-      if (e.id === ROOT_ID) continue;
+      if (roots.has(el)) continue;
       try {
         if (e.waypoints) this.canvas.removeConnection(e.id);
         else this.canvas.removeShape(e.id);

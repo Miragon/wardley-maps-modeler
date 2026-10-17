@@ -13,15 +13,23 @@ Together they show _what_ you depend on and _how mature_ each piece is.
 
 ## Editing a map
 
-- **Add and connect** — use the palette and context pad to place components and draw the
-  dependencies between them.
-- **Move, resize, rename** — drag a component to reposition it, or click its label to rename.
-  Dragging it left or right evolves it.
-- **Undo and redo** — `Ctrl/Cmd+Z` and `Ctrl/Cmd+Shift+Z`.
-- **Export** — the menu in the top-right corner fits the view, sets the map size, and exports to
-  SVG or PNG. Exported PNGs embed the map, so they reopen as editable files.
+- **Add and connect** — pick a tool in the palette at the top (or press `C` for a component, `U`
+  for a user, `N` for a note) and type its name. Select an element and press `A`, or use its
+  context pad, to draw a dependency.
+- **Move, rename, evolve** — drag a component to reposition it and double-click it to rename it.
+  Dragging it left or right evolves it. Drag a label to move just the label.
+- **Resize the map** — drag the plot's right or bottom edge or its corner, or pick a size in the
+  menu.
+- **Undo and redo** — `Ctrl/Cmd+Z` and `Ctrl/Cmd+Shift+Z`, the same history as the text file.
+- **Zoom** — the controls in the bottom-right corner, or `Ctrl/Cmd+=`, `-` and `0` (fit).
+- **Export** — the menu in the top-left corner fits the view, sets the map size and the X-axis
+  labels, and exports SVG or PNG pictures (also via **Wardley: Export as …** in the Command
+  Palette). Exports are pictures: keep the `.wmap` or `.owm` file as the editable source.
 
-The text file and the canvas stay in sync: open the `.wmap` or `.owm` text in a split view and
-watch your edits re-render live.
+## Text and diagram side by side
+
+Click **Open Source to the Side** in the editor title bar to see the text next to the diagram. Your
+edits on either side show up on the other right away, and canvas edits keep your comments and
+layout of the text. Lines the parser cannot read are listed in the **Problems** view.
 
 New to the concept? Start with [Learn Wardley Mapping](https://learnwardleymapping.com/).

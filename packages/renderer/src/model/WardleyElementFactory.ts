@@ -10,6 +10,7 @@ import type {
   ComponentElement,
   DrawingElement,
   MapEdge,
+  MapElement,
   NoteElement,
   PipelineElement,
   SubmapElement,
@@ -18,6 +19,32 @@ import type EvolutionGrid from '../evolution-grid/EvolutionGrid.js';
 import { NODE_SIZE, PIPELINE_HEIGHT, noteMetrics } from '../draw/styles.js';
 import { connectionAnchorOf } from '../layout/index.js';
 import type { WardleyConnection, WardleyShape } from './di-types.js';
+
+/** Element types that edges and DSL lines reference by name — their labels must be unique. */
+const LINKABLE_TYPES: ReadonlySet<string> = new Set([
+  'component',
+  'anchor',
+  'submap',
+  'pipeline',
+  'accelerator',
+]);
+
+function isLinkableType(type: unknown): boolean {
+  return typeof type === 'string' && LINKABLE_TYPES.has(type);
+}
+
+/**
+ * First label not in `taken`: `base` itself, otherwise the next counter. A base that already ends
+ * in a counter continues it ('Cup 2' -> 'Cup 3') instead of stacking ('Cup 2 2').
+ */
+export function nextFreeLabel(base: string, taken: ReadonlySet<string>): string {
+  if (!taken.has(base)) return base;
+  const counterMatch = / (\d+)$/.exec(base);
+  const stem = counterMatch ? base.slice(0, counterMatch.index) : base;
+  let counter = counterMatch ? Number(counterMatch[1]) + 1 : 2;
+  while (taken.has(`${stem} ${counter}`)) counter++;
+  return `${stem} ${counter}`;
+}
 
 export interface CreateNewExtra {
   attitudeKind?: AttitudeKind;
@@ -43,22 +70,85 @@ export default class WardleyElementFactory {
   /**
    * Returns a unique label: `base`, otherwise `base 2`, `base 3`, … Unique labels are mandatory
    * because the OWM DSL references elements BY THEIR NAME — duplicate names would cause ID
-   * collisions on serialize/re-import and lose edges (lines).
+   * collisions on serialize/re-import and lose edges (lines). Only linkable elements count:
+   * notes and regions are never referenced, so their text must not force a suffix.
    *
    * @param excludeId optional ID of the element currently being renamed (does NOT count its own
    *        current name as a collision — otherwise every rename would add a suffix).
    */
   uniqueLabel(base: string, excludeId?: string): string {
+    return nextFreeLabel(
+      base,
+      this.takenLinkableLabels(excludeId, this.pairableTypeFor(excludeId)),
+    );
+  }
+
+  /**
+   * Batch variant for pasted copies: linkable labels unique against the map AND each other;
+   * everything else keeps its text.
+   */
+  uniqueLabels(entries: ReadonlyArray<{ type: unknown; label: string }>): string[] {
+    const taken = this.takenLinkableLabels();
+    return entries.map(({ type, label }) => {
+      if (!isLinkableType(type)) return label;
+      const unique = nextFreeLabel(label, taken);
+      taken.add(unique);
+      return unique;
+    });
+  }
+
+  /** Whether elements of `type` are referenced by name (and so need a unique label). */
+  isLinkable(type: unknown): boolean {
+    return isLinkableType(type);
+  }
+
+  /**
+   * @param pairableType elements of this type that still lack their OWM partner do not block a
+   *        name: a standalone component may take the name of a pipeline without an anchor (and so
+   *        anchor it), and such a pipeline may take the name of a free standalone component.
+   */
+  private takenLinkableLabels(excludeId?: string, pairableType?: 'component' | 'pipeline') {
     const taken = new Set<string>();
     for (const el of this.elementRegistry.getAll()) {
       if (excludeId && el.id === excludeId) continue;
-      const lbl = (el as { wardleyLabel?: unknown }).wardleyLabel;
-      if (typeof lbl === 'string') taken.add(lbl);
+      const { wardleyType, wardleyLabel } = el as { wardleyType?: unknown; wardleyLabel?: unknown };
+      if (!isLinkableType(wardleyType) || typeof wardleyLabel !== 'string') continue;
+      if (wardleyType === pairableType && this.isUnpaired(el as WardleyShape)) continue;
+      taken.add(wardleyLabel);
     }
-    if (!taken.has(base)) return base;
-    let i = 2;
-    while (taken.has(`${base} ${i}`)) i++;
-    return `${base} ${i}`;
+    return taken;
+  }
+
+  /** Which partner type the element being renamed may share its new name with. */
+  private pairableTypeFor(excludeId?: string): 'component' | 'pipeline' | undefined {
+    const renamed = excludeId
+      ? (this.elementRegistry.getAll().find((el) => el.id === excludeId) as
+          WardleyShape | undefined)
+      : undefined;
+    if (!renamed || !this.isUnpaired(renamed)) return undefined;
+    if (renamed.wardleyType === 'component') return 'pipeline';
+    if (renamed.wardleyType === 'pipeline') return 'component';
+    return undefined;
+  }
+
+  /**
+   * A pipeline without an anchor component, or a standalone (non-member) component that anchors
+   * no pipeline. Members never pair: they belong to their own pipeline.
+   */
+  private isUnpaired(shape: WardleyShape): boolean {
+    const shapes = this.elementRegistry.getAll() as WardleyShape[];
+    if (shape.wardleyType === 'pipeline') {
+      return !shapes.some(
+        (other) =>
+          other.wardleyType === 'component' &&
+          other.wardleyLabel === shape.wardleyLabel &&
+          other.pipelineId !== shape.id,
+      );
+    }
+    if (shape.wardleyType !== 'component' || shape.pipelineId) return false;
+    return !shapes.some(
+      (other) => other.wardleyType === 'pipeline' && other.wardleyLabel === shape.wardleyLabel,
+    );
   }
 
   /** Next free annotation number (max + 1) — palette annotations therefore never collide. */
@@ -211,6 +301,38 @@ export default class WardleyElementFactory {
     });
   }
 
+  /**
+   * The shape for any model element, projected with the current grid. Shared by the importer and
+   * the in-place map resize, so both place every element type identically.
+   */
+  createFromModel(el: MapElement): WardleyShape | undefined {
+    switch (el.elementType) {
+      case 'component':
+        return this.createComponent(el);
+      case 'anchor':
+        return this.createAnchor(el);
+      case 'note':
+        return this.createNote(el);
+      case 'pipeline':
+        return this.createPipeline(el);
+      case 'annotation':
+        return this.createAnnotation(el);
+      case 'attitude':
+        return this.createAttitude(el);
+      case 'accelerator':
+        return this.createAccelerator(el);
+      case 'submap':
+        return this.createSubmap(el);
+      case 'drawing':
+        return this.createDrawing(el);
+      default: {
+        const exhaustive: never = el;
+        void exhaustive;
+        return undefined;
+      }
+    }
+  }
+
   /** Builds a drawing shape from ABSOLUTE canvas points (bbox shape + relative points). */
   drawingFromCanvasPoints(
     canvasPoints: ReadonlyArray<{ x: number; y: number }>,
@@ -254,8 +376,14 @@ export default class WardleyElementFactory {
     rawLabel: string,
     extra: CreateNewExtra = {},
   ): WardleyShape {
-    // Enforce a unique label -> lossless DSL round-trip (see uniqueLabel).
-    const label = this.uniqueLabel(rawLabel);
+    // Enforce a unique label -> lossless DSL round-trip (see uniqueLabel). Attitude regions are
+    // unlabelled like in OWM: their title is the canonical kind name.
+    const label =
+      type === 'attitude'
+        ? (extra.attitudeKind ?? 'pioneers')
+        : isLinkableType(type)
+          ? this.uniqueLabel(rawLabel)
+          : rawLabel;
     if (type === 'pipeline') {
       const shape = this.elementFactory.createShape({
         width: 200,

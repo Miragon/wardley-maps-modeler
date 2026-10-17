@@ -1,0 +1,149 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Wardley Map (OWM-DSL)",
+  "scopeName": "source.wardley",
+  "patterns": [
+    { "include": "#url-definition" },
+    { "include": "#comments" },
+    { "include": "#title" },
+    { "include": "#evolve" },
+    { "include": "#keywords" },
+    { "include": "#coordinates" },
+    { "include": "#suffixes" },
+    { "include": "#links" },
+    { "include": "#blocks" }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.block.wardley",
+          "begin": "/\\*",
+          "end": "\\*/",
+          "beginCaptures": { "0": { "name": "punctuation.definition.comment.wardley" } },
+          "endCaptures": { "0": { "name": "punctuation.definition.comment.wardley" } }
+        },
+        {
+          "name": "comment.line.double-slash.wardley",
+          "begin": "//",
+          "end": "$",
+          "beginCaptures": { "0": { "name": "punctuation.definition.comment.wardley" } }
+        }
+      ]
+    },
+    "url-definition": {
+      "comment": "A named address; the parser exempts these lines from comment stripping (https://…).",
+      "match": "(?i)^\\s*(url)\\s+([^\\[]+?)\\s*(\\[)([^\\]]*)(\\])\\s*$",
+      "captures": {
+        "1": { "name": "keyword.control.wardley" },
+        "2": { "name": "entity.name.type.wardley" },
+        "3": { "name": "punctuation.section.brackets.begin.wardley" },
+        "4": { "name": "markup.underline.link.wardley" },
+        "5": { "name": "punctuation.section.brackets.end.wardley" }
+      }
+    },
+    "title": {
+      "match": "(?i)^\\s*(title)(?![\\w-])\\s*(.*?)\\s*(?=//|/\\*|$)",
+      "captures": {
+        "1": { "name": "keyword.control.wardley" },
+        "2": { "name": "entity.name.section.wardley" }
+      }
+    },
+    "evolve": {
+      "match": "(?i)^\\s*(evolve)(?![\\w-])(.*?)\\s(-?(?:\\d+(?:\\.\\d*)?|\\.\\d+))(?=\\s*(?:label\\b|\\(|//|/\\*|$))",
+      "captures": {
+        "1": { "name": "keyword.control.wardley" },
+        "2": { "patterns": [{ "include": "#links" }] },
+        "3": { "name": "constant.numeric.wardley" }
+      }
+    },
+    "keywords": {
+      "comment": "Statement keywords: the cases of the parser's statement table (a test keeps them in sync).",
+      "match": "(?i)^\\s*(title|anchor|component|market|ecosystem|note|pipeline|evolve|style|size|evolution|y-axis|annotations|annotation|line|pioneers|settlers|townplanners|url|build|buy|outsource|accelerator|deaccelerator|submap)(?![\\w-])",
+      "captures": { "1": { "name": "keyword.control.wardley" } }
+    },
+    "coordinates": {
+      "begin": "\\[(?=\\s*[-\\d.\\[])",
+      "end": "\\]",
+      "beginCaptures": { "0": { "name": "punctuation.section.brackets.begin.wardley" } },
+      "endCaptures": { "0": { "name": "punctuation.section.brackets.end.wardley" } },
+      "patterns": [
+        { "include": "#coordinates" },
+        { "name": "constant.numeric.wardley", "match": "-?(?:\\d+(?:\\.\\d*)?|\\.\\d+)" },
+        { "name": "punctuation.separator.comma.wardley", "match": "," }
+      ]
+    },
+    "suffixes": {
+      "patterns": [
+        {
+          "match": "(?i)\\b(label)(?=\\s*\\[)",
+          "captures": { "1": { "name": "keyword.other.label.wardley" } }
+        },
+        {
+          "match": "(?i)\\b(url)\\s*(\\()([^()]*)(\\))",
+          "captures": {
+            "1": { "name": "keyword.other.url.wardley" },
+            "2": { "name": "punctuation.section.parens.begin.wardley" },
+            "3": { "name": "variable.other.reference.wardley" },
+            "4": { "name": "punctuation.section.parens.end.wardley" }
+          }
+        },
+        {
+          "match": "(?i)(\\()\\s*(color)\\s+(#[0-9a-f]{3,8}|[a-z][\\w-]*)\\s*(\\))",
+          "captures": {
+            "1": { "name": "punctuation.section.parens.begin.wardley" },
+            "2": { "name": "keyword.other.color.wardley" },
+            "3": { "name": "constant.other.color.wardley" },
+            "4": { "name": "punctuation.section.parens.end.wardley" }
+          }
+        },
+        {
+          "begin": "(?i)\\((?=\\s*(?:build|buy|outsource|inertia|market|ecosystem|closed|dashed|dotted)\\s*(?:,|\\)))",
+          "end": "\\)",
+          "beginCaptures": { "0": { "name": "punctuation.section.parens.begin.wardley" } },
+          "endCaptures": { "0": { "name": "punctuation.section.parens.end.wardley" } },
+          "patterns": [
+            {
+              "name": "storage.modifier.decorator.wardley",
+              "match": "(?i)\\b(?:build|buy|outsource|inertia|market|ecosystem|closed|dashed|dotted)\\b"
+            },
+            { "name": "punctuation.separator.comma.wardley", "match": "," }
+          ]
+        },
+        {
+          "name": "storage.modifier.decorator.wardley",
+          "match": "(?i)(?<=[\\])] |[\\])])inertia\\b"
+        }
+      ]
+    },
+    "links": {
+      "patterns": [
+        {
+          "match": "(\\+)(')([^']*)(')(<>|>|<)",
+          "captures": {
+            "1": { "name": "keyword.operator.flow.wardley" },
+            "2": { "name": "punctuation.definition.string.begin.wardley" },
+            "3": { "name": "string.quoted.single.wardley" },
+            "4": { "name": "punctuation.definition.string.end.wardley" },
+            "5": { "name": "keyword.operator.flow.wardley" }
+          }
+        },
+        { "name": "keyword.operator.flow.wardley", "match": "\\+(?:<>|>|<)" },
+        { "name": "keyword.operator.arrow.wardley", "match": "->" },
+        {
+          "match": "(;)(.*?)(?=//|/\\*|$)",
+          "captures": {
+            "1": { "name": "punctuation.separator.annotation.wardley" },
+            "2": { "name": "string.unquoted.annotation.wardley" }
+          }
+        }
+      ]
+    },
+    "blocks": {
+      "patterns": [
+        { "name": "punctuation.section.block.begin.wardley", "match": "\\{" },
+        { "name": "punctuation.section.block.end.wardley", "match": "\\}" }
+      ]
+    }
+  }
+}

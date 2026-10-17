@@ -12,6 +12,31 @@ export const DEFAULT_EVOLUTION_LABELS: readonly [string, string, string, string]
   'Commodity / Utility',
 ];
 
+/**
+ * The X-axis labels to store: an empty stage falls back to its default (an empty label cannot be
+ * written in the `->`-separated `evolution` line), a typed `->` becomes an arrow so it cannot add
+ * a fifth stage, and the default set is stored as no labels at all (no `evolution` line).
+ */
+export function normalizeEvolutionLabels(
+  values: readonly string[] | undefined,
+): readonly [string, string, string, string] | undefined {
+  if (!values) return undefined;
+  const labels = DEFAULT_EVOLUTION_LABELS.map((fallback, index) => {
+    const value = (values[index] ?? '').replace(/->/g, '→').trim();
+    return value || fallback;
+  }) as unknown as readonly [string, string, string, string];
+  return sameEvolutionLabels(labels, DEFAULT_EVOLUTION_LABELS) ? undefined : labels;
+}
+
+/** Whether two label sets are equal; `undefined` (the default set) only equals itself. */
+export function sameEvolutionLabels(
+  a: readonly string[] | undefined,
+  b: readonly string[] | undefined,
+): boolean {
+  if (!a || !b) return a === b;
+  return a.length === b.length && a.every((label, index) => label === b[index]);
+}
+
 export interface EvolutionPreset {
   /** Stable identifier (persistence/UI selection). */
   readonly id: string;

@@ -14,7 +14,7 @@ function isFrame(el: unknown): boolean {
 
 /**
  * Keeps the z-order stable for INTERACTIVELY created/moved elements, matching the import order:
- * frames (attitude/pipeline) at the back, connections in the middle, nodes on top. Without this,
+ * frames (attitude/pipeline) at the back, then dependencies, then flows, nodes on top. Without this,
  * connections drawn in the editor would land above the nodes (unlike imported ones).
  */
 export default class WardleyOrderingProvider extends OrderingProvider {
@@ -30,9 +30,13 @@ export default class WardleyOrderingProvider extends OrderingProvider {
   ): { parent: ShapeLike; index?: number } {
     const siblings = (newParent.children ?? []) as ElementLike[];
     if (isWardleyConnection(element)) {
-      // Behind the nodes: after all frames and existing connections.
+      // Behind the nodes. A flow goes on top of all connections; a dependency stays below the
+      // flows, so it cannot strike through a flow value (matches the import order).
+      const isFlow = element.wardleyType === 'flow';
       const index = siblings.filter(
-        (c) => c !== element && (isFrame(c) || isWardleyConnection(c)),
+        (c) =>
+          c !== element &&
+          (isFrame(c) || (isWardleyConnection(c) && (isFlow || c.wardleyType !== 'flow'))),
       ).length;
       return { parent: newParent, index };
     }

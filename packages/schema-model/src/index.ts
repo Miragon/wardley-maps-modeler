@@ -30,13 +30,27 @@ export type {
 } from './types.js';
 
 // Layout default (plot area) — shared by renderer and migrations
-export { DEFAULT_PLOT_SIZE } from './types.js';
+export { DEFAULT_MAP_TITLE, DEFAULT_PLOT_SIZE } from './types.js';
+
+export {
+  PLOT_MIN,
+  PLOT_MAX,
+  MAP_SIZE_PRESETS,
+  drawnPlotLength,
+  normalizeMapSize,
+  parsePlotLength,
+  plotLengthMessage,
+  presetIdForSize,
+} from './map-size.js';
+export type { MapSize, MapSizePreset, MapSizePresetId } from './map-size.js';
 
 export {
   evolutionStage,
   DEFAULT_STAGE_BOUNDARIES,
   DEFAULT_EVOLUTION_LABELS,
   EVOLUTION_PRESETS,
+  normalizeEvolutionLabels,
+  sameEvolutionLabels,
 } from './stage.js';
 export type { EvolutionStage, EvolutionPreset } from './stage.js';
 

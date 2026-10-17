@@ -83,4 +83,9 @@ export class UniqueNames {
     this.used.add(name);
     return name;
   }
+
+  /** Takes a name as it is, even when it is already taken (a name the source text already uses). */
+  reserve(name: string): void {
+    this.used.add(name);
+  }
 }
