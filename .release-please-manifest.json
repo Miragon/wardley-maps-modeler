@@ -1,8 +1,8 @@
 {
-  "packages/schema-model": "0.5.1",
-  "packages/dsl": "0.5.3",
-  "packages/transforms": "0.5.1",
-  "packages/renderer": "0.6.3",
-  "apps/vscode": "0.7.0",
-  "apps/webapp": "0.7.0"
+  "packages/schema-model": "0.6.0",
+  "packages/dsl": "0.6.0",
+  "packages/transforms": "0.5.2",
+  "packages/renderer": "0.7.0",
+  "apps/vscode": "0.8.0",
+  "apps/webapp": "0.8.0"
 }

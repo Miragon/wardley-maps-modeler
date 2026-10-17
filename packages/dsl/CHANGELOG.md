@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.6.0](https://github.com/Miragon/wardley-maps-modeler/compare/dsl-v0.5.3...dsl-v0.6.0) (2026-10-17)
+
+
+### Features
+
+* UX overhaul of the modeler and undoable, DSL-safe map resizing ([#131](https://github.com/Miragon/wardley-maps-modeler/issues/131)) ([4416f8f](https://github.com/Miragon/wardley-maps-modeler/commit/4416f8f8840b90f1b17ce5692b8496364b4e3dcb))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @miragon/wardley-schema-model bumped from 0.5.1 to 0.6.0
+
 ## [0.5.3](https://github.com/Miragon/wardley-maps-modeler/compare/dsl-v0.5.2...dsl-v0.5.3) (2026-10-08)
 
 

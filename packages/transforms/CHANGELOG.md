@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.5.2](https://github.com/Miragon/wardley-maps-modeler/compare/transforms-v0.5.1...transforms-v0.5.2) (2026-10-17)
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @miragon/wardley-schema-model bumped from 0.5.1 to 0.6.0
+
 ## [0.5.1](https://github.com/Miragon/wardley-maps-modeler/compare/transforms-v0.5.0...transforms-v0.5.1) (2026-09-22)
 
 
