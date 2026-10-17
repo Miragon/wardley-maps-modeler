@@ -4,6 +4,7 @@ import type { Root } from 'diagram-js/lib/model/Types';
 import {
   validateMap,
   CURRENT_SCHEMA_VERSION,
+  DEFAULT_MAP_TITLE,
   type AnchorElement,
   type AnnotationElement,
   type AttitudeElement,
@@ -18,6 +19,7 @@ import {
 } from '@miragon/wardley-schema-model';
 import { isWardleyConnection, isWardleyShape, type WardleyShape } from '../model/di-types.js';
 import type EvolutionGrid from '../evolution-grid/EvolutionGrid.js';
+import type WardleySourceOrder from './WardleySourceOrder.js';
 import { ROOT_ID, type RootBusinessObject } from './types.js';
 
 function compact<T extends Record<string, unknown>>(obj: T): T {
@@ -33,30 +35,31 @@ function compact<T extends Record<string, unknown>>(obj: T): T {
  * `businessObject` serves only as a fallback for type-specific fields that are not (yet) editable.
  */
 export default class WardleyExporter {
-  static $inject = ['elementRegistry', 'canvas', 'evolutionGrid'];
+  static $inject = ['elementRegistry', 'canvas', 'evolutionGrid', 'wardleySourceOrder'];
 
   constructor(
     private readonly elementRegistry: ElementRegistry,
     private readonly canvas: Canvas,
     private readonly grid: EvolutionGrid,
+    private readonly sourceOrder: WardleySourceOrder,
   ) {}
 
   export(): WardleyMap {
     const root = this.canvas.getRootElement() as Root & { businessObject?: RootBusinessObject };
     const meta = root.businessObject;
-    const config: MapConfig = meta?.config ?? { title: 'Untitled Map' };
+    const config: MapConfig = meta?.config ?? { title: DEFAULT_MAP_TITLE };
 
-    const elements: MapElement[] = [];
-    const edges: MapEdge[] = [];
+    const unorderedElements: MapElement[] = [];
+    const unorderedEdges: MapEdge[] = [];
 
     for (const el of this.elementRegistry.getAll()) {
       if (el.id === ROOT_ID) continue;
       if (isWardleyConnection(el)) {
         if (el.businessObject) {
-          edges.push(el.businessObject);
+          unorderedEdges.push(el.businessObject);
         } else {
           const base = { id: el.id, from: el.source?.id ?? '', to: el.target?.id ?? '' };
-          edges.push(
+          unorderedEdges.push(
             el.wardleyType === 'flow'
               ? { ...base, edgeType: 'flow', ...(el.bidirectional ? { bidirectional: true } : {}) }
               : { ...base, edgeType: 'dependency' },
@@ -64,9 +67,11 @@ export default class WardleyExporter {
         }
       } else if (isWardleyShape(el)) {
         const built = this.buildElement(el);
-        if (built) elements.push(built);
+        if (built) unorderedElements.push(built);
       }
     }
+    const elements = this.sourceOrder.sortElements(unorderedElements);
+    const edges = this.sourceOrder.sortEdges(unorderedEdges);
 
     // Consolidate pipeline membership: childIds are derived from component.pipelineId
     // (single source of truth); pipelineId references to deleted pipelines are discarded.

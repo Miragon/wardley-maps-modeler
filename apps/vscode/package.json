@@ -31,7 +31,8 @@
   "main": "./dist/extension.cjs",
   "type": "module",
   "activationEvents": [
-    "onCustomEditor:wardley.mapEditor"
+    "onCustomEditor:wardley.mapEditor",
+    "onLanguage:wardley-owm"
   ],
   "contributes": {
     "languages": [
@@ -50,6 +51,13 @@
           "light": "./media/icons/wardley-map-light.svg",
           "dark": "./media/icons/wardley-map-dark.svg"
         }
+      }
+    ],
+    "grammars": [
+      {
+        "language": "wardley-owm",
+        "scopeName": "source.wardley",
+        "path": "./syntaxes/wardley.tmLanguage.json"
       }
     ],
     "customEditors": [
@@ -78,6 +86,38 @@
         "command": "wardley.newMapFromExample",
         "title": "New Map from Example",
         "category": "Wardley"
+      },
+      {
+        "command": "wardley.showSource",
+        "title": "Open Source to the Side",
+        "category": "Wardley",
+        "icon": "$(go-to-file)"
+      },
+      {
+        "command": "wardley.showDiagram",
+        "title": "Open Diagram to the Side",
+        "category": "Wardley",
+        "icon": "$(open-preview)"
+      },
+      {
+        "command": "wardley.fitView",
+        "title": "Fit Map to View",
+        "category": "Wardley"
+      },
+      {
+        "command": "wardley.exportSvg",
+        "title": "Export as SVG",
+        "category": "Wardley"
+      },
+      {
+        "command": "wardley.exportPng",
+        "title": "Export as PNG",
+        "category": "Wardley"
+      },
+      {
+        "command": "wardley.exportPngTransparent",
+        "title": "Export as PNG (4×, Transparent)",
+        "category": "Wardley"
       }
     ],
     "menus": {
@@ -85,6 +125,64 @@
         {
           "command": "wardley.newMap",
           "group": "wardley"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "wardley.showSource",
+          "when": "activeCustomEditorId == 'wardley.mapEditor'",
+          "group": "navigation"
+        },
+        {
+          "command": "wardley.showDiagram",
+          "when": "editorLangId == wardley-owm",
+          "group": "navigation"
+        },
+        {
+          "command": "wardley.fitView",
+          "when": "activeCustomEditorId == 'wardley.mapEditor'",
+          "group": "1_wardley@1"
+        },
+        {
+          "command": "wardley.exportSvg",
+          "when": "activeCustomEditorId == 'wardley.mapEditor'",
+          "group": "2_wardley_export@1"
+        },
+        {
+          "command": "wardley.exportPng",
+          "when": "activeCustomEditorId == 'wardley.mapEditor'",
+          "group": "2_wardley_export@2"
+        },
+        {
+          "command": "wardley.exportPngTransparent",
+          "when": "activeCustomEditorId == 'wardley.mapEditor'",
+          "group": "2_wardley_export@3"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "wardley.showSource",
+          "when": "activeCustomEditorId == 'wardley.mapEditor'"
+        },
+        {
+          "command": "wardley.showDiagram",
+          "when": "editorLangId == wardley-owm"
+        },
+        {
+          "command": "wardley.fitView",
+          "when": "activeCustomEditorId == 'wardley.mapEditor'"
+        },
+        {
+          "command": "wardley.exportSvg",
+          "when": "activeCustomEditorId == 'wardley.mapEditor'"
+        },
+        {
+          "command": "wardley.exportPng",
+          "when": "activeCustomEditorId == 'wardley.mapEditor'"
+        },
+        {
+          "command": "wardley.exportPngTransparent",
+          "when": "activeCustomEditorId == 'wardley.mapEditor'"
         }
       ]
     },

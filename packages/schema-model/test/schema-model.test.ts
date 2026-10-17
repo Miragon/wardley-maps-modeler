@@ -10,6 +10,8 @@ import {
   parseMapJSON,
   validateMap,
   createEmptyMap,
+  normalizeEvolutionLabels,
+  sameEvolutionLabels,
   type WardleyMap,
 } from '../src/index.js';
 
@@ -145,5 +147,27 @@ describe('Validation', () => {
       ],
     };
     expect(() => loadMap(map)).not.toThrow();
+  });
+});
+
+describe('normalizeEvolutionLabels', () => {
+  it('stores nothing for the default labels', () => {
+    expect(normalizeEvolutionLabels([...DEFAULT_EVOLUTION_LABELS])).toBeUndefined();
+    expect(normalizeEvolutionLabels(undefined)).toBeUndefined();
+  });
+
+  it('falls back per empty stage and defuses the DSL separator', () => {
+    expect(normalizeEvolutionLabels(['Novel', ' ', 'Good -> Best', 'Best'])).toEqual([
+      'Novel',
+      'Custom-Built',
+      'Good → Best',
+      'Best',
+    ]);
+  });
+
+  it('compares label sets, the default (undefined) only with itself', () => {
+    expect(sameEvolutionLabels(['A', 'B', 'C', 'D'], ['A', 'B', 'C', 'D'])).toBe(true);
+    expect(sameEvolutionLabels(undefined, ['A', 'B', 'C', 'D'])).toBe(false);
+    expect(sameEvolutionLabels(undefined, undefined)).toBe(true);
   });
 });

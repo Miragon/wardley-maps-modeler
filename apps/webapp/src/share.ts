@@ -49,29 +49,58 @@ export async function decodeMapCompressed(b64: string): Promise<string> {
 const HASH_PREFIX_COMPRESSED = '#mz=';
 const HASH_PREFIX_LEGACY = '#m=';
 
-/** Reads the DSL encoded in the hash (compressed `#mz=` or legacy `#m=`) — or null. */
-export async function readHashMap(): Promise<string | null> {
-  const h = location.hash;
+/**
+ * What a URL hash holds: no map at all (`none`, e.g. `#section-2`), a readable map (`ok`), or a map
+ * link that cannot be decoded (`corrupt`, typically a link truncated by a mail or chat client).
+ */
+export type HashMapResult =
+  | { readonly kind: 'none' }
+  | { readonly kind: 'ok'; readonly dsl: string }
+  | { readonly kind: 'corrupt' };
+
+/** Decodes the map in a hash (compressed `#mz=` or legacy `#m=`). */
+export async function readHashMap(hash: string = location.hash): Promise<HashMapResult> {
+  const payload = hash.startsWith(HASH_PREFIX_COMPRESSED)
+    ? hash.slice(HASH_PREFIX_COMPRESSED.length)
+    : hash.startsWith(HASH_PREFIX_LEGACY)
+      ? hash.slice(HASH_PREFIX_LEGACY.length)
+      : undefined;
+  if (payload === undefined) return { kind: 'none' };
   try {
-    if (h.startsWith(HASH_PREFIX_COMPRESSED)) {
-      return await decodeMapCompressed(h.slice(HASH_PREFIX_COMPRESSED.length));
-    }
-    if (h.startsWith(HASH_PREFIX_LEGACY)) {
-      return decodeMap(h.slice(HASH_PREFIX_LEGACY.length));
-    }
+    const dsl = hash.startsWith(HASH_PREFIX_COMPRESSED)
+      ? await decodeMapCompressed(payload)
+      : decodeMap(payload);
+    return dsl.trim() ? { kind: 'ok', dsl } : { kind: 'corrupt' };
   } catch {
-    return null;
+    return { kind: 'corrupt' };
   }
-  return null;
+}
+
+/**
+ * Finds a share link in pasted text (`https://…#mz=…` or just the hash) and decodes it. Text that
+ * contains no map link at all is `none`.
+ */
+export function readShareLink(text: string): Promise<HashMapResult> {
+  const match = /#mz?=[A-Za-z0-9_-]*/.exec(text.trim());
+  return match ? readHashMap(match[0]) : Promise.resolve({ kind: 'none' });
+}
+
+/** Updates the hash with an already encoded (compressed) map, without a history entry. */
+export function writeHashPayload(payload: string): void {
+  history.replaceState(null, '', HASH_PREFIX_COMPRESSED + payload);
 }
 
 /** Updates the hash with the current DSL (no history entry). */
 export async function writeHashMap(dsl: string): Promise<void> {
-  history.replaceState(null, '', HASH_PREFIX_COMPRESSED + (await encodeMapCompressed(dsl)));
+  writeHashPayload(await encodeMapCompressed(dsl));
+}
+
+/** Full shareable URL for an already encoded (compressed) map. */
+export function shareUrlForPayload(payload: string): string {
+  return `${location.origin}${location.pathname}${HASH_PREFIX_COMPRESSED}${payload}`;
 }
 
 /** Full shareable URL for the given DSL. */
 export async function shareUrl(dsl: string): Promise<string> {
-  const encoded = await encodeMapCompressed(dsl);
-  return `${location.origin}${location.pathname}${HASH_PREFIX_COMPRESSED}${encoded}`;
+  return shareUrlForPayload(await encodeMapCompressed(dsl));
 }

@@ -11,10 +11,19 @@ import {
   COMPONENT_INNER_RADIUS,
   ANCHOR_ICON_SIZE,
   ATTITUDE_COLORS,
+  ATTITUDE_TITLES,
   NOTE_LINE_HEIGHT,
   PIPELINE_ANCHOR_SIZE,
 } from './styles.js';
 import { drawIcon, ICON_FAST_FORWARD, ICON_FAST_REWIND, ICON_PERSON } from './icons.js';
+import {
+  LABEL_METHOD_LINE_SHIFT,
+  anchorLabelPlacement,
+  componentLabelPlacement,
+  movementDeltaX as movementDeltaXOf,
+  movementLabelPlacement,
+  type LabelPlacement,
+} from './label-layout.js';
 import {
   isWardleyConnection,
   isWardleyShape,
@@ -26,6 +35,16 @@ import { connectionAnchorOf } from '../layout/index.js';
 
 /** BaseRenderer default is 1000; 1500 wins the render.shape/render.connection event. */
 const WARDLEY_RENDER_PRIORITY = 1500;
+
+/** Primary name text of a node (contract shared with other modules and consumers' CSS). */
+export const NAME_LABEL_CLASS = 'wardley-name-label';
+/** Groups every evolve visual so tools (e.g. the context pad) can tell the node from its movement. */
+export const MOVEMENT_CLASS = 'wardley-movement';
+/** Labels the user may drag to set an OWM `label [dx, dy]` offset (see the label-drag module). */
+export const LABEL_HANDLE_CLASS = 'wardley-label-handle';
+/** Which offset a dragged label writes: the node's own `labelOffset` or its evolve's. */
+export const LABEL_ROLE_ATTRIBUTE = 'data-label-role';
+const ATTITUDE_TITLE_CLEARANCE = 6;
 
 type Attrs = Record<string, string | number>;
 
@@ -152,8 +171,9 @@ export default class WardleyRenderer extends BaseRenderer {
     const cx = shape.width / 2;
     const cy = shape.height / 2;
     const dec = shape.decorators;
+    const movementDeltaX = movementDeltaXOf(shape, this.grid);
 
-    if (shape.movement) this.drawMovement(visuals, shape, cx, cy);
+    if (movementDeltaX !== undefined) this.drawMovement(visuals, shape, cx, cy, movementDeltaX);
     if (dec?.inertia) drawInertiaMarker(visuals, cx, cy);
 
     // User-picked element color tints stroke and label (default: ink-on-paper look).
@@ -174,37 +194,50 @@ export default class WardleyRenderer extends BaseRenderer {
     }
 
     drawComponentSymbols(visuals, cx, cy, tint, dec);
-    drawComponentLabel(visuals, shape, cx, cy);
+    drawComponentLabel(visuals, shape, cx, cy, componentLabelPlacement(shape, movementDeltaX));
     return ring;
   }
 
   /** Planned evolution (canon: DASHED red line with arrow, target label in red). */
-  private drawMovement(visuals: SVGElement, shape: WardleyShape, cx: number, cy: number): void {
+  private drawMovement(
+    visuals: SVGElement,
+    shape: WardleyShape,
+    cx: number,
+    cy: number,
+    movementDeltaX: number,
+  ): void {
     const mv = shape.movement;
     if (!mv) return;
-    const here = this.grid.toCanvas({ visibility: shape.visibility, evolution: shape.evolution });
-    const there = this.grid.toCanvas({
-      visibility: shape.visibility,
-      evolution: mv.targetEvolution,
-    });
-    const dx = there.x - here.x;
-    const tx = cx + dx;
+    const group = svgAttr(svgCreate('g'), { class: MOVEMENT_CLASS });
+    svgAppend(visuals, group);
+    const tx = cx + movementDeltaX;
     // End the arrowhead BEFORE the target circle's edge — otherwise the circle hides it entirely.
-    const dir = Math.sign(dx) || 1;
+    const dir = Math.sign(movementDeltaX) || 1;
     const tipX = tx - dir * (COMPONENT_RADIUS + 2);
+    // Paper-coloured knock-out: a pipeline's dashed top edge runs through its anchor component's
+    // centre line, and two interleaved dash patterns read as one broken line.
     svgAppend(
-      visuals,
+      group,
+      line(cx, cy, tipX, cy, {
+        stroke: COLORS.plotBackground,
+        'stroke-width': 4,
+        'stroke-linecap': 'butt',
+        class: 'wardley-movement-underlay',
+      }),
+    );
+    svgAppend(
+      group,
       line(cx, cy, tipX, cy, {
         stroke: COLORS.movement,
         'stroke-width': 1.5,
         'stroke-dasharray': '6 4',
       }),
     );
-    svgAppend(visuals, connectionArrow({ x: cx, y: cy }, { x: tipX, y: cy }, COLORS.movement));
+    svgAppend(group, connectionArrow({ x: cx, y: cy }, { x: tipX, y: cy }, COLORS.movement));
     // Target circle = direct drag handle: marked by class so the evolve module can intercept a
     // mousedown on it and let the target be moved by dragging (see WardleyEvolveDragging).
     svgAppend(
-      visuals,
+      group,
       circle(tx, cy, COMPONENT_RADIUS, {
         fill: COLORS.paper,
         stroke: COLORS.movement,
@@ -213,19 +246,24 @@ export default class WardleyRenderer extends BaseRenderer {
       }),
     );
     // Target label (evolve Old->New) or the component's name — canonically red at the target circle.
+    const placement = movementLabelPlacement(mv.labelOffset, movementDeltaX);
     svgAppend(
-      visuals,
-      label(mv.newLabel ?? shape.wardleyLabel, tx + COMPONENT_RADIUS + 7, cy - 4, {
+      group,
+      label(mv.newLabel ?? shape.wardleyLabel, cx + placement.x, cy + placement.y, {
         'font-weight': '500',
         fill: COLORS.movement,
+        'text-anchor': placement.anchor,
+        class: `wardley-movement-label ${LABEL_HANDLE_CLASS}`,
+        [LABEL_ROLE_ATTRIBUTE]: 'movement',
       }),
     );
     if (mv.method) {
       svgAppend(
-        visuals,
-        label(mv.method, tx + COMPONENT_RADIUS + 7, cy + 11, {
+        group,
+        label(mv.method, cx + placement.x, cy + placement.y + LABEL_METHOD_LINE_SHIFT, {
           'font-size': 10.5,
           fill: COLORS.movement,
+          'text-anchor': placement.anchor,
         }),
       );
     }
@@ -236,18 +274,16 @@ export default class WardleyRenderer extends BaseRenderer {
     const cy = shape.height / 2;
     const icon = drawIcon(ICON_PERSON, cx, cy, ANCHOR_ICON_SIZE, shape.color ?? COLORS.ink);
     svgAppend(visuals, icon);
+    const placement = anchorLabelPlacement(shape);
     svgAppend(
       visuals,
-      label(
-        shape.wardleyLabel,
-        cx + (shape.labelOffset?.dx ?? 0),
-        cy - ANCHOR_ICON_SIZE / 2 - 4 + (shape.labelOffset?.dy ?? 0),
-        {
-          'text-anchor': 'middle',
-          'font-weight': '700',
-          ...(shape.color ? { fill: shape.color } : {}),
-        },
-      ),
+      label(shape.wardleyLabel, cx + placement.x, cy + placement.y, {
+        'text-anchor': placement.anchor,
+        'font-weight': '700',
+        class: `${NAME_LABEL_CLASS} ${LABEL_HANDLE_CLASS}`,
+        [LABEL_ROLE_ATTRIBUTE]: 'name',
+        ...(shape.color ? { fill: shape.color } : {}),
+      }),
     );
     return icon;
   }
@@ -294,6 +330,7 @@ export default class WardleyRenderer extends BaseRenderer {
         visuals,
         label(shape.wardleyLabel, width / 2 + half + 6, -4, {
           'font-weight': '500',
+          class: NAME_LABEL_CLASS,
           ...(tint ? { fill: tint } : {}),
         }),
       );
@@ -309,6 +346,7 @@ export default class WardleyRenderer extends BaseRenderer {
     const y0 = shape.height / 2 - ((lines.length - 1) * NOTE_LINE_HEIGHT) / 2 + 4;
     const attrs = {
       'text-anchor': 'middle',
+      class: NAME_LABEL_CLASS,
       fill: color ?? COLORS.noteText,
       'font-style': 'italic',
       // Colored notes are slightly bolder -> feedback (good/bad) stands out.
@@ -324,7 +362,8 @@ export default class WardleyRenderer extends BaseRenderer {
   }
 
   private drawAttitude(visuals: SVGElement, shape: WardleyShape): SVGElement {
-    const c = ATTITUDE_COLORS[shape.attitudeKind ?? 'pioneers'] ?? ATTITUDE_COLORS['pioneers']!;
+    const kind = shape.attitudeKind ?? 'pioneers';
+    const c = ATTITUDE_COLORS[kind] ?? ATTITUDE_COLORS['pioneers']!;
     // A user-picked color overrides the kind palette (stroke + label; the soft fill stays).
     const stroke = shape.color ?? c.stroke;
     const box = svgAttr(svgCreate('rect'), {
@@ -339,19 +378,22 @@ export default class WardleyRenderer extends BaseRenderer {
       'stroke-dasharray': '5 4',
     });
     svgAppend(visuals, box);
+    // Regions sit behind every line, so a title inside the box gets struck through by dependencies.
+    // Above the top edge it stays clear — unless that would leave the plot (then it stays inside).
+    const plotTop = this.grid.toCanvas({ visibility: 1, evolution: 0 }).y;
+    const titleAbove = shape.y - ATTITUDE_TITLE_CLEARANCE - FONT.label >= plotTop;
+    // Regions are unlabelled as in OWM: the title is always the canonical kind name.
     svgAppend(
       visuals,
-      // A custom label (edited by the user) wins over the kind; default stays "Pioneers" etc.
       label(
-        shape.wardleyLabel && shape.wardleyLabel !== shape.attitudeKind
-          ? shape.wardleyLabel
-          : capitalize(shape.attitudeKind ?? 'pioneers'),
-        10,
-        18,
+        ATTITUDE_TITLES[kind] ?? kind,
+        titleAbove ? 4 : 10,
+        titleAbove ? -ATTITUDE_TITLE_CLEARANCE : 18,
         {
           fill: stroke,
           'font-weight': '700',
           'letter-spacing': '0.04em',
+          class: 'wardley-attitude-title',
         },
       ),
     );
@@ -400,7 +442,10 @@ export default class WardleyRenderer extends BaseRenderer {
     );
     svgAppend(visuals, sym);
     if (shape.wardleyLabel) {
-      svgAppend(visuals, label(shape.wardleyLabel, cx + 15, cy + 5, { 'font-size': 12 }));
+      svgAppend(
+        visuals,
+        label(shape.wardleyLabel, cx + 15, cy + 5, { 'font-size': 12, class: NAME_LABEL_CLASS }),
+      );
     }
     return sym;
   }
@@ -438,6 +483,7 @@ export default class WardleyRenderer extends BaseRenderer {
       visuals,
       label(shape.wardleyLabel, cx + r + 6, cy - 6, {
         'font-weight': '500',
+        class: NAME_LABEL_CLASS,
         ...(shape.color ? { fill: shape.color } : {}),
       }),
     );
@@ -497,21 +543,29 @@ function drawComponentLabel(
   shape: WardleyShape,
   cx: number,
   cy: number,
+  placement: LabelPlacement,
 ): void {
-  const dec = shape.decorators;
-  const lx = cx + COMPONENT_RADIUS + 7 + (shape.labelOffset?.dx ?? 0);
-  const ly = cy - 4 + (shape.labelOffset?.dy ?? 0);
+  const lx = cx + placement.x;
+  const ly = cy + placement.y;
   svgAppend(
     visuals,
     label(shape.wardleyLabel, lx, ly, {
       'font-weight': '500',
+      'text-anchor': placement.anchor,
+      class: `${NAME_LABEL_CLASS} ${LABEL_HANDLE_CLASS}`,
+      [LABEL_ROLE_ATTRIBUTE]: 'name',
       ...(shape.color ? { fill: shape.color } : {}),
     }),
   );
-  if (dec?.method) {
+  const method = shape.decorators?.method;
+  if (method) {
     svgAppend(
       visuals,
-      label(dec.method, lx, ly + 15, { 'font-size': 10.5, fill: COLORS.axisText }),
+      label(method, lx, ly + LABEL_METHOD_LINE_SHIFT, {
+        'font-size': 10.5,
+        'text-anchor': placement.anchor,
+        fill: COLORS.axisText,
+      }),
     );
   }
 }
@@ -596,8 +650,4 @@ function endpoints(conn: WardleyConnection): [Point, Point] {
     { x: sc.x + ux * sr, y: sc.y + uy * sr },
     { x: tc.x - ux * tr, y: tc.y - uy * tr },
   ];
-}
-
-function capitalize(s: string): string {
-  return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
 }

@@ -22,22 +22,36 @@ interface CreateEvent {
   y: number;
   context: {
     source?: SourceShape;
-    shape?: object;
+    shape?: { wardleyType?: unknown };
+    elements?: readonly object[];
     canExecute?: { connect?: unknown } | false | null;
+    /** Set by WardleyCopyPaste: pasted copies keep their names, no editor. */
+    wardleyPaste?: boolean;
   };
 }
+
+/** Types that carry a visible name — placing one goes straight into naming it. */
+const NAMED_TYPES: ReadonlySet<unknown> = new Set([
+  'component',
+  'anchor',
+  'submap',
+  'pipeline',
+  'accelerator',
+  'note',
+]);
 
 // diagram-js runs listeners in descending priority order; the default create.end handler (creation)
 // sits at 1000 -> with < 1000 we run AFTERWARDS, once the shape already exists.
 const AFTER_CREATE = 500;
 
 /**
- * Behavior for "append component" (`create.start` with `context.source`):
- *  1. LIVE arrow preview from the source to the cursor (analogous to diagram-js ConnectPreview, but
- *     in the create flow) — requires the `connectionPreview` service (ConnectionPreviewModule).
- *  2. After creation, automatically opens the new component's label editor so it can be named
- *     (uniquely) right away.
- * Both only when `context.source` is set; ordinary palette-create stays untouched.
+ * Create behavior for palette, keyboard and "append component" (`create.start`, the latter with
+ * `context.source`):
+ *  1. Append only: LIVE arrow preview from the source to the cursor (analogous to diagram-js
+ *     ConnectPreview, but in the create flow) — requires the `connectionPreview` service.
+ *  2. After placing a single named element (component, user, submap, pipeline, accelerator, note)
+ *     the label editor opens with the placeholder selected, so typing names it right away.
+ *     Regions, drawings and pasted copies are left alone.
  */
 export default class WardleyAppendBehavior {
   static $inject = ['injector', 'eventBus'];
@@ -72,12 +86,13 @@ export default class WardleyAppendBehavior {
       );
     }
 
-    // (2) automatically open the label editor after appending
+    // (2) automatically open the label editor after placing a named element
     if (labelEditing) {
       eventBus.on('create.end', AFTER_CREATE, (event: CreateEvent) => {
         const { context } = event;
-        if (!context.source || !context.canExecute || !context.shape) return;
         const shape = context.shape;
+        if (!context.canExecute || !shape || context.wardleyPaste) return;
+        if ((context.elements?.length ?? 1) !== 1 || !NAMED_TYPES.has(shape.wardleyType)) return;
         // Activate only after render/cleanup so the editor is positioned correctly.
         setTimeout(() => labelEditing.activate(shape), 0);
       });

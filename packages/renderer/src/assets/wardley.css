@@ -1,4 +1,7 @@
 @import 'diagram-js/assets/diagram-js.css';
+/* Vendored from Miragon/corporate-identity. Do not edit; re-copy to update. In a cascade layer, so
+   a host page's own --cd-* tokens (unlayered) always win over this copy. */
+@import '../theme/cd-tokens.generated.css' layer(wardley-tokens);
 
 /* Miragon design tokens for the in-canvas chrome. The VALUES here are hand-mirrored from the single
    source of truth in `src/theme/palette.ts` (CHROME_LIGHT_VARS / CHROME_DARK_VARS); a unit test
@@ -7,7 +10,7 @@
 :root {
   --wardley-paper: #f9f7f7;
   --wardley-ink: #1d1d1d;
-  --wardley-ink-soft: #5b5b5b;
+  --wardley-ink-soft: #6b6666;
   --wardley-surface: #ffffff;
   --wardley-border: #e6e2e2;
   --wardley-accent: #335de5;
@@ -37,6 +40,7 @@
   background-image: radial-gradient(rgba(29, 29, 29, 0.045) 0.6px, transparent 0.6px);
   background-size: 22px 22px;
   font-family:
+    'Geist Variable',
     'Geist',
     ui-sans-serif,
     system-ui,
@@ -63,11 +67,34 @@
   pointer-events: all;
 }
 
-/* Hover / selection emphasis: darken+saturate the WHOLE visual group so elements keep their own
-   (possibly user-picked) colour; the branded blue outline (below) signals the actual selection. */
-.wardley-container .djs-element.hover > .djs-visual,
-.wardley-container .djs-element.selected > .djs-visual {
-  filter: brightness(0.72) saturate(1.15);
+/* Hover / selection emphasis: darken the element's shapes so they keep their own (possibly
+   user-picked) colour; the branded blue outline (below) signals the actual selection. Text is left
+   out on purpose — darkening a label would turn its paper halo into a grey smudge. */
+.wardley-container .djs-element.hover > .djs-visual :not(g, text, tspan),
+.wardley-container .djs-element.selected > .djs-visual :not(g, text, tspan) {
+  filter: brightness(0.72);
+}
+
+/* diagram-js draws no outline around a selected connection, so the line itself carries the state.
+   !important because tiny-svg writes stroke and stroke-width as inline styles. Flow links (the ones
+   with arrowheads) keep their colour so line and arrowheads still match; they only grow thicker. */
+.wardley-container .djs-connection.hover > .djs-visual > polyline {
+  stroke-width: 2.5px !important;
+}
+.wardley-container .djs-connection.selected > .djs-visual > polyline {
+  stroke-width: 3px !important;
+}
+.wardley-container .djs-connection.hover > .djs-visual:not(:has(> polygon)) > polyline {
+  stroke: var(--wardley-ink-soft) !important;
+}
+.wardley-container .djs-connection.selected > .djs-visual:not(:has(> polygon)) > polyline {
+  stroke: var(--wardley-ink) !important;
+}
+.wardley-container .djs-connection.hover > .djs-visual:has(> polygon) > polyline {
+  stroke-width: 3.25px !important;
+}
+.wardley-container .djs-connection.selected > .djs-visual:has(> polygon) > polyline {
+  stroke-width: 3.75px !important;
 }
 
 .wardley-container .djs-outline {
@@ -92,42 +119,55 @@
   fill: none;
 }
 
-/* Palette: horizontal floating toolbar (Excalidraw style). Styling on the element itself (.djs-palette),
-   NOT on .wardley-container — so it travels along when the consumer mounts the palette elsewhere
-   (e.g. the webapp into the header). Default = floating top-center; overridable by the consumer. */
-.djs-palette {
+/* Palette: horizontal floating toolbar (Excalidraw style). Styling on the element itself
+   (.wardley-palette, set by the Wardley palette), NOT on .wardley-container — so it travels along
+   when the consumer mounts the palette elsewhere, and other diagram-js palettes on the page (e.g. a
+   bpmn-js modeler) keep their own look. Default = floating top-center; overridable by the consumer. */
+.djs-palette.wardley-palette {
   left: 50%;
   top: 12px;
   transform: translateX(-50%);
-  width: auto; /* diagram-js otherwise sets a fixed 48px (vertical) */
+  width: max-content; /* diagram-js otherwise sets a fixed 48px (vertical) */
+  /* Never wider than the canvas: narrow hosts scroll the toolbar instead of clipping tools. */
+  max-width: calc(100% - 24px);
+  box-sizing: border-box;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
   display: flex;
   align-items: center;
   padding: 5px 7px;
   background: var(--wardley-surface);
   border: 1px solid var(--wardley-border);
   border-radius: var(--wardley-radius);
-  box-shadow:
-    0 1px 2px var(--wardley-shadow),
-    0 10px 26px var(--wardley-shadow);
+  box-shadow: var(--cd-shadow-2, 0 4px 12px rgba(29, 29, 29, 0.1));
+  /* Icon colour of the armed tool (diagram-js applies it with !important). */
+  --palette-entry-selected-color: var(--wardley-surface);
 }
-.djs-palette .djs-palette-entries,
-.djs-palette .group {
+/* Safety net: the provider disables diagram-js' vertical two-column collapse, which would squeeze
+   the horizontal bar to 94px. */
+.djs-palette.wardley-palette.two-column.open {
+  width: auto;
+}
+.djs-palette.wardley-palette .djs-palette-entries,
+.djs-palette.wardley-palette .group {
   display: flex;
   flex-direction: row;
   align-items: center;
 }
-.djs-palette .entry {
+.djs-palette.wardley-palette .entry {
   float: none; /* diagram-js uses float:left -> redundant in the flex row */
+  flex: none;
   width: 40px;
   height: 40px;
   line-height: normal;
   border-radius: var(--wardley-radius-sm);
   color: var(--wardley-ink);
   transition:
-    background 150ms ease,
-    color 150ms ease;
+    background var(--cd-motion-fast, 150ms) var(--cd-ease, ease),
+    color var(--cd-motion-fast, 150ms) var(--cd-ease, ease);
 }
-.djs-palette .entry:hover {
+.djs-palette.wardley-palette .entry:hover {
   background: var(--wardley-accent-soft);
   color: var(--wardley-accent);
 }
@@ -143,19 +183,28 @@
   pointer-events: all;
 }
 
-/* Active tool (e.g. the lasso): branded — the interactive blue, so the "armed" tool is obvious. */
-.djs-palette .entry.highlighted-entry {
+/* Active tool (e.g. the lasso): branded — the interactive blue, so the "armed" tool is obvious.
+   The tool glyphs draw in currentColor, so they turn light on the blue (5:1). */
+.djs-palette.wardley-palette .entry.highlighted-entry {
   background: var(--wardley-accent);
-  color: #fff;
+  color: var(--wardley-surface);
+}
+
+/* diagram-js palette tooltip: it is placed to the right of an entry, which in this horizontal
+   toolbar would cover the neighbouring tool — shift it below the 40px entry instead. */
+.wardley-container .djs-hover-tooltip--right {
+  transform: translate(calc(-50% - 28px), 28px);
+  font-family: inherit;
+  border-radius: var(--cd-radius-sm, 6px);
 }
 
 /* Subtle vertical separator between the groups (diagram-js does not separate groups on its own). */
-.djs-palette .group + .group {
+.djs-palette.wardley-palette .group + .group {
   position: relative;
   margin-left: 9px;
   padding-left: 9px;
 }
-.djs-palette .group + .group::before {
+.djs-palette.wardley-palette .group + .group::before {
   content: '';
   position: absolute;
   top: 6px;
@@ -181,34 +230,67 @@
   display: block;
 }
 
-/* ContextPad icons (stay in the canvas -> scoped) */
-.wardley-container .wardley-cp-entry {
+/* ContextPad (stays in the canvas -> scoped): a compact icon grid instead of a tall column.
+   Row 1 = the primary group (edit, append, connect, evolve), row 2 = properties followed by the
+   destructive action, which sits apart behind a separator. */
+.wardley-container .djs-context-pad {
+  width: max-content;
+}
+.wardley-container .djs-context-pad.open {
+  display: grid;
+  grid-template-columns: repeat(2, max-content);
+  column-gap: 7px;
+  row-gap: 4px;
+  align-items: start;
+}
+.wardley-container .djs-context-pad .group {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-  min-width: 24px;
-  min-height: 24px;
-  font-size: 17px;
-  line-height: 1;
-  color: var(--wardley-ink);
+  gap: 4px;
+}
+.wardley-container .djs-context-pad .group[data-group='edit'] {
+  grid-column: 1 / -1;
+}
+.wardley-container .djs-context-pad .group[data-group='wardley'] + .group[data-group='danger'] {
+  position: relative;
+  padding-left: 7px;
+}
+.wardley-container
+  .djs-context-pad
+  .group[data-group='wardley']
+  + .group[data-group='danger']::before {
+  content: '';
+  position: absolute;
+  top: 5px;
+  bottom: 5px;
+  left: 0;
+  width: 1px;
+  background: var(--wardley-border);
 }
 
-.wardley-container .djs-context-pad .entry {
+.wardley-container .djs-context-pad .entry.wardley-cp-entry {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 28px;
+  height: 28px;
+  margin: 0;
+  line-height: 1;
   border-radius: var(--wardley-radius-sm);
-  box-shadow:
-    0 1px 2px var(--wardley-shadow),
-    0 2px 8px var(--wardley-shadow);
+  box-shadow: var(--cd-shadow-1, 0 1px 2px rgba(29, 29, 29, 0.06), 0 1px 3px rgba(29, 29, 29, 0.1));
   background: var(--wardley-surface);
   color: var(--wardley-ink);
   transition:
-    background 150ms ease,
-    color 150ms ease;
+    background var(--cd-motion-fast, 150ms) var(--cd-ease, ease),
+    color var(--cd-motion-fast, 150ms) var(--cd-ease, ease);
 }
 .wardley-container .djs-context-pad .entry:hover {
   background: var(--wardley-accent-soft);
   color: var(--wardley-accent);
+}
+.wardley-container .djs-context-pad .group[data-group='danger'] .entry:hover {
+  background: color-mix(in srgb, var(--wardley-danger) 12%, var(--wardley-surface));
+  color: var(--wardley-danger);
 }
 
 .wardley-container .wardley-label-input {
@@ -216,13 +298,16 @@
   font-size: 13px;
   padding: 2px 6px;
   border: 1.5px solid var(--wardley-accent);
-  border-radius: 6px;
+  border-radius: var(--cd-radius-sm, 6px);
   background: var(--wardley-surface);
   color: var(--wardley-ink);
   outline: none;
   box-shadow: 0 2px 12px var(--wardley-accent-soft);
   z-index: 100;
   min-width: 90px;
+}
+.wardley-container .wardley-link-input {
+  min-width: 240px;
 }
 .wardley-container .wardley-label-textarea {
   resize: none;
@@ -232,21 +317,36 @@
   font-style: italic;
 }
 
-.wardley-container.drag-over::after {
-  content: 'Drop Wardley map here (.wmap · .json · .svg · .png)';
+/* Label editing: the name field replaces the label in place (size, font and zoom set inline). */
+.wardley-container .djs-element.wardley-label-editing .wardley-name-label {
+  visibility: hidden;
+}
+.wardley-container .wardley-label-input--name {
+  box-sizing: border-box;
+  min-width: 0;
+  overflow: hidden;
+}
+.wardley-container .wardley-label-input--error {
+  border-color: var(--wardley-danger);
+  box-shadow: 0 2px 12px color-mix(in srgb, var(--wardley-danger) 18%, transparent);
+}
+.wardley-container .wardley-label-caption {
   position: absolute;
-  inset: 10px;
-  z-index: 200;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 2px dashed var(--wardley-accent);
-  border-radius: var(--wardley-radius-lg);
-  background: var(--wardley-accent-soft);
-  color: var(--wardley-accent);
-  font-size: 15px;
-  font-weight: 600;
+  z-index: 101;
+  max-width: 320px;
+  padding: 3px 8px;
+  border-radius: var(--wardley-radius-sm);
+  background: var(--wardley-surface);
+  box-shadow: 0 1px 2px var(--wardley-shadow);
+  color: var(--wardley-ink-soft);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 1.4;
   pointer-events: none;
+}
+.wardley-container .wardley-label-error {
+  color: var(--wardley-danger);
 }
 
 /* Dark surround dot-grid: light dots on navy (the plot area stays paper — see the token block). */
@@ -265,26 +365,25 @@
   padding: 8px;
   background: var(--wardley-surface);
   border: 1px solid var(--wardley-border);
-  border-radius: var(--wardley-radius-sm);
-  box-shadow:
-    0 1px 2px var(--wardley-shadow),
-    0 6px 24px var(--wardley-shadow);
+  border-radius: var(--cd-radius-md, 12px);
+  box-shadow: var(--cd-shadow-3, 0 12px 32px rgba(29, 29, 29, 0.16));
 }
 .wardley-container .wardley-cp-swatch {
   width: 22px;
   height: 22px;
   padding: 0;
-  border-radius: 5px;
+  border-radius: var(--cd-radius-sm, 6px);
   border: 1px solid var(--wardley-border);
   cursor: pointer;
-  transition: transform 0.08s ease;
+  transition: transform var(--cd-motion-fast, 150ms) var(--cd-ease, ease);
 }
 .wardley-container .wardley-cp-swatch:hover {
   transform: scale(1.1);
 }
 .wardley-container .wardley-cp-active {
-  outline: 2px solid var(--wardley-accent);
-  outline-offset: 1px;
+  box-shadow:
+    0 0 0 2px var(--wardley-surface),
+    0 0 0 4px var(--wardley-accent);
 }
 .wardley-container .wardley-cp-none {
   background: var(--wardley-surface);
@@ -295,4 +394,160 @@
     var(--wardley-danger) 55%,
     transparent 56%
   );
+}
+
+/* Pipeline drop target: the box a dragged component would join. A neutral ink outline, so it reads
+   as "lands here" without competing with the blue selection accent. Solid, because the box is
+   already drawn dashed in ink: only a change of the line itself reads as feedback. !important
+   because tiny-svg writes stroke and fill as inline styles, which beat any selector. */
+.wardley-container .djs-element.wardley-drop-target > .djs-visual > rect:first-child {
+  stroke: var(--wardley-ink) !important;
+  stroke-width: 2px !important;
+  stroke-dasharray: none !important;
+  fill: rgba(29, 29, 29, 0.05) !important;
+}
+/* While dragging, elements passed under the cursor are not drop targets — no hover emphasis. */
+.wardley-container .djs-drag-active .djs-element.hover > .djs-visual,
+.wardley-container .djs-drag-active .djs-element.hover > .djs-visual :not(g, text, tspan) {
+  filter: none;
+}
+
+/* Map resize handles: plot right edge, bottom edge and bottom-right corner. Invisible until the
+   pointer is near the plot edge (or a resize drag runs); neutral like the axes, no accent colour. */
+.wardley-container .wardley-map-resize-hit {
+  fill: transparent;
+  stroke: none;
+  pointer-events: all;
+}
+.wardley-container .wardley-map-resize-x .wardley-map-resize-hit {
+  cursor: ew-resize;
+}
+.wardley-container .wardley-map-resize-y .wardley-map-resize-hit {
+  cursor: ns-resize;
+}
+.wardley-container .wardley-map-resize-xy .wardley-map-resize-hit {
+  cursor: nwse-resize;
+}
+.wardley-container .wardley-map-resize-visual {
+  opacity: 0;
+  pointer-events: none;
+  stroke: var(--wardley-ink-soft);
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+  transition: opacity 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.wardley-container rect.wardley-map-resize-visual {
+  fill: var(--wardley-surface);
+  stroke-width: 1;
+  rx: 2px;
+}
+.wardley-container .wardley-map-resize:hover .wardley-map-resize-visual,
+.wardley-container .wardley-map-resize.is-dragging .wardley-map-resize-visual {
+  opacity: 1;
+}
+.wardley-container .wardley-map-resize-handle:hover .wardley-map-resize-visual {
+  stroke: var(--wardley-ink);
+}
+.wardley-container .wardley-map-resize-badge {
+  position: absolute;
+  z-index: 30;
+  padding: 4px 8px;
+  border-radius: var(--wardley-radius-sm);
+  background: var(--wardley-ink);
+  color: var(--wardley-surface);
+  font-size: 12px;
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 4px 12px var(--wardley-shadow);
+}
+.wardley-container .wardley-map-resize-badge[hidden] {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .wardley-container .wardley-map-resize-visual {
+    transition: none;
+  }
+}
+
+/* Element settings popup (type / sourcing / inertia): show every option — diagram-js caps the result
+   list at 280px, which always hid Inertia below an invisible scroll edge. Unscoped because
+   diagram-js may mount popups outside the canvas container. */
+.djs-popup.wardley-element-settings {
+  border: 1px solid var(--wardley-border);
+  border-radius: var(--cd-radius-md, 12px);
+  box-shadow: var(--cd-shadow-3, 0 12px 32px rgba(29, 29, 29, 0.16));
+  font-family: inherit;
+}
+.djs-popup.wardley-element-settings .djs-popup-results {
+  max-height: none;
+}
+/* The result list keeps focus while arrow keys move the active entry; its own ring would be cut by
+   the popup's rounded border (or cross the group headings), so the popup frame carries it. */
+.djs-popup.wardley-element-settings .djs-popup-results:focus-visible {
+  outline: none;
+}
+.djs-popup.wardley-element-settings:has(.djs-popup-results:focus-visible) {
+  outline: 2px solid var(--cd-blau-link, #2b50d4);
+  outline-offset: 2px;
+}
+
+/* Keyboard focus ring (design system: blue :focus-visible ring). Scoped to the modeler's own
+   chrome — a library stylesheet must not restyle the host page's controls. */
+.wardley-container
+  :where(button, a, select, input, textarea, [role='button'], [tabindex]):focus-visible,
+.djs-palette.wardley-palette :where(.entry, [role='button'], [tabindex]):focus-visible,
+.djs-popup.wardley-element-settings :where(.entry, [tabindex]):focus-visible {
+  outline: 2px solid var(--cd-blau-link, #2b50d4);
+  outline-offset: 2px;
+}
+/* The canvas fills its container, so an outer ring would be clipped — draw it inside. */
+.wardley-container svg:focus-visible {
+  outline: 2px solid var(--cd-blau-link, #2b50d4);
+  outline-offset: -2px;
+}
+/* diagram-js focuses the canvas on every pointer interaction; without this the browser's default
+   ring would frame the whole canvas after each click. */
+.wardley-container svg:focus:not(:focus-visible) {
+  outline: none;
+}
+/* Inline editors show focus through their own accent border. */
+.wardley-container .wardley-label-input:focus-visible {
+  outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wardley-container *,
+  .wardley-container *::before,
+  .wardley-container *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* Canvas rendering */
+
+/* Draggable node and evolve-target labels (OWM `label [dx, dy]`). Only once the label-drag module
+   has armed the container — a read-only viewer keeps labels transparent to panning. */
+.wardley-container.wardley-labels-draggable .wardley-label-handle {
+  cursor: move;
+  pointer-events: all;
+}
+.wardley-container.wardley-label-dragging,
+.wardley-container.wardley-label-dragging * {
+  cursor: move !important;
+}
+
+/* The hover/selection darkening would turn the white evolve knock-out into a grey band. */
+.wardley-container .djs-element.hover > .djs-visual .wardley-movement-underlay,
+.wardley-container .djs-element.selected > .djs-visual .wardley-movement-underlay {
+  visibility: hidden;
+}
+
+/* `style dark`: the axis texts sit in the navy margin, where text-leise drops below 4.5:1. tiny-svg
+   writes inline styles, hence !important; exports serialize the inline light value. */
+.wardley-container.wardley-dark .layer-wardley-axes .wardley-axis-text {
+  fill: #8f8a8a !important;
 }

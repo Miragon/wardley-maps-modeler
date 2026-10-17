@@ -3,11 +3,12 @@ import MouseModule from 'diagram-js/lib/features/mouse';
 import CreateModule from 'diagram-js/lib/features/create';
 import WardleyModeling from './WardleyModeling.js';
 import WardleyCopyPaste from './WardleyCopyPaste.js';
+import { mapProjectionModule } from '../map-resize/index.js';
 
 /** High-level Wardley mutations + registration of the custom command handlers. */
 export const wardleyModelingModule: ModuleDeclaration = {
   // Mouse/Create are needed by the paste preview (clones attach to the cursor).
-  __depends__: [MouseModule, CreateModule],
+  __depends__: [MouseModule, CreateModule, mapProjectionModule],
   __init__: ['wardleyModeling'],
   wardleyModeling: ['type', WardleyModeling],
   wardleyCopyPaste: ['type', WardleyCopyPaste],
@@ -15,4 +16,6 @@ export const wardleyModelingModule: ModuleDeclaration = {
 
 export { default as WardleyModeling } from './WardleyModeling.js';
 export { default as WardleyCopyPaste } from './WardleyCopyPaste.js';
+export { RESIZE_MAP, UPDATE_CONFIG } from './WardleyModeling.js';
 export type { EvolveOptions } from './WardleyModeling.js';
+export type { MapConfigUpdate } from './cmd/UpdateConfigHandler.js';

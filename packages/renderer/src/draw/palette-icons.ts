@@ -16,15 +16,17 @@ const text = (content: string, attrs: string): string =>
   `<text x="12" text-anchor="middle" font-family="${FONT.family}" ${attrs}>${content}</text>`;
 
 export const PALETTE_ICONS: Record<string, string> = {
-  // Draw tool: open zigzag polyline with the start point marked.
+  // Draw tool: open zigzag polyline with the start point marked. The two tool glyphs use
+  // currentColor so the armed (highlighted) state can invert them; the create glyphs keep the
+  // notation colours because they preview the element.
   draw: wrap(
-    `<polyline points="3,18 8.5,7 14,14 21,4" fill="none" stroke="${COLORS.ink}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>` +
-      `<circle cx="3" cy="18" r="2.2" fill="${COLORS.componentFill}" stroke="${COLORS.ink}" stroke-width="1.4"/>`,
+    `<polyline points="3.98,16.03 8.5,7 14,14 21,4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>` +
+      `<circle cx="3" cy="18" r="2.2" fill="none" stroke="currentColor" stroke-width="1.4"/>`,
   ),
   // Selection tool: dashed lasso rectangle with a cursor arrow.
   lasso: wrap(
-    `<rect x="3" y="3" width="13" height="13" rx="2" fill="none" stroke="${COLORS.ink}" stroke-width="1.5" stroke-dasharray="3 2.5"/>` +
-      `<path d="M13.5 13.5l7 2.7-3 1.3-1.3 3z" fill="${COLORS.ink}"/>`,
+    `<rect x="3" y="3" width="13" height="13" rx="2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="3 2.5"/>` +
+      `<path d="M13.5 13.5l7 2.7-3 1.3-1.3 3z" fill="currentColor"/>`,
   ),
   component: wrap(eventCircle()),
   // Canon: market = three dots in a triangle (like drawComponent).
@@ -49,8 +51,11 @@ export const PALETTE_ICONS: Record<string, string> = {
       `<circle cx="7" cy="14.5" r="2.2" fill="${COLORS.componentFill}" stroke="${COLORS.stroke}" stroke-width="1.2"/>` +
       `<circle cx="17" cy="14.5" r="2.2" fill="${COLORS.componentFill}" stroke="${COLORS.stroke}" stroke-width="1.2"/>`,
   ),
+  // Sticky note with a folded corner (distinct from the hamburger menu glyph).
   note: wrap(
-    `<g stroke="${COLORS.noteText}" stroke-width="1.5" stroke-linecap="round"><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="12" x2="19" y2="12"/><line x1="5" y1="16" x2="13" y2="16"/></g>`,
+    `<g fill="none" stroke="${COLORS.noteText}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">` +
+      `<path d="M5 4h14v11l-5 5H5z" fill="${COLORS.componentFill}"/><path d="M14 20v-5h5"/>` +
+      `<line x1="8" y1="8.5" x2="16" y2="8.5"/><line x1="8" y1="12" x2="13" y2="12"/></g>`,
   ),
   annotation: wrap(
     `<circle cx="12" cy="12" r="8" fill="${COLORS.annotationFill}" stroke="${COLORS.stroke}" stroke-width="1.25"/>` +
@@ -64,9 +69,18 @@ export const PALETTE_ICONS: Record<string, string> = {
   ),
 };
 
+const ATTITUDE_INITIALS: Record<string, string> = {
+  pioneers: 'P',
+  settlers: 'S',
+  townplanners: 'T',
+};
+
+/** Region glyph; the initial letter tells the three kinds apart without relying on colour. */
 export function attitudeIcon(kind: string): string {
   const c = ATTITUDE_COLORS[kind] ?? { fill: COLORS.band, stroke: COLORS.dependency };
+  const initial = ATTITUDE_INITIALS[kind] ?? '';
   return wrap(
-    `<rect x="2" y="6" width="20" height="12" rx="3" fill="${c.fill}" stroke="${c.stroke}" stroke-width="1.5" stroke-dasharray="3 2"/>`,
+    `<rect x="2" y="6" width="20" height="12" rx="3" fill="${c.fill}" stroke="${c.stroke}" stroke-width="1.5" stroke-dasharray="3 2"/>` +
+      text(initial, `y="15.3" font-size="9" font-weight="700" fill="${COLORS.ink}"`),
   );
 }

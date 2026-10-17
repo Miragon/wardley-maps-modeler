@@ -1,47 +1,50 @@
-/* Webapp chrome — Miragon corporate identity (official CI: Miragon/corporate-identity, brand/tokens.json).
-   Blue leads (buttons/links/focus), green accents (brand mark/gradient/highlights), Geist typeface.
-   A single mode (the CI defines no dark theme); tokens mirror the renderer's `--wardley-*` where they
-   overlap. See the Miragon design system (the `miragon-brand:modeler-tool-design` skill;
-   CLAUDE.md § "Design system"). */
+/* Webapp chrome — Miragon design system (the `miragon-brand:modeler-tool-design` skill; CLAUDE.md
+   § "Design system"). Every value comes from the vendored CI tokens (`--cd-*`, loaded with the
+   renderer's wardley.css); the short names below are aliases, never new colours. Blue leads
+   (buttons, links, focus), green is reserved for the brand mark. A single light mode. */
 :root {
-  /* neutrals (grau = warm off-white surface) */
-  --paper: #f9f7f7;
-  --surface: #ffffff;
-  --surface-2: #f9f7f7;
-  --ink: #1d1d1d;
-  --ink-soft: #5b5b5b;
-  --ink-faint: #8c8c8c;
-  --line: #e6e2e2;
+  /* neutrals */
+  --paper: var(--cd-grau);
+  --surface: var(--cd-weiss);
+  --surface-2: var(--cd-grau);
+  --ink: var(--cd-schwarz);
+  --ink-soft: var(--cd-text-leise);
+  --ink-faint: var(--cd-text-leise);
+  --line: var(--cd-linie);
+  --kontur: var(--cd-kontur);
 
   /* brand: blue leads, green accents */
-  --accent: #335de5; /* blau — primary fill (buttons, active) */
-  --accent-hover: #2b50d4; /* blau-link — button hover */
-  --accent-ink: #2b50d4; /* interactive text / links / focus (AA on white) */
-  --accent-soft: rgba(51, 93, 229, 0.12);
-  --brand: #00e676; /* gruen — accent / highlight */
-  --gradient-brand: linear-gradient(120deg, #335de5 30%, #00e676);
+  --accent: var(--cd-blau);
+  --accent-hover: var(--cd-blau-link);
+  --accent-ink: var(--cd-blau-link);
+  --accent-soft: color-mix(in srgb, var(--cd-blau) 12%, transparent);
+  --brand: var(--cd-gruen);
 
   /* functional (status) layer */
-  --success: #0b7a55;
-  --warning: #92610a;
-  --danger: #c92a2a;
-  --info: #2b50d4;
+  --success: var(--cd-success);
+  --warning: var(--cd-warning);
+  --danger: var(--cd-danger);
+  --info: var(--cd-info);
 
-  /* radius (CI: md = standard for buttons/inputs/cards) */
-  --radius-sm: 6px;
-  --radius: 12px;
-  --radius-lg: 16px;
-  --radius-pill: 999px;
+  --radius-sm: var(--cd-radius-sm);
+  --radius: var(--cd-radius-md);
+  --radius-lg: var(--cd-radius-lg);
 
-  /* elevation (CI, tinted with brand black) */
-  --shadow-1: 0 1px 2px rgba(29, 29, 29, 0.06), 0 1px 3px rgba(29, 29, 29, 0.1);
-  --shadow-2: 0 4px 12px rgba(29, 29, 29, 0.1);
-  --shadow-3: 0 12px 32px rgba(29, 29, 29, 0.16);
+  --shadow-1: var(--cd-shadow-1);
+  --shadow-2: var(--cd-shadow-2);
+  --shadow-3: var(--cd-shadow-3);
 
-  /* motion (CI) */
-  --motion-fast: 150ms;
-  --ease: cubic-bezier(0.4, 0, 0.2, 1);
-  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --motion-fast: var(--cd-motion-fast);
+  --motion-base: var(--cd-motion-base);
+  --ease: var(--cd-ease);
+  --ease-out: var(--cd-ease-out);
+
+  --backdrop: color-mix(in srgb, var(--cd-schwarz) 42%, transparent);
+  --font-sans:
+    'Geist Variable', 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono:
+    'Geist Mono Variable', 'Geist Mono', ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas,
+    monospace;
 
   color-scheme: light;
 }
@@ -56,13 +59,7 @@ body,
 body {
   background: var(--paper);
   color: var(--ink);
-  font-family:
-    'Geist',
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    'Segoe UI',
-    sans-serif;
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -71,12 +68,34 @@ body {
   position: relative;
 }
 
+/* One visible focus ring for all app chrome (the canvas styles its own in wardley.css). */
+:where(button, a, select, input, textarea, summary):focus-visible {
+  outline: 2px solid var(--accent-ink);
+  outline-offset: 2px;
+}
+
+kbd {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ink-soft);
+  padding: 1px 5px;
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  white-space: nowrap;
+}
+
 /* --- Floating chrome over the canvas (no header bar, Excalidraw style) --- */
 .app-menu {
   position: absolute;
   top: 12px;
   left: 12px;
   z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .icon-btn {
@@ -97,7 +116,7 @@ body {
     background var(--motion-fast) var(--ease),
     border-color var(--motion-fast) var(--ease),
     color var(--motion-fast) var(--ease),
-    transform 60ms var(--ease);
+    transform var(--motion-fast) var(--ease);
 }
 .icon-btn svg {
   display: block;
@@ -113,6 +132,43 @@ body {
   transform: translateY(1px);
 }
 
+/* Map title: reads as text, edits as a field. Capped so it never runs into the centred palette:
+   half the palette (315px) plus the menu button and gaps (116px; 70px once the menu is icon-only). */
+.title-field {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: max(48px, calc(50vw - 315px - 116px));
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  padding: 7px 9px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: transparent;
+  text-overflow: ellipsis;
+  transition:
+    background var(--motion-fast) var(--ease),
+    border-color var(--motion-fast) var(--ease);
+}
+.title-field::placeholder {
+  color: var(--ink-soft);
+  font-weight: 500;
+}
+.title-field:hover {
+  background: color-mix(in srgb, var(--surface) 80%, transparent);
+  border-color: var(--line);
+}
+.title-field:focus {
+  background: var(--surface);
+  border-color: var(--accent);
+  outline: 2px solid var(--accent-soft);
+  outline-offset: 0;
+}
+.title-field:focus-visible {
+  outline: 2px solid var(--accent-ink);
+}
+
 .menu-dropdown[hidden] {
   display: none;
 }
@@ -121,9 +177,28 @@ body {
   top: calc(100% + 8px);
   left: 0;
   z-index: 40;
-  min-width: 236px;
+  width: 296px;
+  max-height: calc(100vh - 80px);
+  overflow-y: auto;
   padding: 6px;
-  background: var(--surface);
+  /* Scroll shadows: on short screens the items below the fold get a visible cue. The "local"
+     layers scroll with the content and cover the shadows at either end. */
+  background:
+    linear-gradient(var(--surface) 30%, transparent) center top / 100% 28px no-repeat local,
+    linear-gradient(transparent, var(--surface) 70%) center bottom / 100% 28px no-repeat local,
+    radial-gradient(
+        farthest-side at 50% 0,
+        color-mix(in srgb, var(--ink) 18%, transparent),
+        transparent
+      )
+      center top / 100% 10px no-repeat scroll,
+    radial-gradient(
+        farthest-side at 50% 100%,
+        color-mix(in srgb, var(--ink) 18%, transparent),
+        transparent
+      )
+      center bottom / 100% 10px no-repeat scroll,
+    var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   box-shadow: var(--shadow-3);
@@ -151,19 +226,26 @@ body {
   background: transparent;
   cursor: pointer;
   transition:
-    background 120ms var(--ease),
-    color 120ms var(--ease);
+    background var(--motion-fast) var(--ease),
+    color var(--motion-fast) var(--ease);
 }
 .menu-item svg {
   flex: none;
   color: var(--ink-soft);
 }
-.menu-item:hover {
+.menu-item:hover:not(:disabled) {
   background: var(--accent-soft);
   color: var(--accent-ink);
 }
-.menu-item:hover svg {
+.menu-item:hover:not(:disabled) svg {
   color: var(--accent-ink);
+}
+.menu-item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.menu-kbd {
+  margin-left: auto;
 }
 
 .menu-sep {
@@ -172,11 +254,14 @@ body {
   background: var(--line);
 }
 
+.menu-size {
+  padding: 2px 0 6px;
+}
 .menu-field {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 10px;
+  padding: 8px 10px 6px;
   font-size: 13px;
   color: var(--ink);
 }
@@ -189,16 +274,82 @@ body {
   flex: none;
   color: var(--ink-soft);
 }
-.menu-field select {
-  margin-left: auto;
+.menu-field select,
+.size-input input,
+.axis-row select,
+.axis-stage input {
   font: inherit;
-  font-size: 12.5px;
   color: var(--ink);
-  padding: 5px 8px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--kontur);
   border-radius: var(--radius-sm);
   background: var(--surface-2);
+  transition:
+    border-color var(--motion-fast) var(--ease),
+    background var(--motion-fast) var(--ease);
+}
+.menu-field select {
+  min-width: 0;
+  max-width: 172px;
+  margin-left: auto;
+  font-size: 12.5px;
+  padding: 5px 6px;
   cursor: pointer;
+}
+.menu-size-inputs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px 0 36px;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+.size-input {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.size-input input {
+  width: 58px;
+  font-size: 12.5px;
+  padding: 4px 6px;
+  font-variant-numeric: tabular-nums;
+}
+.size-times {
+  color: var(--ink-soft);
+}
+.link-btn {
+  margin-left: auto;
+  white-space: nowrap;
+  font: inherit;
+  font-size: 12px;
+  color: var(--accent-ink);
+  padding: 2px 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.link-btn[hidden] {
+  display: none;
+}
+.menu-hint {
+  margin: 6px 10px 0 36px;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--ink-soft);
+}
+:where(.size-input input, .axis-stage input):focus,
+:where(.menu-field select, .axis-row select):focus {
+  border-color: var(--accent);
+  background: var(--surface);
+  outline: 2px solid var(--accent-soft);
+  outline-offset: 0;
+}
+:where(.size-input input, .axis-stage input, .menu-field select, .axis-row select):focus-visible {
+  outline: 2px solid var(--accent-ink);
+  outline-offset: 1px;
 }
 
 /* --- Toolbar (floating top-right: Share) --- */
@@ -211,39 +362,65 @@ body {
   align-items: center;
   gap: 8px;
 }
-.app-toolbar button {
+
+/* --- Buttons shared by the toolbar, the start card and the dialogs --- */
+:where(.app-toolbar, .empty-card, .app-dialog) :is(.primary, .ghost) {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   font: inherit;
   font-size: 13px;
   font-weight: 600;
-  padding: 9px 16px;
+  padding: 8px 14px;
   border-radius: var(--radius);
   cursor: pointer;
   transition:
     background var(--motion-fast) var(--ease),
+    border-color var(--motion-fast) var(--ease),
+    color var(--motion-fast) var(--ease),
     box-shadow var(--motion-fast) var(--ease),
-    transform 80ms var(--ease);
+    transform var(--motion-fast) var(--ease);
 }
-.app-toolbar button svg {
-  display: block;
-  flex: none;
-}
-.app-toolbar button.primary {
+:where(.app-toolbar, .empty-card, .app-dialog) .primary {
+  color: var(--cd-weiss);
   border: 1px solid var(--accent);
   background: var(--accent);
-  color: #fff;
   box-shadow: var(--shadow-1);
 }
-.app-toolbar button.primary:hover {
+:where(.app-toolbar, .empty-card, .app-dialog) .primary:hover:not(:disabled) {
   background: var(--accent-hover);
   border-color: var(--accent-hover);
   box-shadow: var(--shadow-2);
   transform: translateY(-1px);
 }
-.app-toolbar button.primary:active {
+:where(.app-toolbar, .empty-card, .app-dialog) .ghost {
+  color: var(--ink);
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+:where(.app-toolbar, .empty-card, .app-dialog) .ghost:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent-ink);
+  background: var(--accent-soft);
+}
+:where(.app-toolbar, .empty-card, .app-dialog) :is(.primary, .ghost):active {
   transform: translateY(0);
+}
+:where(.app-toolbar, .empty-card, .app-dialog) :is(.primary, .ghost):disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+.app-dialog :is(.primary, .ghost)[hidden] {
+  display: none;
+}
+.app-toolbar .primary {
+  padding: 9px 16px;
+}
+.app-toolbar button svg {
+  display: block;
+  flex: none;
 }
 
 /* --- Stage (canvas + empty state) --- */
@@ -257,7 +434,7 @@ body {
 }
 
 .app-stage.drag-over::after {
-  content: 'Drop Wardley map here';
+  content: 'Drop a .wmap, .owm or .json file';
   position: absolute;
   inset: 12px;
   z-index: 30;
@@ -273,11 +450,33 @@ body {
   pointer-events: none;
 }
 
+/* --- Empty-map hint (after "New diagram", until the first element exists) --- */
+.onboarding-hint {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  z-index: 4;
+  width: max-content;
+  max-width: min(520px, calc(100% - 48px));
+  margin: 0;
+  transform: translate(-50%, -50%);
+  font-size: 14px;
+  line-height: 1.7;
+  text-align: center;
+  color: var(--ink-soft);
+  pointer-events: none;
+  user-select: none;
+}
+.onboarding-hint[hidden],
+.app-canvas.wardley-draw-mode ~ .onboarding-hint {
+  display: none;
+}
+
 /* --- Empty-State --- */
 .empty-state[hidden] {
   display: none;
 }
-.app-canvas.wardley-draw-mode + .empty-state {
+.app-canvas.wardley-draw-mode ~ .empty-state {
   display: none;
 }
 .empty-state {
@@ -296,13 +495,14 @@ body {
   text-align: center;
   gap: 12px;
   max-width: 380px;
+  margin: 0 16px;
   padding: 36px 40px;
   background: color-mix(in srgb, var(--surface) 84%, transparent);
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-3);
   backdrop-filter: blur(8px);
-  animation: card-in 200ms var(--ease-out);
+  animation: card-in var(--motion-base) var(--ease-out);
 }
 @keyframes card-in {
   from {
@@ -315,7 +515,7 @@ body {
   width: 60px;
   height: 60px;
   border-radius: 15px;
-  box-shadow: 0 8px 22px rgba(51, 93, 229, 0.3);
+  box-shadow: var(--shadow-2);
 }
 .empty-card h2 {
   margin: 8px 0 0;
@@ -334,48 +534,8 @@ body {
   gap: 10px;
   margin-top: 4px;
 }
-.empty-card .primary,
-.empty-card .ghost {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 600;
+.empty-card :is(.primary, .ghost) {
   padding: 10px 20px;
-  border-radius: var(--radius);
-  cursor: pointer;
-  transition:
-    background var(--motion-fast) var(--ease),
-    border-color var(--motion-fast) var(--ease),
-    color var(--motion-fast) var(--ease),
-    transform 80ms var(--ease),
-    box-shadow var(--motion-fast) var(--ease);
-}
-.empty-card .primary {
-  color: #fff;
-  border: 1px solid var(--accent);
-  background: var(--accent);
-  box-shadow: var(--shadow-1);
-}
-.empty-card .primary:hover {
-  background: var(--accent-hover);
-  box-shadow: var(--shadow-2);
-  transform: translateY(-1px);
-}
-.empty-card .ghost {
-  color: var(--ink);
-  border: 1px solid var(--line);
-  background: var(--surface);
-}
-.empty-card .ghost:hover {
-  border-color: var(--accent);
-  color: var(--accent-ink);
-  background: var(--accent-soft);
-}
-.empty-card .primary:active,
-.empty-card .ghost:active {
-  transform: translateY(0);
 }
 .empty-hint {
   margin-top: 2px;
@@ -385,99 +545,165 @@ body {
 }
 
 /* Landing (empty & not yet started): keep the Menu, Share and palette so a user can already open
- * another file or drag an element onto the canvas to start. Only the zoom control is hidden — it
- * has nothing to act on yet. */
-#app.app--landing .app-zoom {
+ * another file or drag an element onto the canvas to start. The zoom control (nothing to act on
+ * yet) and the title of the not-yet-existing map are hidden. */
+#app.app--landing :is(.app-zoom, .title-field) {
   display: none;
 }
 
-/* --- Export-Panel (JSON/DSL) --- */
-.output-overlay[hidden] {
-  display: none;
-}
-.output-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  display: grid;
-  place-items: center;
-  background: rgba(8, 10, 32, 0.42);
-  backdrop-filter: blur(3px);
-  animation: overlay-in 140ms var(--ease-out);
-}
-@keyframes overlay-in {
-  from {
-    opacity: 0;
-  }
-}
-.output-panel {
-  display: flex;
+/* --- Dialogs (native <dialog> + showModal) --- */
+.app-dialog {
   flex-direction: column;
-  width: min(720px, 92vw);
-  height: min(70vh, 640px);
+  width: min(720px, calc(100vw - 32px));
+  max-height: calc(100vh - 48px);
+  padding: 0;
+  color: var(--ink);
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   box-shadow: var(--shadow-3);
   overflow: hidden;
 }
-.output-head {
+.app-dialog[open] {
+  display: flex;
+  animation: dialog-in var(--motion-fast) var(--ease-out);
+}
+.app-dialog::backdrop {
+  background: var(--backdrop);
+  backdrop-filter: blur(3px);
+}
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+.dialog-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
+  gap: 12px;
+  padding: 10px 10px 10px 18px;
   border-bottom: 1px solid var(--line);
-  font-weight: 600;
+}
+.dialog-head h2 {
+  margin: 0;
   font-size: 15px;
+  font-weight: 600;
 }
-.output-actions {
-  display: flex;
-  gap: 8px;
-}
-.output-actions button {
+.dialog-close {
+  width: 32px;
+  height: 32px;
   font: inherit;
-  font-size: 12.5px;
-  font-weight: 500;
-  padding: 6px 12px;
-  border: 1px solid var(--line);
+  font-size: 20px;
+  line-height: 1;
+  color: var(--ink-soft);
+  border: 0;
   border-radius: var(--radius-sm);
-  background: var(--surface);
-  color: var(--ink);
+  background: transparent;
   cursor: pointer;
   transition:
-    border-color 120ms var(--ease),
-    color 120ms var(--ease),
-    background 120ms var(--ease);
+    background var(--motion-fast) var(--ease),
+    color var(--motion-fast) var(--ease);
 }
-.output-actions button:hover {
-  border-color: var(--accent);
-  color: var(--accent-ink);
+.dialog-close:hover {
   background: var(--accent-soft);
+  color: var(--accent-ink);
 }
-.output-panel textarea {
-  flex: 1;
-  border: 0;
-  outline: 0;
-  resize: none;
-  padding: 14px;
-  font-family: 'Geist Mono', ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
+.dialog-hint {
+  margin: 0;
+  padding: 10px 18px;
   font-size: 12.5px;
   line-height: 1.5;
+  color: var(--ink-soft);
+  border-bottom: 1px solid var(--line);
+}
+.dialog-hint[hidden] {
+  display: none;
+}
+.dialog-foot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--line);
+}
+
+/* Text panel (OWM-DSL / JSON / share link) */
+.text-dialog {
+  height: min(78vh, 680px);
+}
+.text-dialog textarea {
+  flex: 1;
+  min-height: 120px;
+  border: 0;
+  resize: none;
+  padding: 14px 18px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.55;
   color: var(--ink);
   background: var(--surface-2);
   white-space: pre;
+  tab-size: 2;
+}
+.text-dialog textarea:focus {
+  outline: none;
+}
+.text-dialog textarea:focus-visible {
+  outline: 2px solid var(--accent-ink);
+  outline-offset: -2px;
+}
+.text-dialog--link {
+  height: fit-content;
+}
+.text-dialog textarea.is-link {
+  flex: none;
+  min-height: 0;
+  height: 96px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+.diagnostics {
+  flex: none;
+  max-height: 128px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 6px 10px;
+  list-style: none;
+  border-top: 1px solid var(--line);
+}
+.diagnostics[hidden] {
+  display: none;
+}
+.diagnostic {
+  display: block;
+  width: 100%;
+  font: inherit;
+  font-size: 12.5px;
+  text-align: left;
+  color: var(--warning);
+  padding: 4px 8px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  cursor: pointer;
+}
+.diagnostic:hover {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
 }
 
-/* --- X-axis labels (modal) --- */
-.axis-panel {
-  display: flex;
-  flex-direction: column;
-  width: min(440px, 92vw);
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-3);
-  overflow: hidden;
+/* X-axis labels: docked near the top with a light backdrop, so the bottom axis being previewed
+   stays readable. */
+.axis-dialog {
+  width: min(460px, calc(100vw - 32px));
+  margin: 72px auto auto;
+}
+.axis-dialog::backdrop {
+  background: color-mix(in srgb, var(--cd-schwarz) 8%, transparent);
+  backdrop-filter: none;
 }
 .axis-body {
   display: flex;
@@ -490,20 +716,15 @@ body {
   align-items: center;
   gap: 12px;
   font-size: 13px;
-  color: var(--ink);
 }
 .axis-row > span {
   font-weight: 600;
 }
 .axis-row select {
   flex: 1;
-  font: inherit;
-  font-size: 12.5px;
-  color: var(--ink);
+  min-width: 0;
+  font-size: 13px;
   padding: 7px 9px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  background: var(--surface-2);
   cursor: pointer;
 }
 .axis-hint {
@@ -524,56 +745,100 @@ body {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-width: 0;
   font-size: 11.5px;
   color: var(--ink-soft);
 }
 .axis-stage input {
-  font: inherit;
+  min-width: 0;
   font-size: 13px;
-  color: var(--ink);
   padding: 8px 9px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  background: var(--surface-2);
 }
-.axis-stage input:focus {
-  outline: 2px solid var(--accent-soft);
-  outline-offset: 0;
-  border-color: var(--accent);
-  background: var(--surface);
+.axis-dialog .dialog-foot {
+  justify-content: space-between;
 }
-.axis-foot {
-  display: flex;
-  justify-content: flex-end;
+
+/* Lists: import issues, keyboard shortcuts */
+.list-dialog {
+  width: min(560px, calc(100vw - 32px));
 }
-.axis-foot .ghost {
-  font: inherit;
-  font-size: 12.5px;
-  font-weight: 500;
-  padding: 7px 13px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-  color: var(--ink);
-  cursor: pointer;
-  transition:
-    border-color 120ms var(--ease),
-    color 120ms var(--ease),
-    background 120ms var(--ease);
+.issue-list {
+  margin: 0;
+  padding: 8px 18px 14px 40px;
+  overflow-y: auto;
+  font-size: 13px;
+  line-height: 1.5;
 }
-.axis-foot .ghost:hover {
-  border-color: var(--accent);
-  color: var(--accent-ink);
-  background: var(--accent-soft);
+.issue-list li {
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line);
+}
+.issue-list li:last-child {
+  border-bottom: 0;
+}
+.issue-source {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-soft);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+#shortcuts-dialog {
+  width: min(760px, calc(100vw - 32px));
+}
+.shortcut-groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 4px 24px;
+  padding: 10px 18px 18px;
+  overflow-y: auto;
+}
+/* Gestures are long phrases: their group gets the full width. */
+.shortcut-group--wide {
+  grid-column: 1 / -1;
+}
+.shortcut-group h3 {
+  margin: 10px 0 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.shortcut-group dl {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px 12px;
+  margin: 0;
+  font-size: 13px;
+}
+.shortcut-group dt {
+  line-height: 1.5;
+}
+.shortcut-group dd {
+  margin: 0;
+  text-align: right;
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+.shortcut-gesture {
+  font-style: normal;
 }
 
 /* --- Toaster (transient feedback, bottom-center) --- */
 .toaster {
   position: fixed;
-  bottom: 20px;
-  left: 50%;
+  inset: auto auto 20px 50%;
   transform: translateX(-50%);
   z-index: 60;
+  /* Reset the popover defaults (centred box with border, background and padding). */
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  overflow: visible;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -585,8 +850,8 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
-  max-width: min(420px, 90vw);
-  padding: 11px 15px;
+  max-width: min(480px, calc(100vw - 32px));
+  padding: 9px 10px 9px 15px;
   border: 1px solid var(--line);
   border-left: 3px solid var(--info);
   border-radius: var(--radius);
@@ -595,10 +860,10 @@ body {
   box-shadow: var(--shadow-3);
   font-size: 13px;
   font-weight: 500;
-  animation: toast-in 180ms var(--ease-out);
+  animation: toast-in var(--motion-base) var(--ease-out);
 }
 .toast.is-leaving {
-  animation: toast-out 160ms var(--ease) forwards;
+  animation: toast-out var(--motion-fast) var(--ease) forwards;
 }
 .toast__dot {
   flex: none;
@@ -607,11 +872,51 @@ body {
   border-radius: 50%;
   background: var(--info);
 }
+.toast__text {
+  padding: 2px 5px 2px 0;
+  line-height: 1.4;
+}
+.toast__action,
+.toast__close {
+  flex: none;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  cursor: pointer;
+  transition:
+    background var(--motion-fast) var(--ease),
+    color var(--motion-fast) var(--ease);
+}
+.toast__action {
+  color: var(--accent-ink);
+  padding: 4px 8px;
+}
+.toast__close {
+  width: 26px;
+  height: 26px;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--ink-soft);
+}
+.toast__action:hover,
+.toast__close:hover {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
 .toast--success {
   border-left-color: var(--success);
 }
 .toast--success .toast__dot {
   background: var(--success);
+}
+.toast--warning {
+  border-left-color: var(--warning);
+}
+.toast--warning .toast__dot {
+  background: var(--warning);
 }
 .toast--error {
   border-left-color: var(--danger);
@@ -644,7 +949,6 @@ body {
   border-radius: var(--radius);
   background: var(--surface);
   box-shadow: var(--shadow-1);
-  overflow: hidden;
 }
 .app-zoom button {
   font: inherit;
@@ -655,8 +959,15 @@ body {
   cursor: pointer;
   padding: 6px 11px;
   transition:
-    background 120ms var(--ease),
-    color 120ms var(--ease);
+    background var(--motion-fast) var(--ease),
+    color var(--motion-fast) var(--ease);
+}
+/* Rounded ends instead of overflow:hidden, which would clip the focus ring. */
+.app-zoom button:first-child {
+  border-radius: var(--radius) 0 0 var(--radius);
+}
+.app-zoom button:last-child {
+  border-radius: 0 var(--radius) var(--radius) 0;
 }
 .app-zoom button:hover {
   background: var(--accent-soft);
@@ -690,15 +1001,64 @@ body {
   text-decoration: underline;
 }
 
-@media (max-width: 540px) {
+/* --- Narrow windows --- */
+/* Menu, then Share keep only their icons (their aria-label names them): the room goes to the title. */
+@media (max-width: 1100px) {
+  #btn-menu span {
+    display: none;
+  }
+  #btn-menu {
+    padding: 8px 10px;
+  }
+  .title-field {
+    max-width: max(48px, calc(50vw - 315px - 70px));
+  }
+}
+@media (max-width: 900px) {
+  #btn-share span {
+    display: none;
+  }
+  .app-toolbar .primary {
+    padding: 9px 11px;
+  }
+}
+/* The palette no longer fits between Menu and Share: it moves to a second row (fitView reads its
+   position, so the map starts below it). */
+@media (max-width: 860px) {
+  .djs-palette.wardley-palette {
+    top: 60px;
+  }
+  .title-field {
+    max-width: calc(100vw - 132px);
+  }
+}
+/* Phones: the zoom control moves above the legal links instead of covering them. */
+@media (max-width: 600px) {
   .app-legal {
-    bottom: 8px;
-    left: 8px;
+    bottom: 10px;
+    left: 10px;
     font-size: 11px;
+  }
+  .app-zoom {
+    bottom: 36px;
+    right: 10px;
+  }
+  .toaster {
+    inset: auto auto 76px 50%;
   }
 }
 
 /* Respect users who prefer less motion. */
+/* Short screens (e.g. 1366×657): keep every menu item, down to "Keyboard shortcuts", in view. */
+@media (max-height: 720px) {
+  .menu-item {
+    padding-block: 7px;
+  }
+  .menu-size .menu-hint {
+    display: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

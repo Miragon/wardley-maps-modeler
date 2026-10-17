@@ -151,13 +151,16 @@ export default class WardleyDrawingHandles {
     }
   }
 
+  /** Clamped into the plot, like the draw tool: what the preview shows is what gets saved. */
   private toCanvasPoint(e: MouseEvent): Point {
     const rect = this.canvas.getContainer().getBoundingClientRect();
     const vb = this.canvas.viewbox();
     const scale = this.canvas.zoom();
-    return {
-      x: (e.clientX - rect.left) / scale + vb.x,
-      y: (e.clientY - rect.top) / scale + vb.y,
-    };
+    return this.grid.toCanvas(
+      this.grid.fromCanvas({
+        x: (e.clientX - rect.left) / scale + vb.x,
+        y: (e.clientY - rect.top) / scale + vb.y,
+      }),
+    );
   }
 }

@@ -1,6 +1,6 @@
 import { wardleyMapSchema } from './schema.js';
 import { migrate, CURRENT_SCHEMA_VERSION } from './migrations.js';
-import type { MapConfig, WardleyMap } from './types.js';
+import { DEFAULT_MAP_TITLE, type MapConfig, type WardleyMap } from './types.js';
 
 /** Number of decimal places for coordinates in serialization (concept doc §7.1). */
 const COORD_PRECISION = 3;
@@ -102,7 +102,7 @@ function stableStringify(value: unknown): string {
   return JSON.stringify(sortDeep(value), null, 2) + '\n';
 }
 
-export function createEmptyMap(title = 'Untitled Map'): WardleyMap {
+export function createEmptyMap(title = DEFAULT_MAP_TITLE): WardleyMap {
   return {
     schemaVersion: CURRENT_SCHEMA_VERSION,
     config: { title },

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from 'vitest';
 import type Canvas from 'diagram-js/lib/core/Canvas';
-import EvolutionGrid from '../src/evolution-grid/EvolutionGrid.js';
+import EvolutionGrid, { DEFAULT_Y_AXIS_END_LABELS } from '../src/evolution-grid/EvolutionGrid.js';
 import { clampRange } from '../src/evolution-grid/EvolutionConstraintBehavior.js';
 
 /** Pure math tests (P7): no canvas/rendering needed. */
@@ -52,6 +52,42 @@ describe('EvolutionGrid (single source of math)', () => {
     g.configure({ title: 'T', size: { width: 1760, height: 720 } });
     expect(g.getPlotSize()).toEqual({ width: 1760, height: 720 });
     expect(g.outerBounds().width).toBeGreaterThan(1760);
+  });
+});
+
+describe('EvolutionGrid.render (axis background)', () => {
+  function renderAxes(configure?: (grid: EvolutionGrid) => void): SVGGElement {
+    const layer = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    const canvas = { getLayer: () => layer } as unknown as Canvas;
+    const g = new EvolutionGrid(canvas);
+    configure?.(g);
+    g.render();
+    return layer;
+  }
+
+  const texts = (layer: SVGGElement) =>
+    Array.from(layer.querySelectorAll('text')).map((node) => node.textContent);
+
+  it('defaults the value-chain end labels to title case like the axis titles', () => {
+    expect(DEFAULT_Y_AXIS_END_LABELS).toEqual(['Invisible', 'Visible']);
+    expect(texts(renderAxes())).toEqual(expect.arrayContaining(['Invisible', 'Visible']));
+    const configured = renderAxes((g) => g.configure({ title: 'T' }));
+    expect(texts(configured)).toEqual(expect.arrayContaining(['Invisible', 'Visible']));
+  });
+
+  it('keeps custom end labels from `y-axis Label->Bottom->Top`', () => {
+    const layer = renderAxes((g) =>
+      g.configure({ title: 'T', yAxisEndLabels: ['Hidden', 'Shown'] }),
+    );
+    expect(texts(layer)).toEqual(expect.arrayContaining(['Hidden', 'Shown']));
+    expect(texts(layer)).not.toContain('Visible');
+  });
+
+  it('marks axis lines and texts so the `style dark` override can reach them', () => {
+    const layer = renderAxes();
+    expect(layer.querySelectorAll('.wardley-axis')).toHaveLength(4);
+    const axisTexts = layer.querySelectorAll('text.wardley-axis-text');
+    expect(axisTexts.length).toBe(layer.querySelectorAll('text').length);
   });
 });
 

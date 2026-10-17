@@ -25,9 +25,6 @@ export const ICON_EDIT =
   'M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z';
 export const ICON_DELETE =
   'M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z';
-/** close — remove evolve. */
-export const ICON_CLOSE =
-  'M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z';
 /** description — note. */
 export const ICON_NOTE =
   'M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z';
@@ -89,6 +86,12 @@ export const ICON_AUTORENEW =
 /** aspect_ratio — map size. */
 export const ICON_ASPECT_RATIO =
   'M19 12h-2v3h-3v2h5v-5zM7 9h3V7H5v5h2V9zm14-6H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16.01H3V4.99h18v14.02z';
+/** open_in_new — open the element's link in a new tab. */
+export const ICON_OPEN_IN_NEW =
+  'M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z';
+/** link — set the element's link (url). */
+export const ICON_LINK =
+  'M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z';
 /** menu — hamburger (main menu). */
 export const ICON_MENU = 'M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z';
 /** add — append component. */
@@ -116,7 +119,36 @@ export function drawIcon(
   return g;
 }
 
+const STRIKE_GAP = 'M0.44 3.56L3.56 0.44 23.56 20.44 20.44 23.56z';
+let struckIconCount = 0;
+const STRIKE_LINE = 'M1.29 2.71L2.71 1.29 22.71 21.29 21.29 22.71z';
+
+/** Icon paths are public API input, so they are escaped before they land in an HTML attribute. */
+function escapeAttribute(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+/**
+ * Like `iconMarkup`, but crossed out by a diagonal stroke (e.g. "remove evolve" = struck double
+ * arrow). The mask cuts a gap around the stroke so it stays legible over the filled glyph.
+ */
+export function struckIconMarkup(path: string, size = 18): string {
+  // Ids are document-global: a shared id would make every copy depend on the first one still
+  // being rendered.
+  const maskId = `wardley-icon-strike-gap-${++struckIconCount}`;
+  return (
+    `<svg viewBox="0 0 24 24" width="${Number(size)}" height="${Number(size)}" fill="currentColor" aria-hidden="true">` +
+    `<mask id="${maskId}" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24">` +
+    `<rect width="24" height="24" fill="#fff"/><path d="${STRIKE_GAP}" fill="#000"/></mask>` +
+    `<path d="${escapeAttribute(path)}" mask="url(#${maskId})"/><path d="${STRIKE_LINE}"/></svg>`
+  );
+}
+
 /** Returns an icon as an HTML SVG string (for palette/context pad/buttons), color = currentColor. */
 export function iconMarkup(path: string, size = 18): string {
-  return `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="currentColor" aria-hidden="true"><path d="${path}"/></svg>`;
+  return `<svg viewBox="0 0 24 24" width="${Number(size)}" height="${Number(size)}" fill="currentColor" aria-hidden="true"><path d="${escapeAttribute(path)}"/></svg>`;
 }

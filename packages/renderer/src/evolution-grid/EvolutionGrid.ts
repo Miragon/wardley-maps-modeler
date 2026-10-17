@@ -5,6 +5,7 @@ import {
   clear as svgClear,
 } from 'tiny-svg';
 import {
+  drawnPlotLength,
   evolutionStage,
   DEFAULT_STAGE_BOUNDARIES,
   DEFAULT_EVOLUTION_LABELS,
@@ -14,9 +15,14 @@ import {
 } from '@miragon/wardley-schema-model';
 import type Canvas from 'diagram-js/lib/core/Canvas';
 import type { Point } from 'diagram-js/lib/util/Types';
-import { PLOT, PLOT_MIN, COLORS, FONT } from '../draw/styles.js';
+import { PLOT, COLORS, FONT } from '../draw/styles.js';
 
 const AXES_LAYER = 'wardley-axes';
+/** Value-chain end labels [bottom, top] unless the map sets `y-axis Label->Bottom->Top`. */
+export const DEFAULT_Y_AXIS_END_LABELS: readonly [string, string] = ['Invisible', 'Visible'];
+/** Axis lines/arrowheads and margin texts — hooks for the `style dark` override in wardley.css. */
+const AXIS_CLASS = 'wardley-axis';
+const AXIS_TEXT_CLASS = 'wardley-axis-text';
 
 function clamp01(n: number): number {
   return n < 0 ? 0 : n > 1 ? 1 : n;
@@ -33,7 +39,7 @@ export default class EvolutionGrid {
   private boundaries: readonly [number, number, number] = DEFAULT_STAGE_BOUNDARIES;
   private labels: readonly [string, string, string, string] = DEFAULT_EVOLUTION_LABELS;
   private yAxisLabel = 'Value Chain';
-  private yAxisEndLabels: readonly [string, string] = ['invisible', 'visible'];
+  private yAxisEndLabels: readonly [string, string] = DEFAULT_Y_AXIS_END_LABELS;
   private plotWidth: number = PLOT.width;
   private plotHeight: number = PLOT.height;
 
@@ -43,9 +49,10 @@ export default class EvolutionGrid {
     this.boundaries = config.stageBoundaries ?? DEFAULT_STAGE_BOUNDARIES;
     this.labels = config.evolutionLabels ?? DEFAULT_EVOLUTION_LABELS;
     this.yAxisLabel = config.yAxisLabel ?? 'Value Chain';
-    this.yAxisEndLabels = config.yAxisEndLabels ?? ['invisible', 'visible'];
-    this.plotWidth = Math.max(config.size?.width ?? PLOT.width, PLOT_MIN.width);
-    this.plotHeight = Math.max(config.size?.height ?? PLOT.height, PLOT_MIN.height);
+    this.yAxisEndLabels = config.yAxisEndLabels ?? DEFAULT_Y_AXIS_END_LABELS;
+    // A written size stays in the config as is; the grid draws it within the limits (NaN-safe).
+    this.plotWidth = drawnPlotLength(config.size?.width, 'width');
+    this.plotHeight = drawnPlotLength(config.size?.height, 'height');
   }
 
   /** Normalized -> diagram px (center of the node). */
@@ -133,7 +140,10 @@ export default class EvolutionGrid {
       );
     }
 
-    svgAppend(layer, line(left, bottom, right + 10, bottom, { stroke: COLORS.axis }));
+    svgAppend(
+      layer,
+      line(left, bottom, right + 10, bottom, { stroke: COLORS.axis, class: AXIS_CLASS }),
+    );
     svgAppend(layer, arrowHead(right + 10, bottom, 'right'));
     svgAppend(
       layer,
@@ -145,7 +155,10 @@ export default class EvolutionGrid {
       }),
     );
 
-    svgAppend(layer, line(left, bottom, left, top - 10, { stroke: COLORS.axis }));
+    svgAppend(
+      layer,
+      line(left, bottom, left, top - 10, { stroke: COLORS.axis, class: AXIS_CLASS }),
+    );
     svgAppend(layer, arrowHead(left, top - 10, 'up'));
     const yLabel = text(this.yAxisLabel, 0, 0, {
       'text-anchor': 'middle',
@@ -187,7 +200,13 @@ function line(x1: number, y1: number, x2: number, y2: number, attrs: Attrs): SVG
 }
 
 function text(content: string, x: number, y: number, attrs: Attrs): SVGElement {
-  const el = svgAttr(svgCreate('text'), { x, y, 'font-family': FONT.family, ...attrs });
+  const el = svgAttr(svgCreate('text'), {
+    x,
+    y,
+    'font-family': FONT.family,
+    class: AXIS_TEXT_CLASS,
+    ...attrs,
+  });
   el.textContent = content;
   return el;
 }
@@ -198,5 +217,5 @@ function arrowHead(x: number, y: number, dir: 'right' | 'up'): SVGElement {
     dir === 'right'
       ? `${x - s},${y - s} ${x + 2},${y} ${x - s},${y + s}`
       : `${x - s},${y + s} ${x},${y - 2} ${x + s},${y + s}`;
-  return svgAttr(svgCreate('polygon'), { points, fill: COLORS.axis });
+  return svgAttr(svgCreate('polygon'), { points, fill: COLORS.axis, class: AXIS_CLASS });
 }

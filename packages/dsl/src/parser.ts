@@ -1,5 +1,9 @@
 import {
   CURRENT_SCHEMA_VERSION,
+  DEFAULT_MAP_TITLE,
+  PLOT_MAX,
+  PLOT_MIN,
+  drawnPlotLength,
   validateMap,
   type AcceleratorElement,
   type AnchorElement,
@@ -48,6 +52,7 @@ import {
   type TextSpan,
 } from './lexer.js';
 import { UniqueNames, escapeCommentMarkers, roundAsWritten, writtenName } from './names.js';
+import type { UrlReferenceHint } from './serializer.js';
 
 /** Splits `A -> B` at the FIRST arrow — plain indexOf, immune to regex backtracking. */
 function splitDependency(core: string): { left: string; right: string } | null {
@@ -289,6 +294,7 @@ function buildEdges(
   idOfName: (name: string) => string | undefined,
   unresolved: (link: PendingLink, name: string) => void,
   labelOf: (link: PendingLink) => string | undefined,
+  built: (edge: MapEdge, link: PendingLink) => void,
 ): MapEdge[] {
   let dependencies = 0;
   let flows = 0;
@@ -301,30 +307,30 @@ function buildEdges(
       continue;
     }
     if (link.kind === 'dependency') {
-      edges.push(
-        compact({
-          id: `dep_${++dependencies}`,
-          edgeType: 'dependency',
-          from: fromId,
-          to: toId,
-          label: labelOf(link),
-        }) as MapEdge,
-      );
+      const edge = compact({
+        id: `dep_${++dependencies}`,
+        edgeType: 'dependency',
+        from: fromId,
+        to: toId,
+        label: labelOf(link),
+      }) as MapEdge;
+      edges.push(edge);
+      built(edge, link);
       continue;
     }
     // `+<` reverses the flow direction (right -> left).
     const [from, to] = link.reverse ? [toId, fromId] : [fromId, toId];
-    edges.push(
-      compact({
-        id: `flow_${++flows}`,
-        edgeType: 'flow',
-        from,
-        to,
-        bidirectional: link.bidirectional ? true : undefined,
-        flowValue: link.flowValue,
-        label: labelOf(link),
-      }) as MapEdge,
-    );
+    const edge = compact({
+      id: `flow_${++flows}`,
+      edgeType: 'flow',
+      from,
+      to,
+      bidirectional: link.bidirectional ? true : undefined,
+      flowValue: link.flowValue,
+      label: labelOf(link),
+    }) as MapEdge;
+    edges.push(edge);
+    built(edge, link);
   }
   return edges;
 }
@@ -339,6 +345,23 @@ export interface ParseDiagnostic {
 export interface ParseResult {
   readonly map: WardleyMap;
   readonly diagnostics: readonly ParseDiagnostic[];
+}
+
+/**
+ * Where a parse read its statements: 1-based source lines per statement key (the keys
+ * `serializeKeyedLines` writes). A secondary line also feeds the statement: a legacy `buy X`
+ * line, or a repeated config or evolve line that the primary one replaces.
+ */
+export interface SourceMap {
+  readonly primaryLineOf: ReadonlyMap<string, number>;
+  readonly secondaryLinesOf: ReadonlyMap<string, readonly number[]>;
+  /** Per rawPassthrough entry (same index). */
+  readonly passthrough: readonly { readonly line: number; readonly isComment: boolean }[];
+  /** The `{` and `}` lines of each pipeline block, by pipeline id. */
+  readonly blocks: ReadonlyMap<string, { readonly open?: number; readonly close?: number }>;
+  /** Pipelines written without a range: their children span it. */
+  readonly rangeFromChildren: ReadonlySet<string>;
+  readonly urlReferences: ReadonlyMap<string, UrlReferenceHint>;
 }
 
 class IdAllocator {
@@ -366,6 +389,18 @@ export function parseDSL(text: string): WardleyMap {
  * unresolved references, clamped coordinates) — for editor feedback instead of silent loss.
  */
 export function parseDSLWithDiagnostics(text: string): ParseResult {
+  return readMap(text).result;
+}
+
+/** Like `parseDSLWithDiagnostics`, plus the source lines each statement was read from. */
+export function parseDSLWithSourceMap(
+  text: string,
+): ParseResult & { readonly sourceMap: SourceMap } {
+  const reading = readMap(text);
+  return { ...reading.result, sourceMap: reading.sourceMap };
+}
+
+function readMap(text: string): MapReading {
   const reading = new MapReader(new Set()).read(text);
   // `Title Search -> X` is a link only when both names are declared, maybe further down the file:
   // the first reading collects the names. Read either way, such a line declares no name a link can
@@ -373,13 +408,12 @@ export function parseDSLWithDiagnostics(text: string): ParseResult {
   const needsDeclaredNames = reading.keywordLinks.some((link) =>
     leftNameIsDeclared(link, reading.declaredNames),
   );
-  return needsDeclaredNames
-    ? new MapReader(reading.declaredNames).read(text).result
-    : reading.result;
+  return needsDeclaredNames ? new MapReader(reading.declaredNames).read(text) : reading;
 }
 
 interface MapReading {
   readonly result: ParseResult;
+  readonly sourceMap: SourceMap;
   readonly declaredNames: ReadonlySet<string>;
   /** Link-shaped lines read as their keyword's statement because their names were not declared. */
   readonly keywordLinks: readonly PendingLink[];
@@ -399,7 +433,7 @@ class MapReader {
   private readonly pendingEvolve: PendingEvolve[] = [];
   private readonly pendingPipeline: PendingPipeline[] = [];
   private readonly pendingMethod: PendingMethod[] = [];
-  private config: MapConfig = { title: 'Untitled Map' };
+  private config: MapConfig = { title: DEFAULT_MAP_TITLE };
   private readonly lineThatSetConfig = new Map<string, number>();
   private readonly unusedConfigLines: UnusedConfigLine[] = [];
   private annotationCounter = 0;
@@ -412,8 +446,26 @@ class MapReader {
   private blockOpening = { line: 0, text: '' };
   private lineNo = 0;
   private currentLine = '';
+  private readonly declarationLineById = new Map<string, number>();
+  private readonly configLinesByKeyword = new Map<string, number[]>();
+  private readonly evolveLinesById = new Map<string, number[]>();
+  private readonly methodLinesById = new Map<string, number[]>();
+  private readonly blockLines = new Map<PendingPipeline, { open?: number; close?: number }>();
+  private readonly pipelineIds = new Map<PendingPipeline, string>();
+  private readonly rangeFromChildren = new Set<string>();
 
   constructor(private readonly linkNames: ReadonlySet<string>) {}
+
+  private addElement(element: MapElement, line = this.lineNo): void {
+    this.elements.push(element);
+    this.declarationLineById.set(element.id, line);
+  }
+
+  private recordBlockLine(pipeline: PendingPipeline, end: 'open' | 'close'): void {
+    const lines = this.blockLines.get(pipeline) ?? {};
+    lines[end] = this.lineNo;
+    this.blockLines.set(pipeline, lines);
+  }
 
   private readonly report = (message: string) => this.diag(message);
   private readonly reportAt: Report = (message, line, text) => this.diag(message, line, text);
@@ -454,6 +506,9 @@ class MapReader {
       this.diag(`Repeated "${keyword}" — replaces the one on line ${earlier}`);
     }
     this.lineThatSetConfig.set(keyword, this.lineNo);
+    const configLines = this.configLinesByKeyword.get(keyword) ?? [];
+    configLines.push(this.lineNo);
+    this.configLinesByKeyword.set(keyword, configLines);
     this.config = update;
   }
 
@@ -556,14 +611,17 @@ class MapReader {
   private openBlock(): void {
     if (this.lastPipeline) {
       this.blockPipeline = this.lastPipeline;
+      this.recordBlockLine(this.blockPipeline, 'open');
       this.blockOpening = { line: this.lineNo, text: this.currentLine };
     } else this.diag('Ignored "{" — a block must directly follow a pipeline line');
     this.lastPipeline = null;
   }
 
   private closeBlock(): void {
-    if (this.blockPipeline) this.blockPipeline = null;
-    else this.diag('Ignored "}" — no pipeline block is open');
+    if (this.blockPipeline) {
+      this.recordBlockLine(this.blockPipeline, 'close');
+      this.blockPipeline = null;
+    } else this.diag('Ignored "}" — no pipeline block is open');
     this.lastPipeline = null;
   }
 
@@ -641,7 +699,10 @@ class MapReader {
     const closesBlock = this.blockPipeline !== null && statement.endsWith('}');
     if (closesBlock) statement = statement.slice(0, -1).trim();
     if (statement) this.readStatement(statement);
-    if (closesBlock) this.blockPipeline = null;
+    if (closesBlock && this.blockPipeline) {
+      this.recordBlockLine(this.blockPipeline, 'close');
+      this.blockPipeline = null;
+    }
   }
 
   private readStatement(line: string): void {
@@ -739,7 +800,7 @@ class MapReader {
       labelOffset: node.labelOffset,
       color: node.color,
     }) as AnchorElement;
-    this.elements.push(anchor);
+    this.addElement(anchor);
     this.register(node.name, label, id);
   }
 
@@ -760,7 +821,7 @@ class MapReader {
       decorators: Object.keys(decorators).length ? decorators : undefined,
       color: node.color,
     }) as ComponentElement;
-    this.elements.push(component);
+    this.addElement(component);
     if (node.urlRef) this.addUrlRef(node.urlRef);
     this.register(node.name, label, id);
     return true;
@@ -784,7 +845,7 @@ class MapReader {
       position: this.position(split.coords.a, split.coords.b),
       color,
     }) as NoteElement;
-    this.elements.push(note);
+    this.addElement(note);
   }
 
   /** `pipeline X [s, e]`, `pipeline X` (block form, range from children) — optionally with `{` at the end. */
@@ -827,6 +888,7 @@ class MapReader {
     this.pendingPipeline.push(pending);
     if (opensBlock) {
       this.blockPipeline = pending;
+      this.recordBlockLine(pending, 'open');
       this.blockOpening = { line: this.lineNo, text: this.currentLine };
     } else this.lastPipeline = pending;
   }
@@ -862,6 +924,14 @@ class MapReader {
     this.reportTextBefore(split.name);
     readSuffix(split.suffix, NO_SUFFIXES, this.report);
     this.setConfig('size', { ...this.config, size: { width: coords.a, height: coords.b } });
+    // The written size is kept as is (lossless round-trip); the findings only explain how it is drawn.
+    const problem = sizeOutsideLimits(coords.a, coords.b);
+    if (problem) this.diag(problem);
+    if (!Number.isInteger(coords.a) || !Number.isInteger(coords.b)) {
+      this.diag(
+        `Map size ${coords.a}×${coords.b} is not in whole pixels — OWM only reads whole-pixel sizes`,
+      );
+    }
   }
 
   private readEvolution(line: string, after: string): void {
@@ -941,7 +1011,7 @@ class MapReader {
       text,
       ...(color ? { color } : {}),
     };
-    this.elements.push(annotation);
+    this.addElement(annotation);
   }
 
   /** Project extension (freeform drawing): `line [[v,e], [v,e], …] (closed) (dashed) (color x)`. */
@@ -962,7 +1032,7 @@ class MapReader {
       ...(suffix.strokeStyle ? { strokeStyle: suffix.strokeStyle } : {}),
       ...(suffix.color ? { color: suffix.color } : {}),
     };
-    this.elements.push(drawing);
+    this.addElement(drawing);
   }
 
   /** Canonical OWM form: `<kind> [vis1, mat1, vis2, mat2]` (two corners, normalized). */
@@ -973,7 +1043,7 @@ class MapReader {
     const { color } = readSuffix(split.after, ATTITUDE_SUFFIXES, this.report);
     const { a, b, c, d } = split.coords;
     const corners = [this.clamp(a), this.clamp(b), this.clamp(c), this.clamp(d)] as const;
-    this.elements.push(makeAttitude(this.ids, kind as AttitudeKind, corners, color));
+    this.addElement(makeAttitude(this.ids, kind as AttitudeKind, corners, color));
   }
 
   /** OWM: `url Name [https://…]` — definition, referenced via `url(Name)` on elements. */
@@ -1012,7 +1082,7 @@ class MapReader {
       position: this.position(node.coords.a, node.coords.b),
       ...(node.color ? { color: node.color } : {}),
     };
-    this.elements.push(accelerator);
+    this.addElement(accelerator);
     this.register(node.name, label, id);
   }
 
@@ -1028,7 +1098,7 @@ class MapReader {
       position: this.position(node.coords.a, node.coords.b),
       ...(node.color ? { color: node.color } : {}),
     };
-    this.elements.push(submap);
+    this.addElement(submap);
     if (node.urlRef) this.addUrlRef(node.urlRef);
     this.register(node.name, label, id);
   }
@@ -1044,11 +1114,20 @@ class MapReader {
     const indexById = new Map(this.elements.map((el, index) => [el.id, index]));
     this.resolveEvolves(indexById);
     this.resolveMethods(indexById);
+    const urlReferences = new Map<string, UrlReferenceHint>();
+    const usedDefinitions = new Set<UrlDefinition>();
     const keptDefinitions = resolveUrlReferences(
       this.elements,
       this.pendingUrlRefs,
       this.urlDefinitions,
       this.reportAt,
+      (element, definition) => {
+        if (definition) usedDefinitions.add(definition);
+        urlReferences.set(
+          element.id,
+          definition ? { kind: 'definition', name: definition.name } : { kind: 'embedded' },
+        );
+      },
     );
     for (const definition of keptDefinitions) {
       this.keepLine(
@@ -1059,6 +1138,7 @@ class MapReader {
     }
 
     const declaredNames = new Set([...this.idBySourceName.keys(), ...this.idByElementName.keys()]);
+    const edgeLineById = new Map<string, number>();
     const edges = buildEdges(
       this.pendingLinks,
       (name) => this.idOfName(name),
@@ -1067,10 +1147,18 @@ class MapReader {
         this.diag(`Link: "${missing}" not found`, link.lineNo, link.text);
       },
       (link) => link.label && this.readText(link.label, link.lineNo, link.text),
+      (edge, link) => edgeLineById.set(edge.id, link.lineNo),
     );
 
     const kept = this.passthrough.filter((_, index) => !removedFromPassthrough.has(index));
     const rawPassthrough = withoutClosersOfKeptComments(kept, this.reportAt);
+    const sourceMap = this.sourceMap({
+      removedFromPassthrough,
+      usedDefinitions,
+      urlReferences,
+      edgeLineById,
+      kept,
+    });
     const map = compact({
       schemaVersion: CURRENT_SCHEMA_VERSION,
       config: this.config,
@@ -1080,8 +1168,64 @@ class MapReader {
     }) as WardleyMap;
     return {
       result: { map: validateMap(map), diagnostics: this.diagnostics },
+      sourceMap,
       declaredNames,
       keywordLinks: this.keywordLinks,
+    };
+  }
+
+  private sourceMap(parts: {
+    readonly removedFromPassthrough: ReadonlySet<number>;
+    readonly usedDefinitions: ReadonlySet<UrlDefinition>;
+    readonly urlReferences: ReadonlyMap<string, UrlReferenceHint>;
+    readonly edgeLineById: ReadonlyMap<string, number>;
+    readonly kept: readonly PassthroughEntry[];
+  }): SourceMap {
+    const primaryLineOf = new Map<string, number>();
+    const secondaryLinesOf = new Map<string, number[]>();
+    const addSecondary = (key: string, line: number) => {
+      const lines = secondaryLinesOf.get(key) ?? [];
+      lines.push(line);
+      secondaryLinesOf.set(key, lines);
+    };
+    // The last line wins; the earlier ones would take over once it is gone.
+    const addRepeated = (key: string, lines: readonly number[] | undefined) => {
+      if (!lines?.length) return;
+      primaryLineOf.set(key, lines[lines.length - 1]!);
+      for (const line of lines.slice(0, -1)) addSecondary(key, line);
+    };
+    for (const [keyword, lines] of this.configLinesByKeyword) {
+      addRepeated(`config:${keyword}`, lines);
+    }
+    for (const unused of this.unusedConfigLines) {
+      if (parts.removedFromPassthrough.has(unused.index)) {
+        addSecondary(`config:${unused.keyword}`, unused.line);
+      }
+    }
+    for (const definition of parts.usedDefinitions) {
+      primaryLineOf.set(`url:${definition.name}`, definition.lineNo);
+    }
+    for (const el of this.elements) {
+      const isChild = el.elementType === 'component' && el.pipelineId !== undefined;
+      const key = `${isChild ? 'child' : 'element'}:${el.id}`;
+      const line = this.declarationLineById.get(el.id);
+      if (line !== undefined) primaryLineOf.set(key, line);
+      for (const methodLine of this.methodLinesById.get(el.id) ?? []) addSecondary(key, methodLine);
+      addRepeated(`evolve:${el.id}`, this.evolveLinesById.get(el.id));
+    }
+    for (const [id, line] of parts.edgeLineById) primaryLineOf.set(`edge:${id}`, line);
+    const blocks = new Map<string, { open?: number; close?: number }>();
+    for (const [pipeline, lines] of this.blockLines) {
+      const id = this.pipelineIds.get(pipeline);
+      if (id !== undefined) blocks.set(id, lines);
+    }
+    return {
+      primaryLineOf,
+      secondaryLinesOf,
+      passthrough: parts.kept.map((entry) => ({ line: entry.lineNo, isComment: entry.isComment })),
+      blocks,
+      rangeFromChildren: this.rangeFromChildren,
+      urlReferences: parts.urlReferences,
     };
   }
 
@@ -1123,6 +1267,8 @@ class MapReader {
       }
       const visibility = p.visibility ?? component?.position.visibility ?? 0.5;
       const id = this.ids.alloc('pipeline', label);
+      this.pipelineIds.set(p, id);
+      if (writtenRange.fromChildren) this.rangeFromChildren.add(id);
       // Standalone pipelines (no same-named component) are edge endpoints themselves; an element
       // with that name still wins.
       if (this.idOfName(p.name) === undefined && this.idOfName(label) === undefined) {
@@ -1139,9 +1285,9 @@ class MapReader {
         this.ids,
         childNames,
       );
-      this.elements.push(pipeline);
+      this.addElement(pipeline, p.lineNo);
       children.forEach((child, index) => {
-        this.elements.push(child);
+        this.addElement(child, p.children[index]!.lineNo);
         this.register(p.children[index]!.name, child.label, child.id);
       });
     }
@@ -1174,6 +1320,9 @@ class MapReader {
         this.diag(message, ev.lineNo, ev.text);
       }
       evolveLineOf.set(component.id, ev.lineNo);
+      const evolveLines = this.evolveLinesById.get(component.id) ?? [];
+      evolveLines.push(ev.lineNo);
+      this.evolveLinesById.set(component.id, evolveLines);
       const movement = compact({
         targetEvolution: ev.target,
         newLabel: ev.newLabel && this.readText(ev.newLabel, ev.lineNo, ev.text),
@@ -1200,6 +1349,9 @@ class MapReader {
         this.diag(message, pm.lineNo, pm.text);
       }
       this.elements[index] = { ...el, decorators: { ...el.decorators, method: pm.method } };
+      const methodLines = this.methodLinesById.get(el.id) ?? [];
+      methodLines.push(pm.lineNo);
+      this.methodLinesById.set(el.id, methodLines);
     }
   }
 }
@@ -1273,6 +1425,7 @@ function resolveUrlReferences(
   refs: readonly PendingUrlRef[],
   definitions: readonly UrlDefinition[],
   report: Report,
+  resolved: (element: MapElement, definition: UrlDefinition | undefined) => void,
 ): UrlDefinition[] {
   const definitionByName = new Map<string, UrlDefinition>();
   const replaced = new Set<UrlDefinition>();
@@ -1301,6 +1454,7 @@ function resolveUrlReferences(
     const el = elements[index]!;
     if (el.elementType === 'component') elements[index] = { ...el, url: address };
     else if (el.elementType === 'submap') elements[index] = { ...el, urlRef: address };
+    resolved(el, definition);
   }
   return definitions.filter((definition) => replaced.has(definition) || !used.has(definition));
 }
@@ -1527,7 +1681,7 @@ function pipelineRange(p: PendingPipeline): PipelineRange | null {
 }
 
 /** The model needs end > start; OWM keeps empty or reversed ranges as written. */
-function widenEmptyRange({ start, end }: PipelineRange): PipelineRange {
+export function widenEmptyRange({ start, end }: PipelineRange): PipelineRange {
   if (end > start) return { start, end };
   const widenedStart = start >= 1 ? 0.95 : start;
   return { start: widenedStart, end: roundAsWritten(Math.min(1, widenedStart + 0.05)) };
@@ -1674,4 +1828,21 @@ function parseEvolve(
     method: tail.decorators.method,
     labelOffset: lo.labelOffset ?? undefined,
   }) as Omit<PendingEvolve, 'raw' | 'lineNo' | 'text' | 'notes'>;
+}
+
+function sizeOutsideLimits(width: number, height: number): string | null {
+  const below = width < PLOT_MIN.width || height < PLOT_MIN.height;
+  const above = width > PLOT_MAX.width || height > PLOT_MAX.height;
+  if (!below && !above) return null;
+  const drawnWidth = drawnPlotLength(width, 'width');
+  const drawnHeight = drawnPlotLength(height, 'height');
+  const minimum = `${PLOT_MIN.width}×${PLOT_MIN.height}`;
+  const maximum = `${PLOT_MAX.width}×${PLOT_MAX.height}`;
+  const limit =
+    below && above
+      ? `outside ${minimum} to ${maximum}`
+      : below
+        ? `below the minimum ${minimum}`
+        : `above the maximum ${maximum}`;
+  return `Map size ${width}×${height} is ${limit} — drawn at ${drawnWidth}×${drawnHeight}`;
 }

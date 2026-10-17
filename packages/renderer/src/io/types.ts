@@ -4,8 +4,13 @@ import type { MapConfig } from '@miragon/wardley-schema-model';
 export const ROOT_ID = 'wardley-root';
 
 export interface ImportWarning {
+  /** Human-readable, already including the line and source text for DSL findings. */
   readonly message: string;
   readonly elementId?: string;
+  /** 1-based line of the DSL finding, for listing or jumping to the offending line. */
+  readonly line?: number;
+  /** The offending DSL source line as written. */
+  readonly source?: string;
 }
 
 /** Map metadata stored on the root element (config + lossless passthrough). */

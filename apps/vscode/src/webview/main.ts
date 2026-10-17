@@ -1,20 +1,35 @@
-// Geist (Miragon typeface), self-hosted variable font (all weights in one file). esbuild inlines the
-// woff2 as data-URLs; the webview has no code area, so Geist Mono is not needed here.
+// Geist (Miragon typeface), self-hosted variable fonts (all weights in one file each). esbuild
+// inlines the woff2 as data-URLs; notes and axis captions are italic, hence the italic face too.
 import '@fontsource-variable/geist/wght.css';
+import '@fontsource-variable/geist/wght-italic.css';
 // Pulls the renderer CSS (incl. diagram-js.css) into the bundle.
 import {
   Modeler,
-  iconMarkup,
-  ICON_MENU,
+  blobToBase64,
+  svgToPng,
   ICON_ASPECT_RATIO,
   ICON_DOWNLOAD,
-  ICON_IMAGE,
   ICON_EDIT,
+  ICON_IMAGE,
+  restoreEditorState,
+  setAsideEditorState,
+  type LabelDeduplicatedEvent,
+  type SvgToPngOptions,
 } from '@miragon/wardley-renderer';
-import { EVOLUTION_PRESETS, DEFAULT_EVOLUTION_LABELS } from '@miragon/wardley-schema-model';
+import { patchDSL } from '@miragon/wardley-dsl';
+import type { WardleyMap } from '@miragon/wardley-schema-model';
 import './style.css';
-import { svgToPng, blobToBase64 } from './io.js';
-import type { HostToWebview, WebviewToHost } from '../protocol.js';
+import {
+  isWebviewCommand,
+  type HostToWebview,
+  type WebviewCommand,
+  type WebviewToHost,
+} from '../protocol.js';
+import { Viewport } from './viewport.js';
+import { Menu } from './menu.js';
+import { MapSizeControl } from './mapSize.js';
+import { AxisDialog } from './axisDialog.js';
+import { ProblemsIndicator, ZoomControls } from './chrome.js';
 
 interface VsCodeApi {
   postMessage(msg: WebviewToHost): void;
@@ -24,26 +39,62 @@ interface VsCodeApi {
 declare const acquireVsCodeApi: () => VsCodeApi;
 const vscode = acquireVsCodeApi();
 
+const app = document.getElementById('app');
 const container = document.getElementById('canvas');
 const toolbar = document.getElementById('toolbar');
-if (!container || !toolbar) throw new Error('Webview layout incomplete (#canvas/#toolbar).');
+if (!app || !container || !toolbar)
+  throw new Error('Webview layout incomplete (#canvas/#toolbar).');
 
-const modeler = new Modeler({ container });
+// VS Code owns undo/redo (the document's undo stack); the canvas leaves Cmd/Ctrl+Z/Y alone.
+const modeler = new Modeler({ container, keyboard: { undoRedo: false } });
 // Debug handle (like the webapp). Harmless in the sandboxed webview, helpful for diagnostics/tests.
-(globalThis as Record<string, unknown>).__wardleyModeler = modeler;
+(globalThis as Record<string, unknown>).__wardleyViewer = modeler;
+
+// ---------------------------------------------------------------------------
+// Chrome: menu (top left), zoom (bottom right), problems (bottom left)
+// ---------------------------------------------------------------------------
+
+const zoomControls = new ZoomControls(app, {
+  zoomIn: () => viewport.stepZoom(1),
+  zoomOut: () => viewport.stepZoom(-1),
+  fit: () => viewport.fit(),
+});
+const viewport = new Viewport(modeler, container, (zoom) => zoomControls.show(zoom));
+const problems = new ProblemsIndicator(app, () => vscode.postMessage({ type: 'showProblems' }));
+const mapSize = new MapSizeControl(modeler, (message) =>
+  vscode.postMessage({ type: 'error', message }),
+);
+const menu = new Menu(toolbar, [
+  { icon: ICON_ASPECT_RATIO, label: 'Fit to view', run: () => viewport.fit() },
+  'separator',
+  mapSize.element,
+  { icon: ICON_EDIT, label: 'X-axis labels…', run: () => axisDialog.open() },
+  'separator',
+  { icon: ICON_DOWNLOAD, label: 'Export · SVG', run: () => void exportSvg() },
+  { icon: ICON_IMAGE, label: 'Export · PNG (2×)', run: () => void exportPng() },
+  {
+    icon: ICON_IMAGE,
+    label: 'Export · PNG (4×, transparent)',
+    run: () => void exportPng({ scale: 4, transparent: true }),
+  },
+]);
+const axisDialog = new AxisDialog(modeler, app, () => menu.button);
+menu.onOpen(() => syncMapSize());
 
 // ---------------------------------------------------------------------------
 // Two-way sync with the document
 // ---------------------------------------------------------------------------
 
 let lastText = ''; // text last reconciled with the host
+// The modeler's map lastText was written from: the modeler keeps the ids of its last import while
+// a re-read of lastText derives them from the current names, so this pairs the two.
+let lastMap: WardleyMap | undefined;
 let importing = false; // suppresses the edit echo during import
 let importFailed = false; // the last import (e.g. externally typed text) was unparsable
-let initialized = false; // first init done -> preserve zoom/viewport from then on
+let hasMap = false; // a map was imported (no viewport, size or editor state to keep before)
 
 // Serialize imports STRICTLY: init/update arrive as (un-awaited) messages; without chaining, two
-// quick updates (e.g. several undos) could import concurrently and finish in the wrong order. The
-// PNG save (respondPng) also hooks onto this chain, so a half-imported state is never rasterized.
+// quick updates (e.g. several undos) could import concurrently and finish in the wrong order.
 let importChain: Promise<void> = Promise.resolve();
 function enqueueImport(text: string, fit: boolean): Promise<void> {
   importChain = importChain.then(() => importText(text, fit)).catch(() => {});
@@ -56,29 +107,37 @@ function sameMapText(a: string, b: string): boolean {
 }
 
 /**
- * Loads `text` into the modeler. `fit=true` (first load) fits the map; `fit=false` (external or
- * echo-missed change) PRESERVES the current zoom/viewport — otherwise every change mirrored back by
- * the host (e.g. the `insertFinalNewline` appended on save) would reset the zoom to default. If the
- * incoming `update` describes the same map as the current state (only whitespace/EOL difference),
- * it is not re-imported at all (no flicker, no zoom/selection loss).
+ * Loads `text` into the modeler. `fit=true` (first load) fits the map; `fit=false` (external
+ * change) PRESERVES the current zoom/viewport, the selection and an open inline editor: they are put
+ * aside before the import and restored afterwards (typed text and caret included), as far as their
+ * elements still exist. Text that
+ * describes the current state (only whitespace/EOL differences, e.g. `insertFinalNewline` on save)
+ * is not re-imported at all.
  */
 async function importText(text: string, fit: boolean): Promise<void> {
-  if (!fit && initialized && sameMapText(text, modeler.exportDSL())) {
+  if (!fit && hasMap && (sameMapText(text, lastText) || sameMapText(text, modeler.exportDSL()))) {
     lastText = text;
     return;
   }
   importing = true;
-  const prevView = fit ? undefined : currentViewbox();
+  const previousView = fit || !hasMap ? undefined : viewport.current();
+  // Selection and an open editor (name, link annotation, flow value, link address) survive the
+  // import: an external edit, VS Code undo/redo or typing in the side editor all arrive here.
+  const editorState = hasMap ? setAsideEditorState(modeler) : undefined;
   try {
-    await modeler.importDSL(text);
+    await viewport.programmatic(() => modeler.importDSL(text));
     lastText = text;
+    lastMap = modeler.exportMap();
     importFailed = false;
-    if (fit) fitView();
-    else if (prevView) restoreViewbox(prevView);
+    hasMap = true;
+    viewport.activate();
+    mapSize.sync();
+    if (fit) viewport.fit();
+    else if (previousView) viewport.restore(previousView);
+    if (editorState && !fit) restoreEditorState(modeler, editorState);
   } catch (err) {
-    // Parse error: the canvas keeps showing the last good map. Block pushEdit so a graphical action
-    // doesn't overwrite the (just externally typed) unparsable text — until a successful re-import
-    // (valid 'update') restores a known state.
+    // The canvas keeps showing the last good map. Block pushEdit so a graphical action doesn't
+    // overwrite the (just externally typed) text — until a successful re-import.
     importFailed = true;
     vscode.postMessage({
       type: 'error',
@@ -86,185 +145,91 @@ async function importText(text: string, fit: boolean): Promise<void> {
     });
   } finally {
     importing = false;
-    initialized = true;
   }
 }
 
-/** Graphical change -> serialize DSL and (only on a real difference) report it to the host. */
+/**
+ * Graphical change -> write it into the last known text, keeping comments, blank lines, statement
+ * order and number formatting of everything the change did not touch.
+ */
 function pushEdit(): void {
   if (importing || importFailed) return;
-  const dsl = modeler.exportDSL();
-  if (dsl === lastText) return;
-  lastText = dsl;
-  vscode.postMessage({ type: 'edit', text: dsl });
+  const map = modeler.exportMap();
+  const text = patchDSL(lastText, map, lastMap ? { previous: lastMap } : {});
+  lastMap = map;
+  if (text === lastText) return;
+  lastText = text;
+  vscode.postMessage({ type: 'edit', text });
 }
 
-modeler.on('commandStack.changed', pushEdit);
-// Do NOT hook fitView globally onto import.done — otherwise every mirrored-back 'update' resets the
-// zoom. Fit happens deliberately: on first load (importText fit=true) and on resize.
+function syncMapSize(): void {
+  if (hasMap) mapSize.sync();
+}
+
+modeler.on('commandStack.changed', () => {
+  pushEdit();
+  syncMapSize();
+});
+modeler.on('wardley.config.changed', (event: { transient?: boolean }) => {
+  if (!event.transient) syncMapSize();
+});
+modeler.on('wardley.label.deduplicated', (event: LabelDeduplicatedEvent) => {
+  vscode.postMessage({
+    type: 'info',
+    message: `“${event.requested}” already exists — renamed to “${event.applied}”, because links refer to names.`,
+  });
+});
 
 window.addEventListener('message', (event: MessageEvent<HostToWebview>) => {
   const msg = event.data;
   if (msg.type === 'init') void enqueueImport(msg.text, true);
   else if (msg.type === 'update') void enqueueImport(msg.text, false);
+  else if (msg.type === 'command' && isWebviewCommand(msg.name)) runCommand(msg.name);
+  else if (msg.type === 'diagnostics') problems.show(msg.count);
 });
 
-// ---------------------------------------------------------------------------
-// Viewport: fit the map, leaving room at the top for the floating toolbar
-// ---------------------------------------------------------------------------
-
-const VIEW_INSET = { top: 72, side: 28, bottom: 28 };
-function fitView(): void {
-  const canvas = modeler.get<{
-    viewbox(box?: { x: number; y: number; width: number; height: number }): void;
-  }>('canvas');
-  const grid = modeler.get<{
-    outerBounds(): { x: number; y: number; width: number; height: number };
-  }>('evolutionGrid');
-  const rect = container!.getBoundingClientRect();
-  const W = rect.width;
-  const H = rect.height;
-  if (!W || !H) return;
-  const p = grid.outerBounds();
-  const availW = Math.max(W - 2 * VIEW_INSET.side, 50);
-  const availH = Math.max(H - VIEW_INSET.top - VIEW_INSET.bottom, 50);
-  const s = Math.min(availW / p.width, availH / p.height);
-  canvas.viewbox({
-    x: p.x + p.width / 2 - W / 2 / s,
-    y: p.y - VIEW_INSET.top / s,
-    width: W / s,
-    height: H / s,
-  });
+function runCommand(name: WebviewCommand): void {
+  if (name === 'fitView') viewport.fit();
+  else if (name === 'exportSvg') void exportSvg();
+  else if (name === 'exportPng') void exportPng();
+  else if (name === 'exportPngTransparent') void exportPng({ scale: 4, transparent: true });
 }
 
-type ViewBox = { x: number; y: number; width: number; height: number };
+// ---------------------------------------------------------------------------
+// Keys VS Code would otherwise take: its webview host forwards every keydown that reaches `window`
+// to the workbench, so these listeners sit on `document` and stop propagation there.
+// ---------------------------------------------------------------------------
 
-/** Read the current zoom/viewport (or undefined if there is no canvas yet). */
-function currentViewbox(): ViewBox | undefined {
-  try {
-    const vb = modeler.get<{ viewbox(): ViewBox }>('canvas').viewbox();
-    return { x: vb.x, y: vb.y, width: vb.width, height: vb.height };
-  } catch {
-    return undefined;
+function isTextEntry(target: EventTarget | null): boolean {
+  return (
+    target instanceof HTMLElement &&
+    (target.isContentEditable || target.closest('input, textarea') !== null)
+  );
+}
+
+document.addEventListener('keydown', (e) => {
+  if (!(e.metaKey || e.ctrlKey) || e.altKey) return;
+  const key = e.key.toLowerCase();
+  if (isTextEntry(e.target)) {
+    // Native undo inside a text field instead of undoing the last map change in the document.
+    if (key === 'z' || key === 'y') e.stopPropagation();
+    return;
   }
-}
-
-function restoreViewbox(box: ViewBox): void {
-  try {
-    modeler.get<{ viewbox(box: ViewBox): void }>('canvas').viewbox(box);
-  } catch {
-    /* no canvas yet -> ignore */
-  }
-}
-
-function deselect(): void {
-  modeler.get<{ select: (e: unknown) => void }>('selection').select(null);
-}
-
-// ---------------------------------------------------------------------------
-// Menu (collapsed hamburger top right, Excalidraw style; chrome in the VS Code theme, canvas stays
-// "Strategic Blueprint"). NO undo/redo — VS Code handles that via Ctrl/Cmd+Z out of the box
-// (the modeler's keyboard service is bound within the webview canvas).
-// ---------------------------------------------------------------------------
-
-function setMenuOpen(open: boolean): void {
-  dropdown.hidden = !open;
-  menuBtn.setAttribute('aria-expanded', String(open));
-}
-
-function menuItem(icon: string, label: string, onClick: () => void): HTMLButtonElement {
-  const item = document.createElement('button');
-  item.type = 'button';
-  item.className = 'menu-item';
-  item.setAttribute('role', 'menuitem');
-  item.innerHTML = `${iconMarkup(icon, 16)}<span>${label}</span>`;
-  item.addEventListener('click', () => {
-    setMenuOpen(false);
-    onClick();
-  });
-  return item;
-}
-
-function menuSep(): HTMLDivElement {
-  const sep = document.createElement('div');
-  sep.className = 'menu-sep';
-  sep.setAttribute('role', 'separator');
-  return sep;
-}
-
-const menuBtn = document.createElement('button');
-menuBtn.type = 'button';
-menuBtn.className = 'menu-btn';
-menuBtn.title = 'Menu';
-menuBtn.setAttribute('aria-label', 'Menu');
-menuBtn.setAttribute('aria-haspopup', 'true');
-menuBtn.setAttribute('aria-expanded', 'false');
-menuBtn.innerHTML = iconMarkup(ICON_MENU, 18);
-
-const dropdown = document.createElement('div');
-dropdown.className = 'menu-dropdown';
-dropdown.setAttribute('role', 'menu');
-dropdown.hidden = true;
-
-const sizeSelect = document.createElement('select');
-sizeSelect.className = 'menu-select';
-sizeSelect.title = 'Map size';
-for (const [label, value] of [
-  ['Compact', '720x460'],
-  ['Standard', '1080x680'],
-  ['Large', '1440x900'],
-  ['Wide', '1760x720'],
-] as const) {
-  const opt = document.createElement('option');
-  opt.value = value;
-  opt.textContent = label;
-  if (value === '1080x680') opt.selected = true;
-  sizeSelect.append(opt);
-}
-sizeSelect.addEventListener('change', () => {
-  const [w, h] = sizeSelect.value.split('x').map(Number);
-  // setMapSize re-imports internally (fires import.done, NOT commandStack.changed) -> trigger
-  // pushEdit ourselves, otherwise the size change is lost on save. Only after the promise resolves
-  // (then exportDSL reflects the new size).
-  if (w && h)
-    void modeler.setMapSize(w, h).then(() => {
-      fitView(); // the plot area changed -> re-fit
-      pushEdit();
-    });
-  setMenuOpen(false);
-});
-const sizeField = document.createElement('label');
-sizeField.className = 'menu-field';
-const sizeFieldLabel = document.createElement('span');
-sizeFieldLabel.textContent = 'Map size';
-sizeField.append(sizeFieldLabel, sizeSelect);
-
-dropdown.append(
-  menuItem(ICON_ASPECT_RATIO, 'Fit to view', fitView),
-  menuSep(),
-  sizeField,
-  menuItem(ICON_EDIT, 'X-axis labels…', openAxisDialog),
-  menuSep(),
-  menuItem(ICON_DOWNLOAD, 'Export · SVG', exportSvg),
-  menuItem(ICON_IMAGE, 'Export · PNG', exportPng),
-);
-
-toolbar.append(menuBtn, dropdown);
-
-menuBtn.addEventListener('click', (e) => {
+  // Canvas zoom instead of zooming the whole VS Code window.
+  if (key === '=' || key === '+') viewport.stepZoom(1);
+  else if (key === '-') viewport.stepZoom(-1);
+  else if (key === '0') viewport.fit();
+  else return;
+  e.preventDefault();
   e.stopPropagation();
-  setMenuOpen(dropdown.hidden === true);
-});
-document.addEventListener('click', (e) => {
-  if (!(e.target as Element | null)?.closest('#toolbar')) setMenuOpen(false);
 });
 
 // ---------------------------------------------------------------------------
 // Export (the webview rasterizes/serializes; the host shows the save dialog)
 // ---------------------------------------------------------------------------
 
+// The picture never shows selection or hover state (saveSVG leaves it out): the selection stays.
 async function exportSvg(): Promise<void> {
-  deselect();
   try {
     const { svg } = await modeler.saveSVG();
     vscode.postMessage({ type: 'export', format: 'svg', data: svg });
@@ -273,132 +238,15 @@ async function exportSvg(): Promise<void> {
   }
 }
 
-async function exportPng(): Promise<void> {
-  deselect();
+async function exportPng(options: SvgToPngOptions = {}): Promise<void> {
   try {
     const { svg } = await modeler.saveSVG();
-    const blob = await svgToPng(svg);
+    const blob = await svgToPng(svg, options);
     vscode.postMessage({ type: 'export', format: 'png', data: await blobToBase64(blob) });
   } catch (err) {
     vscode.postMessage({ type: 'error', message: `PNG export failed: ${(err as Error).message}` });
   }
 }
-
-// ---------------------------------------------------------------------------
-// X-axis labels (choose a preset OR label stages freely) — like the webapp
-// ---------------------------------------------------------------------------
-
-const CUSTOM_PRESET = 'custom';
-let axisOverlay: HTMLElement | undefined;
-let axisPreset: HTMLSelectElement | undefined;
-let axisInputs: HTMLInputElement[] = [];
-
-function currentAxisLabels(): readonly string[] {
-  return modeler.exportMap().config.evolutionLabels ?? DEFAULT_EVOLUTION_LABELS;
-}
-function presetIdFor(labels: readonly string[]): string {
-  return (
-    EVOLUTION_PRESETS.find((p) => p.labels.every((v, i) => v === labels[i]))?.id ?? CUSTOM_PRESET
-  );
-}
-function fillAxisInputs(labels: readonly string[]): void {
-  axisInputs.forEach((el, i) => (el.value = labels[i] ?? ''));
-}
-function applyAxisLabels(persist = true): void {
-  const labels = axisInputs.map((el, i) => {
-    const v = el.value.replace(/->/g, '→').trim();
-    return v || DEFAULT_EVOLUTION_LABELS[i]!;
-  }) as [string, string, string, string];
-  const isDefault = DEFAULT_EVOLUTION_LABELS.every((v, i) => v === labels[i]);
-  modeler.setEvolutionLabels(isDefault ? undefined : labels); // live update of the grid (immediate)
-  if (axisPreset) axisPreset.value = presetIdFor(labels);
-  // An axis change fires no commandStack.changed -> synchronize ourselves.
-  if (persist) pushEdit();
-}
-
-function buildAxisDialog(): void {
-  axisOverlay = document.createElement('div');
-  axisOverlay.className = 'overlay';
-  axisOverlay.hidden = true;
-
-  const panel = document.createElement('div');
-  panel.className = 'panel';
-  panel.innerHTML = `
-    <header class="panel-head">
-      <span>X-axis labels</span>
-      <button type="button" class="ghost" data-axis-close>Close</button>
-    </header>
-    <div class="panel-body">
-      <label class="row"><span>Preset</span><select data-axis-preset></select></label>
-      <div class="stages">
-        ${[1, 2, 3, 4]
-          .map(
-            (n, i) =>
-              `<label class="stage"><span>Stage ${n}</span><input data-axis-input="${i}" type="text" autocomplete="off" /></label>`,
-          )
-          .join('')}
-      </div>
-      <div class="foot"><button type="button" class="ghost" data-axis-reset>Reset to default</button></div>
-    </div>`;
-  axisOverlay.append(panel);
-  document.getElementById('app')?.append(axisOverlay);
-
-  axisPreset = panel.querySelector<HTMLSelectElement>('[data-axis-preset]') ?? undefined;
-  axisInputs = [...panel.querySelectorAll<HTMLInputElement>('[data-axis-input]')];
-
-  if (axisPreset) {
-    for (const p of EVOLUTION_PRESETS) {
-      const opt = document.createElement('option');
-      opt.value = p.id;
-      opt.textContent = `${p.name} — ${p.labels.join(' · ')}`;
-      axisPreset.append(opt);
-    }
-    const custom = document.createElement('option');
-    custom.value = CUSTOM_PRESET;
-    custom.textContent = 'Custom…';
-    axisPreset.append(custom);
-    axisPreset.addEventListener('change', () => {
-      const preset = EVOLUTION_PRESETS.find((p) => p.id === axisPreset!.value);
-      if (!preset) return;
-      fillAxisInputs(preset.labels);
-      applyAxisLabels();
-    });
-  }
-  // Live typing: update the grid immediately, but debounce persistence (1 WorkspaceEdit = 1 undo
-  // step) — otherwise one undo entry per keystroke (which the webapp deliberately avoids).
-  let axisTimer: ReturnType<typeof setTimeout> | undefined;
-  for (const el of axisInputs)
-    el.addEventListener('input', () => {
-      applyAxisLabels(false);
-      clearTimeout(axisTimer);
-      axisTimer = setTimeout(() => pushEdit(), 300);
-    });
-  panel.querySelector('[data-axis-reset]')?.addEventListener('click', () => {
-    fillAxisInputs(DEFAULT_EVOLUTION_LABELS);
-    applyAxisLabels();
-  });
-  panel.querySelector('[data-axis-close]')?.addEventListener('click', closeAxisDialog);
-  axisOverlay.addEventListener('click', (e) => {
-    if (e.target === axisOverlay) closeAxisDialog();
-  });
-}
-
-function openAxisDialog(): void {
-  if (!axisOverlay) buildAxisDialog();
-  const labels = currentAxisLabels();
-  fillAxisInputs(labels);
-  if (axisPreset) axisPreset.value = presetIdFor(labels);
-  if (axisOverlay) axisOverlay.hidden = false;
-  axisInputs[0]?.focus();
-}
-function closeAxisDialog(): void {
-  if (axisOverlay) axisOverlay.hidden = true;
-}
-document.addEventListener('keydown', (e) => {
-  if (e.key !== 'Escape') return;
-  if (axisOverlay && !axisOverlay.hidden) closeAxisDialog();
-  else setMenuOpen(false);
-});
 
 // ---------------------------------------------------------------------------
 // Start

@@ -31,22 +31,27 @@ changes these factors, not the coordinates; label offsets and note boxes stay th
 | Element       | Shape                                         | Label / text                                    |
 | ------------- | --------------------------------------------- | ----------------------------------------------- |
 | `component`   | circle Ø 30 px                                | right of the circle (details below)             |
-| `inertia`     | thick bar 18 px right of the centre           | —                                               |
+| `inertia`     | thick bar 18 px right of the centre           | pushes the name 6 px further right              |
 | `(ecosystem)` | dotted ring Ø 37 px                           | —                                               |
 | `anchor`      | person icon 26 px                             | bold, centred above the icon                    |
 | `note`        | box centred on the coordinate (details below) | italic, inside the box                          |
 | `pipeline`    | dashed box 30 px high, top edge at its height | children 15 px below the top edge               |
-| `evolve`      | red dashed line to a Ø 30 px target circle    | right of the target, method below               |
+| `evolve`      | red dashed line to a Ø 30 px target circle    | beyond the target, method below (details below) |
 | `annotation`  | numbered marker Ø 20 px                       | 15 px right of the marker's centre, 12 px font  |
 | `accelerator` | arrow icon 24 px                              | 15 px right of the centre                       |
 | `submap`      | double square 32 px                           | right of the square                             |
-| region        | translucent rectangle, behind everything      | the kind (`Pioneers`, …) in the top-left        |
+| region        | translucent rectangle, behind everything      | `Pioneers` / `Settlers` / `Town Planners` above |
 | links         | straight lines between centres                | flow value above the midpoint, annotation at it |
 
 - **Component**: the circle covers `± 0.014` maturity and `± 0.022` visibility. The label starts
   22 px right of the centre, 13 px font, ≈ 7 px per character, so a name of `n` characters reaches
   `(22 + 7n) / 1080` maturity to the right — ≈ `0.085` for 10 characters, ≈ `0.15` for 20. The
-  method word (`buy`, …) sits in small type below the label.
+  method word (`buy`, …) sits in small type below the label. With `inertia` the label starts 28 px
+  right of the centre.
+- **Evolve**: the target name sits 22 px right of the target circle, or 22 px left of it (ending
+  there) when the evolve points left. If the arrow is shorter than the source name plus ≈ 44 px,
+  the source name moves to the left of its own circle so the two names don't run together. Both
+  automatic placements only apply while the label has no `label [dx, dy]`.
 - **Note**: ≈ `7.5 × characters + 16` px wide, `17 × lines + 12` px high, at least 34 × 34 px.
 - **Links** attach to element centres; a standalone pipeline's links attach to the middle of its
   top edge.
@@ -89,8 +94,10 @@ Verified against the renderer's geometry:
 
 `label [dx, dy]` moves a label by pixels from its default place: `dx` to the right, `dy`
 **downwards** (screen coordinates). Supported on `anchor`, `component`, pipeline children and
-`evolve` (stored, but the Modeler does not yet use it for the evolve label). Not on notes,
-pipelines, accelerators or submaps — there it is dropped on save, with a diagnostic.
+`evolve` (moves the red target name). Not on notes, pipelines, accelerators or submaps — there it is
+dropped on save, with a diagnostic. The offset is always measured from the plain OWM slot (22 px
+right of the circle, 4 px above its centre line), never from the automatic placements described
+above. In the Modeler, dragging a name writes this offset; Alt+double-click puts it back.
 
 For a component name of `n` characters:
 
@@ -138,8 +145,10 @@ townplanners [0.4, 0.68, 0.05, 0.98]
 - Two corners `[vis1, mat1, vis2, mat2]`, any order; the parser normalises them to top-left and
   bottom-right. All in map units.
 - Regions are drawn translucent and behind everything else, so they never hide a component.
-- The kind's name sits just inside the top-left corner (about 10 px in, 18 px down): start a region
-  about `0.03` visibility above its highest component and keep that corner free.
+- The title (`Pioneers`, `Settlers`, `Town Planners`) sits just above the top-left corner, about
+  6 px above the top edge, so lines through the region don't strike through it. Only a region that
+  touches the top of the plot keeps it inside the corner (about 10 px in, 18 px down). Keep about
+  `0.03` visibility free above a region for its title.
 - Size each region to the components that team owns, with about `0.03` margin around their circles.
   Typical columns follow evolution: pioneers over genesis and early custom-built (≈ `0–0.35`),
   settlers over custom-built to product (≈ `0.3–0.7`), town planners over product and commodity

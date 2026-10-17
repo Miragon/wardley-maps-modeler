@@ -15,6 +15,21 @@ import {
   writtenText,
 } from './names.js';
 
+/** How the source text referenced an element's address, so a rewritten line keeps doing so. */
+export type UrlReferenceHint =
+  { readonly kind: 'definition'; readonly name: string } | { readonly kind: 'embedded' };
+
+export interface SerializeHints {
+  /** By element id. */
+  readonly urlReferences?: ReadonlyMap<string, UrlReferenceHint>;
+}
+
+/** One output line and the statement it writes (`element:<id>`, `edge:<id>`, `config:title`, …). */
+export interface KeyedLine {
+  readonly key: string;
+  readonly text: string;
+}
+
 /** Address of an element (component.url / submap.urlRef) — or undefined. */
 function urlOf(el: MapElement): string | undefined {
   if (el.elementType === 'component') return el.url;
@@ -47,29 +62,68 @@ function uniqueNames(map: WardleyMap): Map<string, string> {
   return byId;
 }
 
+interface UrlPlan {
+  /** In element order, one per definition name. */
+  readonly definitions: readonly { readonly name: string; readonly address: string }[];
+  /** What each element writes inside `url(…)`. */
+  readonly referenceById: ReadonlyMap<string, string>;
+}
+
+const EMBEDDABLE_ADDRESS_RE = /^[a-z][\w+.-]*:\/\/[^\s()]*$/i;
+
 /**
  * `url(<name>)` cannot hold parentheses, `url <name> [address]` ends the name at "[" and a flow
  * operator (`+'x'>`) would make the definition a link, so the definition name leaves them out; the
  * parser resolves it into the address and forgets the name. Names of definitions kept in
  * rawPassthrough are taken first: the parser lets a later definition replace an earlier one.
+ * A hinted name is the one the source text already uses; elements hinted to the same name with the
+ * same address share its definition.
  */
-function urlDefinitionNames(
+function planUrls(
   map: WardleyMap,
   nameOf: (el: MapElement) => string,
   keptDefinitionNames: readonly string[],
-) {
+  hints: ReadonlyMap<string, UrlReferenceHint> | undefined,
+): UrlPlan {
   const namesInUse = new UniqueNames();
   for (const name of keptDefinitionNames) namesInUse.claim(name);
-  const byId = new Map<string, string>();
+  const addressByHintedName = new Map<string, string>();
+  const definitionNameById = new Map<string, string>();
+  const referenceById = new Map<string, string>();
   for (const el of map.elements) {
-    if (!urlOf(el)) continue;
-    const readable = nameOf(el)
-      .replace(/[()[\]<>]/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-    byId.set(el.id, namesInUse.claim(`${readable} URL`.trim()));
+    const address = urlOf(el);
+    const hint = hints?.get(el.id);
+    if (!address || !hint) continue;
+    if (hint.kind === 'embedded') {
+      if (EMBEDDABLE_ADDRESS_RE.test(address)) referenceById.set(el.id, address);
+      continue;
+    }
+    const hintedAddress = addressByHintedName.get(hint.name);
+    if (hintedAddress === undefined) {
+      addressByHintedName.set(hint.name, address);
+      namesInUse.reserve(hint.name);
+    } else if (hintedAddress !== address) continue;
+    definitionNameById.set(el.id, hint.name);
   }
-  return byId;
+  const definitions: { name: string; address: string }[] = [];
+  const written = new Set<string>();
+  for (const el of map.elements) {
+    const address = urlOf(el);
+    if (!address || referenceById.has(el.id)) continue;
+    let name = definitionNameById.get(el.id);
+    if (name === undefined) {
+      const readable = nameOf(el)
+        .replace(/[()[\]<>]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      name = namesInUse.claim(`${readable} URL`.trim());
+    }
+    referenceById.set(el.id, name);
+    if (written.has(name)) continue;
+    written.add(name);
+    definitions.push({ name, address });
+  }
+  return { definitions, referenceById };
 }
 
 function offsetSuffix(lo: LabelOffset | undefined): string {
@@ -93,21 +147,22 @@ function decoratorSuffix(dec: ComponentDecorators | undefined): string {
   return out;
 }
 
-function configLines(config: WardleyMap['config']): string[] {
-  const lines = [`title ${writtenText(config.title)}`];
-  if (config.style) lines.push(`style ${config.style}`);
-  if (config.size) lines.push(`size [${r(config.size.width)}, ${r(config.size.height)}]`);
+function configLines(config: WardleyMap['config']): KeyedLine[] {
+  const lines: KeyedLine[] = [{ key: 'config:title', text: `title ${writtenText(config.title)}` }];
+  const add = (keyword: string, text: string) => lines.push({ key: `config:${keyword}`, text });
+  if (config.style) add('style', `style ${config.style}`);
+  if (config.size) add('size', `size [${r(config.size.width)}, ${r(config.size.height)}]`);
   if (config.evolutionLabels) {
-    lines.push(`evolution ${config.evolutionLabels.map(writtenText).join('->')}`);
+    add('evolution', `evolution ${config.evolutionLabels.map(writtenText).join('->')}`);
   }
   if (config.yAxisLabel) {
     const ends = config.yAxisEndLabels;
     const endLabels = ends ? `->${writtenText(ends[0])}->${writtenText(ends[1])}` : '';
-    lines.push(`y-axis ${writtenText(config.yAxisLabel)}${endLabels}`);
+    add('y-axis', `y-axis ${writtenText(config.yAxisLabel)}${endLabels}`);
   }
   if (config.annotationsBoxPosition) {
     const b = config.annotationsBoxPosition;
-    lines.push(`annotations [${r(b.visibility)}, ${r(b.evolution)}]`);
+    add('annotations', `annotations [${r(b.visibility)}, ${r(b.evolution)}]`);
   }
   return lines;
 }
@@ -118,21 +173,21 @@ function configLines(config: WardleyMap['config']): string[] {
  * duplicate line, so it is dropped (config is the truth); the same words inside a comment are kept.
  * Also returns the names of the url definitions among them.
  */
-function passthroughLines(map: WardleyMap): { lines: string[]; urlDefinitionNames: string[] } {
+function passthroughLines(map: WardleyMap): { lines: KeyedLine[]; urlDefinitionNames: string[] } {
   const emitted = new Set<string>();
   if (map.config.evolutionLabels) emitted.add('evolution');
   if (map.config.yAxisLabel) emitted.add('y-axis');
   const comments = new CommentStripper();
-  const lines: string[] = [];
+  const lines: KeyedLine[] = [];
   const urlDefinitionNames: string[] = [];
-  for (const raw of map.rawPassthrough ?? []) {
+  (map.rawPassthrough ?? []).forEach((raw, index) => {
     const code = comments.strip(raw).code;
     const keyword = keywordOf(code);
-    if (emitted.has(keyword)) continue;
-    lines.push(raw);
+    if (emitted.has(keyword)) return;
+    lines.push({ key: `raw:${index}`, text: raw });
     const definition = keyword === 'url' ? readUrlDefinition(code.trim().slice(3)) : null;
     if (definition) urlDefinitionNames.push(definition.name);
-  }
+  });
   return { lines, urlDefinitionNames };
 }
 
@@ -162,19 +217,20 @@ function pipelineHeights(
   };
 }
 
-function edgeLines(map: WardleyMap, nameOf: (el: MapElement) => string): string[] {
+function edgeLines(map: WardleyMap, nameOf: (el: MapElement) => string): KeyedLine[] {
   const namesById = new Map(map.elements.map((el) => [el.id, nameOf(el)]));
   return map.edges.map((edge) => {
     const from = namesById.get(edge.from) ?? edge.from;
     const to = namesById.get(edge.to) ?? edge.to;
     const annotation = edge.label ? `; ${writtenText(edge.label)}` : '';
-    if (edge.edgeType === 'dependency') return `${from} -> ${to}${annotation}`;
+    const key = `edge:${edge.id}`;
+    if (edge.edgeType === 'dependency') return { key, text: `${from} -> ${to}${annotation}` };
     const op = edge.flowValue
       ? `+'${edge.flowValue}'${edge.bidirectional ? '<>' : '>'}`
       : edge.bidirectional
         ? '+<>'
         : '+>';
-    return `${from} ${op} ${to}${annotation}`;
+    return { key, text: `${from} ${op} ${to}${annotation}` };
   });
 }
 
@@ -185,6 +241,15 @@ function edgeLines(map: WardleyMap, nameOf: (el: MapElement) => string): string[
  * pipeline = [maturityStart, maturityEnd]).
  */
 export function serializeDSL(map: WardleyMap): string {
+  return [...serializeKeyedLines(map).map((line) => line.text), ''].join('\n');
+}
+
+/**
+ * The lines `serializeDSL` writes, each keyed by the statement it writes: `config:<keyword>`,
+ * `url:<definition name>`, `element:<id>`, `block-open:<pipeline id>`, `child:<id>`,
+ * `block-close:<pipeline id>`, `evolve:<id>`, `edge:<id>` and `raw:<rawPassthrough index>`.
+ */
+export function serializeKeyedLines(map: WardleyMap, hints: SerializeHints = {}): KeyedLine[] {
   const names = uniqueNames(map);
   const nameOf = (el: MapElement): string => names.get(el.id) ?? writtenText(el.label);
   const passthrough = passthroughLines(map);
@@ -192,14 +257,13 @@ export function serializeDSL(map: WardleyMap): string {
 
   // url definitions: one `url <Name> URL [address]` line per element with an address,
   // referenced on the element via `url(<Name> URL)` (OWM form: definition + reference).
-  const urlDefNames = urlDefinitionNames(map, nameOf, passthrough.urlDefinitionNames);
-  for (const el of map.elements) {
-    const defName = urlDefNames.get(el.id);
-    if (defName) lines.push(`url ${defName} [${urlOf(el)}]`);
+  const urls = planUrls(map, nameOf, passthrough.urlDefinitionNames, hints.urlReferences);
+  for (const { name, address } of urls.definitions) {
+    lines.push({ key: `url:${name}`, text: `url ${name} [${address}]` });
   }
   const urlSuffix = (el: MapElement): string => {
-    const def = urlDefNames.get(el.id);
-    return def ? ` url(${def})` : '';
+    const reference = urls.referenceById.get(el.id);
+    return reference ? ` url(${reference})` : '';
   };
 
   // Pipeline children (pipelineId set + pipeline exists) are emitted in the pipeline's
@@ -218,29 +282,34 @@ export function serializeDSL(map: WardleyMap): string {
   }
   const pipelineHeight = pipelineHeights(map, pipelineIds, nameOf);
 
-  const evolveLines: string[] = [];
+  const evolveLines: KeyedLine[] = [];
   for (const el of map.elements) {
     if (el.elementType === 'component' && el.movement) {
-      evolveLines.push(evolveLine(el, nameOf(el)));
+      evolveLines.push({ key: `evolve:${el.id}`, text: evolveLine(el, nameOf(el)) });
     }
     if (el.elementType === 'component' && el.pipelineId && pipelineIds.has(el.pipelineId)) {
       continue; // emitted inside the pipeline block
     }
-    lines.push(elementLine(el, nameOf(el)) + pipelineHeight(el) + urlSuffix(el));
+    lines.push({
+      key: `element:${el.id}`,
+      text: elementLine(el, nameOf(el)) + pipelineHeight(el) + urlSuffix(el),
+    });
     const kids = childrenByPipeline.get(el.id) ?? [];
     if (kids.length) {
-      lines.push('{');
+      lines.push({ key: `block-open:${el.id}`, text: '{' });
       for (const k of kids) {
-        lines.push(
-          `  component ${nameOf(k)} [${r(k.position.evolution)}]` +
+        lines.push({
+          key: `child:${k.id}`,
+          text:
+            `  component ${nameOf(k)} [${r(k.position.evolution)}]` +
             `${decoratorSuffix(k.decorators)}${colorSuffix(k)}${offsetSuffix(k.labelOffset)}`,
-        );
+        });
       }
-      lines.push('}');
+      lines.push({ key: `block-close:${el.id}`, text: '}' });
     }
   }
 
-  return [...lines, ...evolveLines, ...edgeLines(map, nameOf), ...passthrough.lines, ''].join('\n');
+  return [...lines, ...evolveLines, ...edgeLines(map, nameOf), ...passthrough.lines];
 }
 
 function elementLine(el: MapElement, name: string): string {

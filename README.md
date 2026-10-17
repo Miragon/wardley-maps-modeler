@@ -47,21 +47,39 @@ const { svg } = await viewer.saveSVG();
 
 ### Editor interactions
 
+Press `?` in the web app for the same list, with the keys of your platform.
+
 | Action                          | How                                                                                                                                                                                              |
 | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Quick create                    | `C` component, `U` user/anchor, `N` note, `P` pipeline — at the cursor, or at the view centre without a pointer; placing a node opens its name editor                                            |
+| Connect from the selection      | `A` (one selected node), or the context pad                                                                                                                                                      |
 | Multi-select (lasso)            | Palette tool, `L`, or `Shift` + drag on the empty canvas                                                                                                                                         |
+| Add to selection / select all   | `Shift` + click / `Ctrl/Cmd+A`; `Esc` deselects                                                                                                                                                  |
 | Draw lines/shapes               | Palette tool — click point by point; click the last point again (or double-click/`Enter`/`Esc`) to finish, click the start point to close; drag the handles of a selected drawing to move points |
-| Quick create at the cursor      | `C` component, `U` user/anchor                                                                                                                                                                   |
-| Add to selection                | `Shift` + click on elements                                                                                                                                                                      |
 | Copy / paste                    | `Ctrl/Cmd+C`, `Ctrl/Cmd+V` — paste attaches to the cursor; click places, `Esc` cancels                                                                                                           |
 | Duplicate (in place)            | `Ctrl/Cmd+D`                                                                                                                                                                                     |
+| Delete                          | `Delete` / `Backspace`                                                                                                                                                                           |
 | Nudge selection                 | Arrow keys (`Shift` = coarse)                                                                                                                                                                    |
-| Undo / redo                     | `Ctrl/Cmd+Z` / `Ctrl/Cmd+Shift+Z`                                                                                                                                                                |
+| Undo / redo                     | `Ctrl/Cmd+Z` / `Ctrl/Cmd+Shift+Z` or `Ctrl/Cmd+Y`                                                                                                                                                |
 | Zoom                            | `Ctrl/Cmd` + `+` / `-` / `0` (fit), controls bottom-right                                                                                                                                        |
 | Edit label / note               | Double-click (notes: `Cmd/Ctrl+Enter` saves)                                                                                                                                                     |
+| Move a label                    | Drag the label; `Alt` + double-click puts it back                                                                                                                                                |
 | Edit link annotation/flow value | Double-click the connection (or pencil in the pad)                                                                                                                                               |
 | Evolve                          | Drag from the context pad; drag the red target circle                                                                                                                                            |
 | Pipeline membership             | Drop a component into/out of the pipeline box                                                                                                                                                    |
+| Resize the map                  | Drag the plot's right/bottom edge or corner (`Shift` keeps the ratio, `Alt` turns off snapping); double-click the corner to reset                                                                |
+
+In the web app also:
+
+| Action                      | How                                                                                                               |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Rename the map              | Click the title next to the menu; `Enter` saves, `Esc` reverts. The browser tab and download names follow it      |
+| Save the map as a file      | `Ctrl/Cmd+S` or Menu › Download .wmap / .json                                                                     |
+| Edit the map as text        | Menu › View as OWM-DSL — edit, then Apply (`Ctrl/Cmd+Enter`); problems are listed by line                         |
+| Import text or a share link | Paste OWM text or a `#mz=` link onto the canvas, or drop a `.wmap` / `.owm` / `.json` file anywhere               |
+| Undo replacing the map      | Example, New, Open, paste and Apply replace the map; the "Map replaced · Undo" toast brings the previous one back |
+| Map size                    | Menu › Map size: preset, exact width × height, or Reset to default                                                |
+| Keyboard shortcuts          | `?` or Menu › Keyboard shortcuts                                                                                  |
 
 ## Packages
 
@@ -103,7 +121,12 @@ corporate identity); provide it yourself — recommended self-hosted via
 import '@fontsource-variable/geist/wght.css';
 ```
 
-Without a font the fallback chain degrades cleanly to system sans.
+The variable package registers the family as **`'Geist Variable'`** (not `'Geist'`). The renderer's
+font stack (`FONT.family`, set on every SVG `<text>`, and `.wardley-container` in `wardley.css`)
+starts with `'Geist Variable', 'Geist', …`, so both that package and a locally installed Geist are
+picked up. Use the same name in your own CSS — `font-family: 'Geist', …` alone never matches the
+self-hosted face. Without a font the fallback chain degrades cleanly to system sans. Exported SVG/PNG
+files only show Geist where the font is available to the program that renders them.
 
 ## Supported Wardley elements
 

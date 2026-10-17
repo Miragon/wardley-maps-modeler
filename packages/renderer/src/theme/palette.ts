@@ -2,9 +2,10 @@
  * Miragon design tokens — the single source of truth for every colour in the renderer.
  *
  * Values mirror the Miragon design system — the `miragon-brand:modeler-tool-design` skill in
- * `Miragon/corporate-identity` (its vendored `cd-tokens.generated.css` defines the `--cd-*`
- * variables, generated from `brand/tokens.json`). Re-copy from the skill to update; never fork the
- * hex values by hand. WHY this file exists: colours used to live in three
+ * `Miragon/corporate-identity`. Its `cd-tokens.generated.css` (the `--cd-*` variables, generated from
+ * `brand/tokens.json`) is vendored verbatim next to this file, and `test/theme.sync.test.ts` fails if
+ * a `MIRAGON` value drifts from it. Re-copy from the skill to update; never fork the hex values by
+ * hand. WHY this file exists: colours used to live in three
  * hand-duplicated places (the SVG `COLORS` object, the `--wardley-*` CSS variables, and the webapp's
  * own `:root`). Here they are declared once. `draw/styles.ts` derives the public `COLORS`/`FONT`/…
  * from `MIRAGON`; `assets/wardley.css` mirrors the `CHROME_VARS` / `DARK_MAP_VARS` maps (a unit test,
@@ -36,6 +37,12 @@ export const MIRAGON = {
   warning: '#92610A',
   danger: '#C92A2A',
   info: '#2B50D4',
+  /** UI grey (`--cd-linie`) for hairlines, guides and decorative borders. The CI allows no other greys. */
+  linie: '#E6E2E2',
+  /** Structural strokes that must stay visible (≥ 3:1 on white): axes, dependency edges. */
+  kontur: '#8F8A8A',
+  /** Secondary text (≥ 4.5:1 on white and on paper). */
+  textLeise: '#6B6666',
   /** Dark base — the CI hero / nav-glass colour (rgb 8,10,32). Used only by the opt-in "dark map". */
   navy: '#080A20',
   /** Signature brand gradient — hero, large surfaces, brand moments. Use verbatim. */
@@ -50,9 +57,9 @@ export const MIRAGON = {
 export const CHROME_VARS: Record<string, string> = {
   '--wardley-paper': MIRAGON.grau,
   '--wardley-ink': MIRAGON.schwarz,
-  '--wardley-ink-soft': '#5B5B5B',
+  '--wardley-ink-soft': MIRAGON.textLeise,
   '--wardley-surface': MIRAGON.weiss,
-  '--wardley-border': '#E6E2E2',
+  '--wardley-border': MIRAGON.linie,
   '--wardley-accent': MIRAGON.blau,
   '--wardley-accent-soft': 'rgba(51, 93, 229, 0.12)',
   '--wardley-brand': MIRAGON.gruen,
@@ -68,3 +75,10 @@ export const CHROME_VARS: Record<string, string> = {
 export const DARK_MAP_VARS: Record<string, string> = {
   '--wardley-paper': MIRAGON.navy,
 };
+
+/**
+ * Colour of the axis labels in the margin of a `style dark` map. The labels sit on navy there, where
+ * `textLeise` drops to ~3.5:1; `kontur` reads at ~5.7:1. Applied by a scoped `!important` CSS
+ * override in `assets/wardley.css` (tiny-svg writes inline styles), so exports keep the light value.
+ */
+export const DARK_MAP_AXIS_TEXT = MIRAGON.kontur;

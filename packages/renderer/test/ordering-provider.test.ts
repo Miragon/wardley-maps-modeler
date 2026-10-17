@@ -33,6 +33,39 @@ describe('WardleyOrderingProvider', () => {
   });
 });
 
+describe('WardleyOrderingProvider with flows and dependencies', () => {
+  const provider = new WardleyOrderingProvider(new EventBus());
+  const pipeline = { id: 'pipeline', wardleyType: 'pipeline', evolution: 0.2, visibility: 0.3 };
+  const firstDependency = { id: 'dep1', wardleyType: 'dependency', waypoints: [] };
+  const secondDependency = { id: 'dep2', wardleyType: 'dependency', waypoints: [] };
+  const importedFlow = { id: 'flow1', wardleyType: 'flow', waypoints: [] };
+  // Import order: frames -> dependencies -> flows -> nodes.
+  const root = rootWith([
+    attitude,
+    pipeline,
+    firstDependency,
+    secondDependency,
+    importedFlow,
+    platform,
+    customer,
+  ]);
+
+  it('slots a new dependency above the dependencies but below the flows', () => {
+    const newDependency = { id: 'new-dep', wardleyType: 'dependency' } as unknown as ElementLike;
+    expect(provider.getOrdering(newDependency, root).index).toBe(4);
+  });
+
+  it('puts a new flow on top of all connections, still behind the nodes', () => {
+    const newFlow = { id: 'new-flow', wardleyType: 'flow' } as unknown as ElementLike;
+    expect(provider.getOrdering(newFlow, root).index).toBe(5);
+  });
+
+  it('does not count the moved connection itself', () => {
+    expect(provider.getOrdering(firstDependency as unknown as ElementLike, root).index).toBe(3);
+    expect(provider.getOrdering(importedFlow as unknown as ElementLike, root).index).toBe(4);
+  });
+});
+
 describe('isWardleyConnection', () => {
   it('recognises connections by their type, with or without waypoints', () => {
     expect(isWardleyConnection({ wardleyType: 'dependency' })).toBe(true);

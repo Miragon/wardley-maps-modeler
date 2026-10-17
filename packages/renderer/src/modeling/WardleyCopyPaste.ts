@@ -1,5 +1,4 @@
 import type ElementFactory from 'diagram-js/lib/core/ElementFactory';
-import type ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
 import type Canvas from 'diagram-js/lib/core/Canvas';
 import type Create from 'diagram-js/lib/features/create/Create';
 import type Modeling from 'diagram-js/lib/features/modeling/Modeling';
@@ -13,11 +12,14 @@ import {
   type WardleyShape,
 } from '../model/di-types.js';
 import { connectionAnchorOf } from '../layout/index.js';
+import type WardleyElementFactory from '../model/WardleyElementFactory.js';
 
 /** Offset (px) accumulated per paste operation. */
 const PASTE_OFFSET = 24;
 
 interface ShapeSnapshot {
+  readonly id: string;
+  readonly pipelineId?: string;
   readonly props: Record<string, unknown>;
   readonly x: number;
   readonly y: number;
@@ -76,10 +78,10 @@ export default class WardleyCopyPaste {
     'selection',
     'modeling',
     'elementFactory',
-    'elementRegistry',
     'canvas',
     'create',
     'mouse',
+    'wardleyElementFactory',
   ];
 
   private clipboard: { shapes: ShapeSnapshot[]; connections: ConnectionSnapshot[] } | null = null;
@@ -89,10 +91,10 @@ export default class WardleyCopyPaste {
     private readonly selection: Selection,
     private readonly modeling: Modeling,
     private readonly elementFactory: ElementFactory,
-    private readonly elementRegistry: ElementRegistry,
     private readonly canvas: Canvas,
     private readonly create: Create,
     private readonly mouse: Mouse,
+    private readonly wardleyElementFactory: WardleyElementFactory,
   ) {}
 
   /** Copies the current selection. Returns false if nothing copyable is selected. */
@@ -121,6 +123,8 @@ export default class WardleyCopyPaste {
 
     this.clipboard = {
       shapes: shapes.map((s) => ({
+        id: s.id,
+        ...(s.pipelineId ? { pipelineId: s.pipelineId } : {}),
         props: snapshotProps(s as unknown as Record<string, unknown>, SHAPE_PROPS),
         x: s.x,
         y: s.y,
@@ -144,7 +148,10 @@ export default class WardleyCopyPaste {
     const clones = this.buildClones();
     const lastMove = this.mouse.getLastMoveEvent();
     if (lastMove) {
-      this.create.start(lastMove, [...clones.shapes, ...clones.connections] as Element[]);
+      // The flag keeps WardleyAppendBehavior from opening the name editor on pasted copies.
+      this.create.start(lastMove, [...clones.shapes, ...clones.connections] as Element[], {
+        wardleyPaste: true,
+      });
       return true;
     }
     return this.insertWithOffset(clones);
@@ -159,7 +166,7 @@ export default class WardleyCopyPaste {
   /** Builds fresh clone elements (unique labels, internal connections rewired). */
   private buildClones(): { shapes: Shape[]; connections: Element[] } {
     const clipboard = this.clipboard!;
-    const labels = this.uniqueLabels(clipboard.shapes.map((s) => s.label));
+    const labels = this.cloneLabels(clipboard.shapes);
     const shapes = clipboard.shapes.map((snap, i) =>
       this.elementFactory.createShape({
         ...structuredClone(snap.props),
@@ -173,6 +180,14 @@ export default class WardleyCopyPaste {
           : {}),
       }),
     );
+    // Members follow their copied pipeline by id, not by where they happen to land.
+    const cloneIdByOriginalId = new Map(
+      clipboard.shapes.map((snap, i) => [snap.id, shapes[i]!.id]),
+    );
+    clipboard.shapes.forEach((snap, i) => {
+      const pipelineId = snap.pipelineId && cloneIdByOriginalId.get(snap.pipelineId);
+      if (pipelineId) (shapes[i] as unknown as WardleyShape).pipelineId = pipelineId;
+    });
     const connections = clipboard.connections.map((c) =>
       this.elementFactory.createConnection({
         ...structuredClone(c.props),
@@ -187,6 +202,41 @@ export default class WardleyCopyPaste {
     return { shapes, connections: connections as Element[] };
   }
 
+  /**
+   * Unique labels for the clones. A pipeline copied together with its anchor component (the
+   * component written under the pipeline's name) keeps that pairing: both get the same new name,
+   * otherwise the copy loses its anchor and the renamed component would join a box as a member.
+   */
+  private cloneLabels(snapshots: readonly ShapeSnapshot[]): string[] {
+    const pipelineIndexByAnchor = new Map<number, number>();
+    snapshots.forEach((pipeline, pipelineIndex) => {
+      if (pipeline.props['wardleyType'] !== 'pipeline') return;
+      const anchorIndex = snapshots.findIndex(
+        (candidate, index) =>
+          !pipelineIndexByAnchor.has(index) &&
+          candidate.props['wardleyType'] === 'component' &&
+          candidate.label === pipeline.label &&
+          candidate.pipelineId !== pipeline.id,
+      );
+      if (anchorIndex >= 0) pipelineIndexByAnchor.set(anchorIndex, pipelineIndex);
+    });
+    const independent = snapshots
+      .map((snapshot, index) => ({ snapshot, index }))
+      .filter(({ index }) => !pipelineIndexByAnchor.has(index));
+    const uniqueLabels = this.wardleyElementFactory.uniqueLabels(
+      independent.map(({ snapshot }) => ({
+        type: snapshot.props['wardleyType'],
+        label: snapshot.label,
+      })),
+    );
+    const labels: string[] = [];
+    independent.forEach(({ index }, position) => (labels[index] = uniqueLabels[position]!));
+    for (const [anchorIndex, pipelineIndex] of pipelineIndexByAnchor) {
+      labels[anchorIndex] = labels[pipelineIndex]!;
+    }
+    return labels;
+  }
+
   /** One `elements.create` command = one undo step; position = group center + offset. */
   private insertWithOffset(clones: { shapes: Shape[]; connections: Element[] }): boolean {
     this.pasteCount++;
@@ -199,22 +249,6 @@ export default class WardleyCopyPaste {
     );
     this.selection.select(created as Element[]);
     return true;
-  }
-
-  /** Labels unique against the registry AND within the paste batch. */
-  private uniqueLabels(bases: string[]): string[] {
-    const taken = new Set<string>();
-    for (const el of this.elementRegistry.getAll()) {
-      const lbl = (el as { wardleyLabel?: unknown }).wardleyLabel;
-      if (typeof lbl === 'string') taken.add(lbl);
-    }
-    return bases.map((base) => {
-      let label = base;
-      let i = 2;
-      while (taken.has(label)) label = `${base} ${i++}`;
-      taken.add(label);
-      return label;
-    });
   }
 }
 

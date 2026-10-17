@@ -1,3 +1,4 @@
+import type EventBus from 'diagram-js/lib/core/EventBus';
 import type PopupMenu from 'diagram-js/lib/features/popup-menu/PopupMenu';
 import type { PopupMenuTarget } from 'diagram-js/lib/features/popup-menu/PopupMenu';
 import type {
@@ -13,6 +14,15 @@ const TYPE_GROUP = { id: 'type', name: 'Type' };
 const METHOD_GROUP = { id: 'method', name: 'Sourcing' };
 const PROP_GROUP = { id: 'props', name: 'Properties' };
 
+/**
+ * The menu handles its own keys (arrows select, Enter picks); without this the document-level
+ * editor shortcuts would also nudge the element on arrow keys, which closes the menu. Escape must
+ * still bubble: diagram-js closes the menu from a document listener.
+ */
+function keepKeysInsidePopup(event: KeyboardEvent): void {
+  if (event.key !== 'Escape') event.stopPropagation();
+}
+
 function mark(active: boolean, label: string): string {
   return active ? `✓ ${label}` : label;
 }
@@ -23,13 +33,20 @@ function mark(active: boolean, label: string): string {
  * All actions go through `wardleyModeling` (undo/redo).
  */
 export default class WardleyElementSettingsProvider implements PopupMenuProvider {
-  static $inject = ['popupMenu', 'wardleyModeling'];
+  static $inject = ['popupMenu', 'wardleyModeling', 'eventBus'];
 
   constructor(
     popupMenu: PopupMenu,
     private readonly modeling: WardleyModeling,
+    eventBus: EventBus,
   ) {
     popupMenu.registerProvider(POPUP_PROVIDER_ID, this);
+    eventBus.on('popupMenu.open', () => {
+      const container = (popupMenu as unknown as { _current?: { container?: HTMLElement } })
+        ._current?.container;
+      if (container?.getAttribute('data-popup') !== POPUP_PROVIDER_ID) return;
+      container.addEventListener('keydown', keepKeysInsidePopup);
+    });
   }
 
   getPopupMenuEntries(target: PopupMenuTarget): PopupMenuEntries {

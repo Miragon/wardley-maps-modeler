@@ -22,6 +22,26 @@ in `map.rawPassthrough`, and `parseDSLWithDiagnostics` reports every line it did
 written. Older releases could throw on a few malformed pipelines and numbers; keep a `try` /
 `catch` if you must support them.
 
+## Writing edits back into hand-written text
+
+`serializeDSL` writes the canonical form: comments and unknown lines move to the end, blank lines
+disappear, `0.80` becomes `0.8`. Where the text file is the source of truth (an editor, a file under
+Git), write an edited map back with `patchDSL`:
+
+```ts
+import { parseDSL, patchDSL } from '@miragon/wardley-dsl';
+
+const map = parseDSL(fileText);
+// … move, rename, add or delete elements in a copy of `map` …
+const newText = patchDSL(fileText, editedMap);
+```
+
+Untouched lines stay exactly as written (comments, blank lines, order, number format, line breaks).
+Changed statements are rewritten in place, removed ones are deleted together with their links, and
+a rename rewrites every line that references the old name. The result always reads back as the same
+map as `serializeDSL(editedMap)`; when an edit cannot be patched into the source layout safely,
+`patchDSL` returns the canonical text instead. It never throws.
+
 ## Checking generated text
 
 A check for diagnostics and unknown lines:

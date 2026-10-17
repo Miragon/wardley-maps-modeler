@@ -7,3 +7,4 @@ export const wardleyEvolveModule: ModuleDeclaration = {
 };
 
 export { default as WardleyEvolveDragging } from './WardleyEvolveDragging.js';
+export { MIN_EVOLVE_DELTA } from './constants.js';

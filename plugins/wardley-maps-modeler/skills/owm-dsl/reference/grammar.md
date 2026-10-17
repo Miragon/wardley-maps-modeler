@@ -119,9 +119,12 @@ A repeated config line replaces the earlier one, with
   the line is kept. The Modeler currently renders `dark` differently. `wardley` is the default
   look. `handwritten` and `colour` are kept but look like `wardley`.
 - **`size [width, height]`** is the plot area in pixels (`config.size`). The Modeler's default is
-  `1080 × 680`, and it never goes below `480 × 320`. Coordinates stay normalised, so a bigger size
-  spreads the same map wider; label offsets and note sizes do not scale. A value beyond `10^12`
-  cannot be interpreted.
+  `1080 × 680`. It draws the plot between `480 × 320` and `5000 × 5000`, OWM's own limit. Write
+  whole pixels: OWM only reads integer sizes. A value outside the limits or with decimals is kept
+  exactly as written, with a diagnostic, and drawn clamped (`size [100, 50]` is drawn at
+  `480 × 320`). Coordinates stay normalised, so a bigger size spreads the same map wider; label
+  offsets and note sizes do not scale. A value beyond `10^12` cannot be interpreted. The Modeler
+  itself only writes whole-pixel sizes within the limits.
 - **`evolution`** is split at `->`, each part trimmed. It needs **exactly four** parts, otherwise
   you get `Evolution needs exactly four stages, found N` and the default labels stay:
   - `— not used`: the line is kept;
@@ -146,7 +149,7 @@ A repeated config line replaces the earlier one, with
   - A later `y-axis` line also replaces the end labels.
   - An empty `y-axis` gives `y-axis has no label`, with `— not used` or `— removed; …` as for
     `evolution`.
-  - Default: `Value Chain`, ends `invisible` / `visible`.
+  - Default: `Value Chain`, ends `Invisible` / `Visible`.
 - **`annotations [vis, mat]`** is the position of the annotation legend (`annotationsBoxPosition`),
   clamped with a diagnostic. Without coordinates: `Annotations box has no position — not used`, and
   the line is kept. The Modeler keeps the value but currently draws no legend box.
@@ -718,6 +721,10 @@ no effect on the map, or part of it was dropped or changed.
 | `Pipeline block of "X" is never closed — add "}"`                                                          | a block open at the end of the file or at the next `pipeline` line                                                              |
 | `Component with [visibility, maturity] inside the block of pipeline "X" is not a child — use [maturity]`   | a two-number component inside a block; it becomes top-level                                                                     |
 | `Repeated "<keyword>" — replaces the one on line N`                                                        | a second `title`, `style`, `size`, `evolution`, `y-axis` or `annotations`                                                       |
+| `Map size W×H is below the minimum 480×320 — drawn at W'×H'`                                               | a `size` with a width below 480 or a height below 320, zero or negative included; the value is kept                             |
+| `Map size W×H is above the maximum 5000×5000 — drawn at W'×H'`                                             | a `size` with a width or height above 5000; the value is kept                                                                   |
+| `Map size W×H is outside 480×320 to 5000×5000 — drawn at W'×H'`                                            | a `size` that is below the minimum on one side and above the maximum on the other                                               |
+| `Map size W×H is not in whole pixels — OWM only reads whole-pixel sizes`                                   | a `size` with decimals; the value is kept                                                                                       |
 | `Repeated evolve for "X" — replaces the one on line N`                                                     | a second `evolve` for one component                                                                                             |
 | `buy: "X" already has the method "build" — replaced`                                                       | a legacy method line overrides a decorator                                                                                      |
 | `y-axis takes "Label" or "Label->Bottom->Top" — read as "…"`                                               | a `y-axis` with two, or more than three, parts, or empty parts                                                                  |

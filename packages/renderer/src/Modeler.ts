@@ -1,8 +1,11 @@
 import type { ModuleDeclaration } from 'didi';
 import type CommandStack from 'diagram-js/lib/command/CommandStack';
+import type WardleyLabelEditing from './label-editing/WardleyLabelEditing.js';
+import type WardleyLinkEditing from './link-editing/WardleyLinkEditing.js';
 
 import ModelingModule from 'diagram-js/lib/features/modeling';
 import MoveModule from 'diagram-js/lib/features/move';
+import AutoScrollModule from 'diagram-js/lib/features/auto-scroll';
 import CreateModule from 'diagram-js/lib/features/create';
 import ConnectModule from 'diagram-js/lib/features/connect';
 import ContextPadModule from 'diagram-js/lib/features/context-pad';
@@ -29,6 +32,16 @@ import { wardleyAppendModule } from './append/index.js';
 import { wardleyColorPickerModule } from './color-picker/index.js';
 import { wardleyOrderingModule } from './ordering/index.js';
 import { wardleyDrawToolModule } from './draw-tool/index.js';
+import { pipelineGroupModule } from './pipeline/index.js';
+import { ResizeAwareAutoScroll, mapResizeModule } from './map-resize/index.js';
+import { linkEditingModule } from './link-editing/index.js';
+import { wardleyLabelDragModule } from './label-drag/index.js';
+import { canvasAccessibilityModule } from './a11y/index.js';
+
+/** Replaces diagram-js AutoScroll: no scrolling under a map-resize drag. */
+const resizeAwareAutoScrollModule: ModuleDeclaration = {
+  autoScroll: ['type', ResizeAwareAutoScroll],
+};
 
 /**
  * Full Wardley editor: palette/create, move with EvolutionConstraint + stage snapping, connect with
@@ -42,6 +55,10 @@ export class Modeler extends NavigatedViewer {
       wardleyLayoutModule,
       RulesModule,
       MoveModule,
+      // Default 20px bands on every side; a larger top band would scroll as soon as an element is
+      // dragged out of the top-centred palette.
+      AutoScrollModule,
+      resizeAwareAutoScrollModule,
       CreateModule,
       ConnectModule,
       ContextPadModule,
@@ -64,7 +81,21 @@ export class Modeler extends NavigatedViewer {
       wardleyLassoModule,
       wardleyOrderingModule,
       wardleyDrawToolModule,
+      pipelineGroupModule,
+      mapResizeModule,
+      linkEditingModule,
+      canvasAccessibilityModule,
+      wardleyLabelDragModule,
     ];
+  }
+
+  /**
+   * Saves any open inline editor (name, note, link annotation, flow value, link address). Call it
+   * before saving or exporting from a keyboard shortcut, which does not take focus off the editor.
+   */
+  commitPendingEdits(): void {
+    this.get<WardleyLabelEditing>('wardleyLabelEditing').commitActiveEdit();
+    this.get<WardleyLinkEditing>('wardleyLinkEditing').commitActiveEdit();
   }
 
   undo(): void {

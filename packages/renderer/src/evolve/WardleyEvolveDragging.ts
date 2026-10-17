@@ -6,9 +6,10 @@ import type { Movement } from '@miragon/wardley-schema-model';
 import type EvolutionGrid from '../evolution-grid/EvolutionGrid.js';
 import type WardleyModeling from '../modeling/WardleyModeling.js';
 import type { WardleyShape } from '../model/di-types.js';
+import { MIN_EVOLVE_DELTA } from './constants.js';
+import { focusCanvasWithoutRing } from '../a11y/index.js';
 
 const PREFIX = 'wardley.evolve';
-const MIN_DELTA = 0.005;
 /** CSS class of the red target circle (set by the renderer) — direct drag handle. */
 const HANDLE_CLASS = 'wardley-evolve-handle';
 
@@ -52,12 +53,24 @@ export default class WardleyEvolveDragging {
       eventBus.fire('element.changed', { element: shape });
     };
 
+    // Evolution only moves forward: the preview stops at the component instead of flipping
+    // backwards, and such a stub stays below the commit threshold.
+    const forwardTarget = (shape: WardleyShape, evolution: number): number =>
+      Math.max(clamp01(evolution), Math.min(1, shape.evolution + MIN_EVOLVE_DELTA));
+
     // Screen pixels -> normalized evolution (via the single source of math, P7).
     const evolutionAtClientX = (clientX: number, cy: number): number => {
       const rect = canvas.getContainer().getBoundingClientRect();
       const vb = canvas.viewbox();
       const canvasX = vb.x + (clientX - rect.left) * (vb.width / rect.width);
       return clamp01(grid.fromCanvas({ x: canvasX, y: cy }).evolution);
+    };
+
+    // The draw tool owns every press while it is active (its listener registers after this one).
+    const isDrawing = (): boolean => {
+      const container = canvas.getContainer();
+      const outer = container.closest('.wardley-container') ?? container;
+      return outer.classList.contains('wardley-draw-mode');
     };
 
     // Direct handle: mousedown on the red target circle moves the evolve target by dragging.
@@ -68,25 +81,28 @@ export default class WardleyEvolveDragging {
       'mousedown',
       (event: MouseEvent) => {
         const dom = event.target as Element | null;
-        if (!dom?.closest(`.${HANDLE_CLASS}`)) return;
+        if (!dom?.closest(`.${HANDLE_CLASS}`) || isDrawing()) return;
         const id = dom.closest('[data-element-id]')?.getAttribute('data-element-id');
         const shape = id ? (elementRegistry.get(id) as WardleyShape | undefined) : undefined;
         if (!shape || shape.wardleyType !== 'component') return;
         event.stopPropagation();
         event.preventDefault();
+        focusCanvasWithoutRing(canvas);
 
         const original = shape.movement;
         const cy = shape.y + shape.height / 2;
         let target: number | undefined;
         const onMove = (e: MouseEvent) => {
-          target = evolutionAtClientX(e.clientX, cy);
-          preview(shape, { targetEvolution: target });
+          target = forwardTarget(shape, evolutionAtClientX(e.clientX, cy));
+          preview(shape, { ...original, targetEvolution: target });
         };
         const onUp = () => {
           document.removeEventListener('mousemove', onMove);
           document.removeEventListener('mouseup', onUp);
           preview(shape, original); // reset preview, then ONE undoable commit (P4)
-          if (target !== undefined && Math.abs(target - shape.evolution) > MIN_DELTA) {
+          // The shape may be gone (deleted mid-drag, or replaced by a re-import).
+          if (elementRegistry.get(shape.id) !== shape) return;
+          if (target !== undefined && target > shape.evolution + MIN_EVOLVE_DELTA) {
             modeling.evolveComponent(shape, target);
           }
         };
@@ -99,9 +115,9 @@ export default class WardleyEvolveDragging {
     eventBus.on(`${PREFIX}.move`, (event: { context: EvolveContext; x: number }) => {
       const { shape } = event.context;
       const cy = shape.y + shape.height / 2;
-      const target = clamp01(grid.fromCanvas({ x: event.x, y: cy }).evolution);
+      const target = forwardTarget(shape, grid.fromCanvas({ x: event.x, y: cy }).evolution);
       event.context.target = target;
-      preview(shape, { targetEvolution: target });
+      preview(shape, { ...event.context.originalMovement, targetEvolution: target });
     });
 
     eventBus.on(`${PREFIX}.end`, (event: { context: EvolveContext }) => {
@@ -109,7 +125,7 @@ export default class WardleyEvolveDragging {
       const { shape, target } = ctx;
       // Reset the preview, then execute as ONE command (clean undo).
       preview(shape, ctx.originalMovement);
-      if (target !== undefined && Math.abs(target - shape.evolution) > MIN_DELTA) {
+      if (target !== undefined && target > shape.evolution + MIN_EVOLVE_DELTA) {
         modeling.evolveComponent(shape, target);
       }
       ctx.committed = true;

@@ -5,7 +5,9 @@ import {
   encodeMapCompressed,
   decodeMapCompressed,
   readHashMap,
+  readShareLink,
   shareUrl,
+  shareUrlForPayload,
 } from '../src/share.js';
 
 /**
@@ -66,27 +68,62 @@ describe('readHashMap', () => {
   it('reads a compressed (#mz=) hash', async () => {
     const payload = await encodeMapCompressed(TEA_SHOP);
     stubLocation({ hash: `#mz=${payload}` });
-    expect(await readHashMap()).toBe(TEA_SHOP);
+    expect(await readHashMap()).toEqual({ kind: 'ok', dsl: TEA_SHOP });
   });
 
   it('reads a legacy uncompressed (#m=) hash', async () => {
     stubLocation({ hash: `#m=${encodeMap(TEA_SHOP)}` });
-    expect(await readHashMap()).toBe(TEA_SHOP);
+    expect(await readHashMap()).toEqual({ kind: 'ok', dsl: TEA_SHOP });
   });
 
-  it('returns null for no hash', async () => {
+  it('reads an explicitly passed hash instead of the location', async () => {
     stubLocation({ hash: '' });
-    expect(await readHashMap()).toBeNull();
+    expect(await readHashMap(`#m=${encodeMap(TEA_SHOP)}`)).toEqual({ kind: 'ok', dsl: TEA_SHOP });
   });
 
-  it('returns null for an unrelated hash', async () => {
-    stubLocation({ hash: '#section-2' });
-    expect(await readHashMap()).toBeNull();
+  it.each([[''], ['#section-2'], ['#']])('reports no map for the hash %j', async (hash) => {
+    stubLocation({ hash });
+    expect(await readHashMap()).toEqual({ kind: 'none' });
   });
 
-  it('returns null (swallows the error) for a malformed compressed payload', async () => {
+  it('reports a link truncated by a mail or chat client as corrupt', async () => {
+    const payload = await encodeMapCompressed(TEA_SHOP);
+    stubLocation({ hash: `#mz=${payload.slice(0, -10)}` });
+    expect(await readHashMap()).toEqual({ kind: 'corrupt' });
+  });
+
+  it('reports a malformed compressed payload as corrupt', async () => {
     stubLocation({ hash: '#mz=not-valid-deflate-data' });
-    expect(await readHashMap()).toBeNull();
+    expect(await readHashMap()).toEqual({ kind: 'corrupt' });
+  });
+
+  it('reports invalid base64 characters as corrupt', async () => {
+    stubLocation({ hash: '#mz=%%%***' });
+    expect(await readHashMap()).toEqual({ kind: 'corrupt' });
+  });
+
+  it('reports an empty payload as corrupt', async () => {
+    stubLocation({ hash: '#mz=' });
+    expect(await readHashMap()).toEqual({ kind: 'corrupt' });
+  });
+});
+
+describe('readShareLink (pasted text)', () => {
+  it('finds the map in a full pasted URL', async () => {
+    const payload = await encodeMapCompressed(TEA_SHOP);
+    const text = `  https://wardley.example/editor#mz=${payload}\n`;
+    expect(await readShareLink(text)).toEqual({ kind: 'ok', dsl: TEA_SHOP });
+  });
+
+  it('reports a truncated pasted link as corrupt', async () => {
+    const payload = await encodeMapCompressed(TEA_SHOP);
+    expect(await readShareLink(`https://x.example/#mz=${payload.slice(0, 20)}`)).toEqual({
+      kind: 'corrupt',
+    });
+  });
+
+  it('ignores text without a map link', async () => {
+    expect(await readShareLink('component Tea [0.5, 0.5]')).toEqual({ kind: 'none' });
   });
 });
 
@@ -98,5 +135,12 @@ describe('shareUrl', () => {
     // The payload must decode back to the original map.
     const payload = url.slice(url.indexOf('#mz=') + '#mz='.length);
     expect(await decodeMapCompressed(payload)).toBe(TEA_SHOP);
+  });
+});
+
+describe('shareUrlForPayload', () => {
+  it('reuses an already encoded payload (no second compression)', () => {
+    stubLocation({ origin: 'https://wardley.example', pathname: '/' });
+    expect(shareUrlForPayload('abc')).toBe('https://wardley.example/#mz=abc');
   });
 });
