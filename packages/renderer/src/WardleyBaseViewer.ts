@@ -28,6 +28,7 @@ import {
   withoutRawSizeStatements,
 } from './map-resize/MapProjection.js';
 import type WardleyModeling from './modeling/WardleyModeling.js';
+import type { FreeRectInsets } from './free-rect/index.js';
 import { applyConfigUpdate, type MapConfigUpdate } from './modeling/cmd/UpdateConfigHandler.js';
 
 export interface WardleyViewerOptions {
@@ -42,6 +43,13 @@ export interface WardleyViewerOptions {
    * which owns the document's undo stack). Default: the canvas handles undo/redo.
    */
   keyboard?: { undoRedo?: boolean };
+  /**
+   * What the host's chrome covers along the container's edges, in px, read whenever it is needed
+   * (e.g. `() => shell.fitInsets()` of the Miragon modeler shell). Keyboard creation then places
+   * elements in the centre of the free rectangle, and panning keeps the map reachable around it.
+   * Without it the whole container counts.
+   */
+  freeRectInsets?: () => FreeRectInsets;
 }
 
 export type EventCallback<T = unknown> = (event: T) => void;
@@ -107,6 +115,9 @@ export abstract class WardleyBaseViewer {
         canvas: { container: this._container },
         modules,
         ...(this._options.keyboard ? { wardleyKeyboard: this._options.keyboard } : {}),
+        ...(this._options.freeRectInsets
+          ? { wardleyFreeRect: { insets: this._options.freeRectInsets } }
+          : {}),
       });
     }
     return this._diagram;

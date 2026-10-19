@@ -1,13 +1,30 @@
 import type EventBus from 'diagram-js/lib/core/EventBus';
 import type Canvas from 'diagram-js/lib/core/Canvas';
+import type { Injector } from 'didi';
 import type EvolutionGrid from '../evolution-grid/EvolutionGrid.js';
+import type { FreeRect, FreeRectInsets } from '../free-rect/index.js';
+import { exportBounds } from '../io/index.js';
 
+/** Margins in diagram px, for hosts that report no chrome insets. */
 const PAD_TOP = 180;
 const PAD_BOTTOM = 80;
 const PAD_SIDE = 120;
+/**
+ * Screen px a host's chrome insets are widened by. The same on both sides of an axis, so a view
+ * the host fitted into its free rectangle (centred, guide §5.9) is never pulled away: the host
+ * would take the pull for a user move and stop keeping the view fitted.
+ */
+const INSET_SLACK = 96;
 const EPSILON = 0.5;
 
-type ViewBox = { x: number; y: number; width: number; height: number };
+interface Pads {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+}
+
+type ViewBox = { x: number; y: number; width: number; height: number; scale?: number };
 type Bounds = { x: number; y: number; width: number; height: number };
 
 const clamp = (value: number, lo: number, hi: number): number =>
@@ -40,44 +57,37 @@ function constrainAxis(
   return (lowest + highest) / 2 - viewSize / 2;
 }
 
-function union(a: Bounds, b: Bounds): Bounds {
-  const x = Math.min(a.x, b.x);
-  const y = Math.min(a.y, b.y);
-  return {
-    x,
-    y,
-    width: Math.max(a.x + a.width, b.x + b.width) - x,
-    height: Math.max(a.y + a.height, b.y + b.height) - y,
-  };
-}
-
 /**
  * Keeps the map in view while scrolling and zooming.
  * Without this the user could scroll the map completely off-screen into empty space.
  * After every move we pull the visible area back so it stays close to the map,
  * leaving only a small margin of empty space around it. "The map" is the plot plus any content
- * reaching beyond it (long labels at the commodity edge, notes in the margin).
+ * reaching beyond it (long labels at the commodity edge, notes in the margin): `contentBounds()`,
+ * which hosts also fit the view to.
  */
 export default class PanConstraint {
-  static $inject = ['eventBus', 'canvas', 'evolutionGrid'];
+  static $inject = ['eventBus', 'canvas', 'evolutionGrid', 'injector'];
 
   private applying = false;
   /** Content bounds are measured lazily (getBBox), at most once per change of the map. */
-  private contentBounds: Bounds | null | undefined;
+  private measured: Bounds | undefined;
   /** A config change (resize) happened; re-check once its elements are redrawn. */
   private constrainAfterCommand = false;
+  private readonly freeRect: FreeRect | null;
 
   constructor(
     eventBus: EventBus,
     private readonly canvas: Canvas,
     private readonly grid: EvolutionGrid,
+    injector: Injector,
   ) {
+    this.freeRect = injector.get<FreeRect | null>('wardleyFreeRect', false) ?? null;
     eventBus.on('canvas.viewbox.changed', (event: { viewbox?: ViewBox }) => {
       if (this.applying) return;
       this.constrain(event?.viewbox);
     });
     const invalidate = () => {
-      this.contentBounds = undefined;
+      this.measured = undefined;
     };
     eventBus.on(['element.changed', 'import.done'], invalidate);
     // Shrinking the plot while scrolled into its far corner must never leave a blank viewport.
@@ -97,32 +107,35 @@ export default class PanConstraint {
     });
   }
 
-  /** Plot (with axis margins) united with everything drawn on the element layer. */
-  private bounds(): Bounds {
-    const plot = this.grid.outerBounds();
-    if (this.contentBounds === undefined) this.contentBounds = this.measureContent();
-    return this.contentBounds ? union(plot, this.contentBounds) : plot;
+  /**
+   * The plot (with its axis margins) united with everything drawn on it or beyond it, tight (no
+   * padding): what a host fits the view to.
+   */
+  contentBounds(): Bounds {
+    this.measured ??= exportBounds(this.canvas, this.grid, 0);
+    return this.measured;
   }
 
-  private measureContent(): Bounds | null {
-    const layer = (
-      this.canvas as Partial<Pick<Canvas, 'getActiveLayer'>>
-    ).getActiveLayer?.() as unknown as SVGGraphicsElement | undefined;
-    if (typeof layer?.getBBox !== 'function') return null;
-    try {
-      const box = layer.getBBox();
-      return box.width > 0 && box.height > 0
-        ? { x: box.x, y: box.y, width: box.width, height: box.height }
-        : null;
-    } catch {
-      return null; // detached / not rendered
+  /** The margins around the content the view may show, in diagram px at the view's scale. */
+  private pads(view: ViewBox): Pads {
+    const insets: FreeRectInsets | undefined = this.freeRect?.insets();
+    const scale = insets ? (view.scale ?? this.canvas.zoom()) : 0;
+    if (!insets || !(scale > 0)) {
+      return { top: PAD_TOP, right: PAD_SIDE, bottom: PAD_BOTTOM, left: PAD_SIDE };
     }
+    return {
+      top: (insets.top + INSET_SLACK) / scale,
+      right: (insets.right + INSET_SLACK) / scale,
+      bottom: (insets.bottom + INSET_SLACK) / scale,
+      left: (insets.left + INSET_SLACK) / scale,
+    };
   }
 
   private constrain(viewbox?: ViewBox, { recentre = true }: { recentre?: boolean } = {}): void {
     this.constrainAfterCommand = false;
     const current = viewbox ?? (this.canvas.viewbox() as unknown as ViewBox);
-    const bounds = this.bounds();
+    const bounds = this.contentBounds();
+    const pads = this.pads(current);
     if (
       !(bounds.width > 0) ||
       !(bounds.height > 0) ||
@@ -134,13 +147,13 @@ export default class PanConstraint {
     const clampedX = constrainAxis(
       current.x,
       current.width,
-      { min: bounds.x, max: bounds.x + bounds.width, padBefore: PAD_SIDE, padAfter: PAD_SIDE },
+      { min: bounds.x, max: bounds.x + bounds.width, padBefore: pads.left, padAfter: pads.right },
       recentre,
     );
     const clampedY = constrainAxis(
       current.y,
       current.height,
-      { min: bounds.y, max: bounds.y + bounds.height, padBefore: PAD_TOP, padAfter: PAD_BOTTOM },
+      { min: bounds.y, max: bounds.y + bounds.height, padBefore: pads.top, padAfter: pads.bottom },
       recentre,
     );
 

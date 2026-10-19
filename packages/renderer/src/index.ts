@@ -69,6 +69,8 @@ export { wardleyDrawToolModule, WardleyDrawTool } from './draw-tool/index.js';
 export { wardleyRulesModule, WardleyRules } from './rules/index.js';
 export { stageSnappingModule } from './snapping/index.js';
 export { PanConstraintModule, PanConstraint } from './pan-constraint/index.js';
+export { freeRectModule, FreeRect } from './free-rect/index.js';
+export type { FreeRectInsets } from './free-rect/index.js';
 export { wardleyPaletteModule } from './palette/index.js';
 export { wardleyContextPadModule } from './context-pad/index.js';
 export { labelEditingModule, WardleyLabelEditing } from './label-editing/index.js';

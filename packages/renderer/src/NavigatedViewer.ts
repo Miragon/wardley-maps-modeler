@@ -5,6 +5,7 @@ import MoveCanvasModule from 'diagram-js/lib/navigation/movecanvas';
 import KeyboardModule from 'diagram-js/lib/features/keyboard';
 import { Viewer } from './Viewer.js';
 import { PanConstraintModule } from './pan-constraint/index.js';
+import { freeRectModule } from './free-rect/index.js';
 
 /**
  * `keyboard-move-selection` depends on `modeling` and therefore belongs in the (later) Modeler,
@@ -18,6 +19,7 @@ export class NavigatedViewer extends Viewer {
       ZoomScrollModule,
       MoveCanvasModule,
       KeyboardModule,
+      freeRectModule,
       PanConstraintModule,
     ];
   }

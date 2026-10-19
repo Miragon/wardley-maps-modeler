@@ -2,13 +2,45 @@
 import { describe, it, expect } from 'vitest';
 import type Canvas from 'diagram-js/lib/core/Canvas';
 import type EventBus from 'diagram-js/lib/core/EventBus';
+import type { Injector } from 'didi';
 import EvolutionGrid from '../src/evolution-grid/EvolutionGrid.js';
 import PanConstraint from '../src/pan-constraint/PanConstraint.js';
 
 type ViewBox = { x: number; y: number; width: number; height: number };
 type Handler = (event: Record<string, unknown>) => void;
 
-function setup(initial: ViewBox, contentBox?: ViewBox) {
+const IDENTITY = {
+  a: 1,
+  b: 0,
+  c: 0,
+  d: 1,
+  e: 0,
+  f: 0,
+  inverse: () => IDENTITY,
+  multiply: () => IDENTITY,
+};
+
+/** An element layer with one drawn visual covering `box` (what the export bounds measure). */
+function drawnLayer(box: ViewBox) {
+  const visual = { getBBox: () => box, getCTM: () => IDENTITY };
+  return { getCTM: () => IDENTITY, querySelectorAll: () => [visual] };
+}
+
+const noInjector = { get: () => null } as unknown as Injector;
+
+interface Insets {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+}
+
+function injectorWith(insets: Insets): Injector {
+  const freeRect = { insets: () => insets };
+  return { get: (name: string) => (name === 'wardleyFreeRect' ? freeRect : null) } as Injector;
+}
+
+function setup(initial: ViewBox, contentBox?: ViewBox, injector: Injector = noInjector) {
   const handlers = new Map<string, Handler[]>();
   const on = (events: string | string[], priorityOrHandler: number | Handler, maybe?: Handler) => {
     const handler = typeof priorityOrHandler === 'function' ? priorityOrHandler : maybe!;
@@ -33,11 +65,12 @@ function setup(initial: ViewBox, contentBox?: ViewBox) {
       }
       return current;
     },
-    ...(contentBox ? { getActiveLayer: () => ({ getBBox: () => contentBox }) } : {}),
+    getContainer: () => ({ querySelector: () => null }),
+    getActiveLayer: () => (contentBox ? drawnLayer(contentBox) : null),
   } as unknown as Canvas;
 
   const grid = new EvolutionGrid(undefined as unknown as Canvas);
-  new PanConstraint(eventBus, canvas, grid);
+  new PanConstraint(eventBus, canvas, grid, injector);
   return {
     fire: (vb: ViewBox) => emit('canvas.viewbox.changed', { viewbox: vb }),
     emit,
@@ -125,5 +158,44 @@ describe('PanConstraint', () => {
     emit('wardley.config.changed', { config: { title: 'T' } });
     emit('commandStack.changed');
     expect(setCalls).toHaveLength(0);
+  });
+
+  describe('with the insets of a host chrome', () => {
+    const INSETS = { top: 88, right: 24, bottom: 64, left: 24 };
+
+    /** The view a host fits: the bounds centred in the free rectangle, never above 100 %. */
+    function fitted(bounds: ViewBox, width: number, height: number) {
+      const free = { width: width - 48, height: height - 152 };
+      const scale = Math.min(1, free.width / bounds.width, free.height / bounds.height);
+      return {
+        x: bounds.x + bounds.width / 2 - (INSETS.left + free.width / 2) / scale,
+        y: bounds.y + bounds.height / 2 - (INSETS.top + free.height / 2) / scale,
+        width: width / scale,
+        height: height / scale,
+        scale,
+      };
+    }
+
+    it.each([
+      [1280, 900],
+      [2560, 1600],
+      [720, 700],
+    ])('never pulls a view the host fitted into a %ix%i container', (width, height) => {
+      const grid = new EvolutionGrid(undefined as unknown as Canvas);
+      const view = fitted(grid.outerBounds(), width, height);
+      const { fire, setCalls } = setup(view, undefined, injectorWith(INSETS));
+      fire(view);
+      expect(setCalls).toHaveLength(0);
+    });
+
+    it('still pulls a view panned far away back towards the map', () => {
+      const { fire, setCalls } = setup(
+        { x: 5000, y: 5000, width: 400, height: 300, scale: 1 } as ViewBox,
+        undefined,
+        injectorWith(INSETS),
+      );
+      fire({ x: 5000, y: 5000, width: 400, height: 300, scale: 1 } as ViewBox);
+      expect(setCalls).toHaveLength(1);
+    });
   });
 });
