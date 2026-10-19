@@ -100,7 +100,9 @@ async function readDownload(page: Page, run: () => Promise<void>): Promise<[stri
 }
 
 test.describe('the start screen', () => {
-  test('hides the work chrome until a map starts, and names only the app', async ({ page }) => {
+  test('hides the work chrome and the plot until a map starts, and names only the app', async ({
+    page,
+  }) => {
     await openApp(page);
 
     await expect(startScreen(page)).toBeVisible();
@@ -113,12 +115,15 @@ test.describe('the start screen', () => {
       await expect(page.locator(`[data-chrome="${island}"]`)).toBeHidden();
     }
     await expect(page.locator('[data-chrome="legal"]')).toBeVisible();
+    const plot = page.locator('.wardley-container .djs-container > svg');
+    await expect(plot).toHaveCSS('visibility', 'hidden');
 
     await startScreen(page).getByRole('button', { name: 'New diagram' }).click();
     await expect(startScreen(page)).toBeHidden();
     for (const island of ['menu', 'primary', 'palette', 'zoom']) {
       await expect(page.locator(`[data-chrome="${island}"]`)).toBeVisible();
     }
+    await expect(plot).toHaveCSS('visibility', 'visible');
     expect(new URL(page.url()).hash).toBe('');
   });
 

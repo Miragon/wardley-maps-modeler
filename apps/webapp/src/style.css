@@ -1,6 +1,7 @@
-/* The web app's own content inside the shell: the map-as-text dialogs. Everything else around the
-   canvas is the chrome of @miragon/modeler-shell (shell.css) and the renderer's dialog look
-   (wardley.css). Only the --cd-ui-* roles and the mode-independent tokens, as there. */
+/* The web app's own content inside the shell: the map-as-text dialogs and the start screen's empty
+   canvas. Everything else around the canvas is the chrome of @miragon/modeler-shell (shell.css) and
+   the renderer's dialog look (wardley.css). Only the --cd-ui-* roles and the mode-independent
+   tokens, as there. */
 .wardley-dialog.text-dialog {
   width: min(720px, calc(100cqw - 32px));
 }
@@ -77,4 +78,10 @@
   .text-dialog-diagnostic-button::before {
     background: CanvasText;
   }
+}
+
+/* Guide §8: on the start screen nothing but the card competes for attention, so the empty plot
+   behind it waits until the user starts; the dotted surround stays, as in every Miragon modeler. */
+.cd-shell[data-empty-state='shown'] .wardley-container .djs-container > svg {
+  visibility: hidden;
 }
