@@ -46,6 +46,18 @@ export function noteMetrics(label: string): { lines: string[]; width: number; he
 }
 
 /**
+ * The status colours the notation drew with before design system 1.13.0 brightened its status
+ * layer. Maps store note colours as hex, the accelerator needs 4.5:1 as text and the SVG export
+ * must not change, so the notation keeps them as its own literals.
+ */
+const NOTATION_STATUS = {
+  success: '#0B7A55',
+  warning: '#92610A',
+  danger: '#C92A2A',
+  info: '#2B50D4',
+} as const;
+
+/**
  * Canvas colours — Miragon palette (blue = interactive/flow, green = accelerate/positive,
  * red = movement/decelerate). Keys are the public contract; brand values come from the single source
  * of truth in `theme/palette.ts` (`MIRAGON`). Referenced (not spread) so the literal-string types
@@ -66,14 +78,14 @@ export const COLORS = {
   accent: MIRAGON.blau,
   accentSoft: 'rgba(51,93,229,0.12)',
   flow: MIRAGON.blau,
-  movement: MIRAGON.danger,
+  movement: NOTATION_STATUS.danger,
   inertia: MIRAGON.schwarz,
   noteText: MIRAGON.textLeise,
   pipeline: MIRAGON.schwarz,
   annotationFill: '#FBF3E0',
   plotBackground: MIRAGON.weiss,
-  accelerator: MIRAGON.success,
-  deaccelerator: MIRAGON.danger,
+  accelerator: NOTATION_STATUS.success,
+  deaccelerator: NOTATION_STATUS.danger,
 } as const;
 
 /**
@@ -83,10 +95,10 @@ export const COLORS = {
  * amber = watch, blue = info, purple = idea, slate = neutral.
  */
 export const NOTE_COLORS = [
-  { id: 'green', name: 'Green · good', value: MIRAGON.success },
-  { id: 'amber', name: 'Amber · watch', value: MIRAGON.warning },
-  { id: 'red', name: 'Red · problem', value: MIRAGON.danger },
-  { id: 'blue', name: 'Blue · info', value: MIRAGON.info },
+  { id: 'green', name: 'Green · good', value: NOTATION_STATUS.success },
+  { id: 'amber', name: 'Amber · watch', value: NOTATION_STATUS.warning },
+  { id: 'red', name: 'Red · problem', value: NOTATION_STATUS.danger },
+  { id: 'blue', name: 'Blue · info', value: NOTATION_STATUS.info },
   { id: 'teal', name: 'Teal', value: '#0E8181' },
   { id: 'purple', name: 'Purple · idea', value: '#6A3DB8' },
   { id: 'pink', name: 'Pink', value: '#C2185B' },
@@ -99,9 +111,9 @@ export const NOTE_COLORS = [
  */
 export const ATTITUDE_COLORS: Record<string, { fill: string; stroke: string }> = {
   pioneers: { fill: 'rgba(51,93,229,0.07)', stroke: MIRAGON.blau },
-  settlers: { fill: 'rgba(146,97,10,0.10)', stroke: MIRAGON.warning },
+  settlers: { fill: 'rgba(146,97,10,0.10)', stroke: NOTATION_STATUS.warning },
   // Bright brand green only as the fill; the title and outline need the darker success value (AA).
-  townplanners: { fill: 'rgba(0,230,118,0.10)', stroke: MIRAGON.success },
+  townplanners: { fill: 'rgba(0,230,118,0.10)', stroke: NOTATION_STATUS.success },
 };
 
 /** Canonical region titles (Wardley's Pioneers / Settlers / Town Planners), keyed by kind. */

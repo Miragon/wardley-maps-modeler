@@ -59,6 +59,93 @@ const vendoredTokens = readFileSync(
   fileURLToPath(new URL('../src/theme/cd-tokens.generated.css', import.meta.url)),
   'utf8',
 );
+const vendoredCanvas = readFileSync(
+  fileURLToPath(new URL('../src/theme/cd-canvas.css', import.meta.url)),
+  'utf8',
+);
+const vendoredJsonText = readFileSync(
+  fileURLToPath(new URL('../src/theme/cd-tokens.generated.json', import.meta.url)),
+  'utf8',
+);
+
+interface VendoredTokens {
+  $description: string;
+  hell: Record<string, string>;
+  dunkel: Record<string, string>;
+  hochkontrast: { hell: Record<string, string>; dunkel: Record<string, string> };
+  fest: Record<string, string>;
+  shell: Record<string, string>;
+}
+const vendoredJson = JSON.parse(vendoredJsonText) as VendoredTokens;
+
+/** The CSS without comments: what the browser parses. */
+function withoutComments(source: string): string {
+  return source.replace(/\/\*[\s\S]*?\*\//g, '');
+}
+
+/** `--name: value;` of the rule whose selector list ends with `selector` in a vendored file. */
+function vendoredVars(source: string, selector: string): Record<string, string> {
+  const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const block = new RegExp(`${escaped}\\s*\\{([^}]*)\\}`).exec(source);
+  if (!block) throw new Error(`selector not found: ${selector}`);
+  const vars: Record<string, string> = {};
+  for (const m of block[1]!.matchAll(/(--[\w-]+)\s*:\s*([^;]+);/g)) vars[m[1]!] = norm(m[2]!);
+  return vars;
+}
+
+function normalized(values: Record<string, string>): Record<string, string> {
+  return Object.fromEntries(Object.entries(values).map(([name, value]) => [name, norm(value)]));
+}
+
+describe('theme.sync — the vendored files are complete, unchanged copies (design system 1.13.0)', () => {
+  it('every file starts with the generated banner of the design system', () => {
+    for (const source of [vendoredTokens, vendoredCanvas]) {
+      expect(source).toMatch(/^\/\* AUTOMATISCH GENERIERT aus brand\/tokens\.json\./);
+    }
+    expect(vendoredJsonText.startsWith('{\n  "$description": "AUTOMATISCH GENERIERT')).toBe(true);
+    expect(Object.keys(vendoredJson)).toEqual([
+      '$description',
+      'hell',
+      'dunkel',
+      'hochkontrast',
+      'fest',
+      'shell',
+    ]);
+  });
+
+  it('the JSON `hell` roles equal the light roles of the CSS', () => {
+    const root = vendoredVars(vendoredTokens, ':root');
+    const light = vendoredVars(
+      vendoredTokens,
+      '[data-cd-theme="light"],\n[data-cd-theme="system"]',
+    );
+    expect(Object.keys(vendoredJson.hell).length).toBeGreaterThan(20);
+    for (const [name, value] of Object.entries(vendoredJson.hell)) {
+      expect(root[name], `${name} on :root`).toBe(norm(value));
+    }
+    expect(light).toEqual(normalized(vendoredJson.hell));
+  });
+
+  it('the JSON `dunkel` roles equal the dark roles of the CSS', () => {
+    expect(vendoredVars(vendoredTokens, '[data-cd-theme="dark"]')).toEqual(
+      normalized(vendoredJson.dunkel),
+    );
+  });
+
+  it('the JSON `fest` and `shell` tokens equal the fixed tokens on :root', () => {
+    const root = vendoredVars(vendoredTokens, ':root');
+    for (const [name, value] of Object.entries({ ...vendoredJson.fest, ...vendoredJson.shell })) {
+      expect(root[name], `${name} on :root`).toBe(norm(value));
+    }
+  });
+
+  it('cd-canvas.css maps the diagram-js variables onto the roles', () => {
+    expect(withoutComments(vendoredCanvas)).toMatch(
+      /--bio-surface:\s*var\(--cd-ui-flaeche-hoch\);/,
+    );
+    expect(withoutComments(vendoredCanvas)).toMatch(/--lasso-fill-color:\s*transparent;/);
+  });
+});
 
 /** `blauLink` -> `--cd-blau-link`; `null` for app-specific keys the CI does not define. */
 function tokenFor(key: string): string | null {
@@ -81,10 +168,22 @@ function contrast(foreground: string, background: string): number {
 }
 
 describe('theme.sync — MIRAGON mirrors the vendored design-system tokens', () => {
-  it('wardley.css imports the vendored token file', () => {
-    expect(css).toMatch(
-      /@import\s+'\.\.\/theme\/cd-tokens\.generated\.css'\s+layer\(wardley-tokens\);/,
+  it('wardley.css loads the tokens (layered), diagram-js and cd-canvas (unlayered), in this order', () => {
+    const imports = [...withoutComments(css).matchAll(/@import\s+([^;]+);/g)].map((match) =>
+      match[1]!.trim().replace(/\s+/g, ' '),
     );
+    expect(imports).toEqual([
+      "'../theme/cd-tokens.generated.css' layer(wardley-tokens)",
+      "'diagram-js/assets/diagram-js.css'",
+      "'../theme/cd-canvas.css'",
+    ]);
+  });
+
+  it('the status colours are the 1.13.0 status layer', () => {
+    expect(MIRAGON.success).toBe(vendoredJson.fest['--cd-success']);
+    expect(MIRAGON.warning).toBe(vendoredJson.fest['--cd-warning']);
+    expect(MIRAGON.danger).toBe(vendoredJson.fest['--cd-danger']);
+    expect(MIRAGON.info).toBe(vendoredJson.fest['--cd-info']);
   });
 
   it('every MIRAGON value with a --cd-* counterpart equals it', () => {
@@ -103,8 +202,6 @@ describe('theme.sync — MIRAGON mirrors the vendored design-system tokens', () 
     expect(COLORS.grid).toBe(MIRAGON.linie);
     expect(COLORS.axisText).toBe(MIRAGON.textLeise);
     expect(COLORS.inkSoft).toBe(MIRAGON.textLeise);
-    expect(COLORS.accelerator).toBe(MIRAGON.success);
-    expect(ATTITUDE_COLORS['townplanners']?.stroke).toBe(MIRAGON.success);
     expect(CHROME_VARS['--wardley-ink-soft']).toBe(MIRAGON.textLeise);
     expect(CHROME_VARS['--wardley-border']).toBe(MIRAGON.linie);
   });
@@ -127,6 +224,14 @@ describe('theme.sync — MIRAGON mirrors the vendored design-system tokens', () 
       );
     expect(rule, 'dark axis-text override in wardley.css').not.toBeNull();
     expect(norm(rule![1]!)).toBe(`fill:${norm(DARK_MAP_AXIS_TEXT)}!important;`);
+  });
+
+  it('keeps the notation status colours that 1.13.0 brightened: saved maps and exports keep theirs', () => {
+    expect(COLORS.accelerator).toBe('#0B7A55');
+    expect(COLORS.deaccelerator).toBe('#C92A2A');
+    expect(COLORS.movement).toBe('#C92A2A');
+    expect(ATTITUDE_COLORS['settlers']?.stroke).toBe('#92610A');
+    expect(ATTITUDE_COLORS['townplanners']?.stroke).toBe('#0B7A55');
   });
 
   it('keeps the serialized note palette hex values stable', () => {

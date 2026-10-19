@@ -9,3 +9,5 @@ THIRD-PARTY-NOTICES.md
 
 # Vendored verbatim from the Miragon design system (re-copy, never reformat)
 **/*.generated.css
+**/*.generated.json
+**/cd-canvas.css

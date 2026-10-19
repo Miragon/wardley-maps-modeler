@@ -32,11 +32,14 @@ export const MIRAGON = {
   /** Text on light, monochrome logo. Not pure black. */
   schwarz: '#1D1D1D',
   weiss: '#FFFFFF',
-  /** Functional / status layer (own layer beside the brand palette; AA as text on white). */
-  success: '#0B7A55',
-  warning: '#92610A',
-  danger: '#C92A2A',
-  info: '#2B50D4',
+  /**
+   * Status layer (guide §3.3): the brand colours plus amber and red. Fills, borders, icons and
+   * dots; as text on white only `danger` and `info` reach AA.
+   */
+  success: '#00E676',
+  warning: '#FFB000',
+  danger: '#CD1839',
+  info: '#335DE5',
   /** UI grey (`--cd-linie`) for hairlines, guides and decorative borders. The CI allows no other greys. */
   linie: '#E6E2E2',
   /** Structural strokes that must stay visible (≥ 3:1 on white): axes, dependency edges. */

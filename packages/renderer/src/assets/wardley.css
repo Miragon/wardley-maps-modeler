@@ -1,7 +1,10 @@
-@import 'diagram-js/assets/diagram-js.css';
-/* Vendored from Miragon/corporate-identity. Do not edit; re-copy to update. In a cascade layer, so
-   a host page's own --cd-* tokens (unlayered) always win over this copy. */
+/* Design-system files vendored unchanged from Miragon/corporate-identity (src/theme/). The tokens
+   sit in a cascade layer, so a host page's own --cd-* tokens (unlayered) win over this copy.
+   cd-canvas.css stays unlayered and comes after diagram-js.css, so its mapping of the --bio-* and
+   .djs-parent variables onto the --cd-ui-* roles beats diagram-js's defaults. */
 @import '../theme/cd-tokens.generated.css' layer(wardley-tokens);
+@import 'diagram-js/assets/diagram-js.css';
+@import '../theme/cd-canvas.css';
 
 /* Miragon design tokens for the in-canvas chrome. The VALUES here are hand-mirrored from the single
    source of truth in `src/theme/palette.ts` (CHROME_LIGHT_VARS / CHROME_DARK_VARS); a unit test
@@ -16,7 +19,7 @@
   --wardley-accent: #335de5;
   --wardley-accent-soft: rgba(51, 93, 229, 0.12);
   --wardley-brand: #00e676;
-  --wardley-danger: #c92a2a;
+  --wardley-danger: #cd1839;
   --wardley-shadow: rgba(29, 29, 29, 0.1);
 
   --wardley-radius-sm: 6px;
