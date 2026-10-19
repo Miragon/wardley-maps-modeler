@@ -92,13 +92,19 @@ above; the viewer never edits. Both pass the contract's conformance kit without 
 
 ### Menu entries and dialogs for a host's chrome
 
-The map's entries of a chrome menu (Model: "Map size…" and "X-axis labels…", Export, Help) come
-from `mapMenu(actions)`, in the shape the menu groups of
-[`@miragon/modeler-shell`](https://www.npmjs.com/package/@miragon/modeler-shell) take.
+The map's entries of a chrome menu (Model: "Map title…" where the host passes `mapTitle`, "Map
+size…" and "X-axis labels…"; Export; Help) come from `mapMenu(actions)`, in the shape the menu
+groups of [`@miragon/modeler-shell`](https://www.npmjs.com/package/@miragon/modeler-shell) take.
 `createMapSizePopover(chrome, modeler)` and `createAxisLabelsPopover(chrome, modeler)` build the two
-popovers (a live preview, one undo step when done), `createShortcutsDialog(chrome)` the "Keyboard
-shortcuts…" dialog and `mapShortcuts(chrome)` its table. `chrome` is the shell handle or anything of
-the same shape; the renderer never imports the shell itself.
+popovers (a live preview, one undo step when done), `createTitleDialog(chrome, modeler)` the "Map
+title…" dialog (one undo step on Apply, nothing for an unchanged title),
+`createShortcutsDialog(chrome, options)` the "Keyboard shortcuts…" dialog and
+`mapShortcuts(chrome, options)` its table. A web app that binds Cmd/Ctrl+O, Cmd/Ctrl+S and `?`
+itself passes `{ fileKeys: true, shortcutsKey: '?' }`, so the dialog lists them too.
+`createMapDialog(chrome, parts)` is the modal dialog all of them share (guide §8: header with Close,
+scrolling body, footer), for a host's own dialogs in the same look; `dialogButton(label, variant)`
+gives its buttons. `chrome` is the shell handle or anything of the same shape; the renderer never
+imports the shell itself.
 
 ## Events
 

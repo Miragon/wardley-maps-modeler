@@ -1,3 +1,5 @@
+import { EXPORT_LABELS } from './menu.js';
+
 /*
  * Every shortcut and gesture of a map for the "Keyboard shortcuts…" dialog (guide §5.4): one
  * table per group, the keys as chips like the chrome tooltip's (guide §5.6). The chrome's texts
@@ -24,8 +26,18 @@ export interface ShortcutsChrome {
     readonly zoomOut: string;
     zoomToActual(percent: string): string;
     readonly fit: string;
+    /** The File group's "Open…" (the shell's `messages.openFile`); default "Open…". */
+    readonly openFile?: string | undefined;
     readonly keyNames: ShortcutKeyNames;
   };
+}
+
+/** Keys a web app binds itself, next to the canvas's and the chrome's. */
+export interface MapShortcutOptions {
+  /** Cmd/Ctrl+O opens a file and Cmd/Ctrl+S exports the .wmap file: a File group comes first. */
+  readonly fileKeys?: boolean | undefined;
+  /** The key that opens the dialog itself, e.g. "?", listed in the View group. */
+  readonly shortcutsKey?: string | undefined;
 }
 
 export interface ShortcutRow {
@@ -80,14 +92,29 @@ function keysOf(platform: ShortcutPlatform, names: ShortcutKeyNames) {
   };
 }
 
+function fileGroup(chrome: ShortcutsChrome, command: (key: string) => string): ShortcutGroup {
+  return {
+    title: 'File',
+    rows: [
+      { action: chrome.messages.openFile ?? 'Open…', keys: [command('O')] },
+      { action: EXPORT_LABELS.wmap, keys: [command('S')] },
+    ],
+  };
+}
+
 /**
  * Every shortcut of a map, grouped as guide §5.4 asks: View (the chrome's zoom keys), Edit, the
- * notation's tools and the gestures on the map itself.
+ * notation's tools and the gestures on the map itself, after the web app's File keys where it
+ * binds them.
  */
-export function mapShortcuts(chrome: ShortcutsChrome): ShortcutGroup[] {
+export function mapShortcuts(
+  chrome: ShortcutsChrome,
+  options: MapShortcutOptions = {},
+): ShortcutGroup[] {
   const { platform, messages } = chrome;
   const keys = keysOf(platform, messages.keyNames);
   return [
+    ...(options.fileKeys ? [fileGroup(chrome, keys.command)] : []),
     {
       title: 'View',
       rows: [
@@ -98,6 +125,9 @@ export function mapShortcuts(chrome: ShortcutsChrome): ShortcutGroup[] {
           keys: [keys.zoomToActual],
         },
         { action: messages.fit, keys: [keys.fit] },
+        ...(options.shortcutsKey
+          ? [{ action: 'Keyboard shortcuts', keys: [options.shortcutsKey] }]
+          : []),
       ],
     },
     {

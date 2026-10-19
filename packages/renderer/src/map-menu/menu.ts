@@ -22,6 +22,8 @@ export interface MapMenuAction extends MapMenuItem {
 
 export interface MapMenuDialog extends MapMenuItem {
   readonly kind: 'dialog';
+  /** The chip of a key that opens the dialog as well, e.g. "?". */
+  readonly shortcut?: string;
   onSelect(): void;
 }
 
@@ -53,12 +55,16 @@ export interface MapExports {
 }
 
 export interface MapMenuActions {
+  /** Opens the "Map title…" dialog; without it the Model group has no title entry. */
+  mapTitle?: (() => void) | undefined;
   /** Opens the "Map size…" popover. */
   mapSize(): void;
   /** Opens the "X-axis labels…" popover. */
   axisLabels(): void;
   readonly exports: MapExports;
   showKeyboardShortcuts(): void;
+  /** The chip of a key the host binds to the shortcuts dialog as well, e.g. "?" in the web app. */
+  readonly shortcutsKey?: string | undefined;
 }
 
 /** The labels of the export entries, also used by the hosts' commands and notifications. */
@@ -102,12 +108,18 @@ function exportEntries(exports: MapExports): MapMenuAction[] {
 }
 
 /**
- * The menu groups of a map (guide §5.4): Model with the two popovers (both change the document,
- * so a read-only canvas disables them), Export with PNG first, Help with the shortcuts dialog.
+ * The menu groups of a map (guide §5.4): Model with the title dialog where the host offers it and
+ * the two popovers (all three change the document, so a read-only canvas disables them), Export
+ * with PNG first, Help with the shortcuts dialog.
  */
 export function mapMenu(actions: MapMenuActions): MapMenu {
+  const { mapTitle, shortcutsKey } = actions;
+  const titleEntries: MapMenuEntry[] = mapTitle
+    ? [{ kind: 'dialog', id: 'map-title', label: 'Map title…', onSelect: () => mapTitle() }]
+    : [];
   return {
     model: [
+      ...titleEntries,
       { kind: 'dialog', id: 'map-size', label: 'Map size…', onSelect: () => actions.mapSize() },
       {
         kind: 'dialog',
@@ -123,6 +135,7 @@ export function mapMenu(actions: MapMenuActions): MapMenu {
         id: 'keyboard-shortcuts',
         label: 'Keyboard shortcuts…',
         icon: 'keyboard',
+        ...(shortcutsKey ? { shortcut: shortcutsKey } : {}),
         onSelect: () => actions.showKeyboardShortcuts(),
       },
     ],

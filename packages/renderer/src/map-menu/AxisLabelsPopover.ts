@@ -5,8 +5,8 @@ import {
 } from '@miragon/wardley-schema-model';
 import type { Modeler } from '../Modeler.js';
 import { element } from './dom.js';
+import { dialogButton } from './dialog.js';
 import {
-  button,
   createPopover,
   field,
   withMapListeners,
@@ -75,8 +75,8 @@ export function createAxisLabelsPopover(chrome: PopoverChrome, modeler: Modeler)
       hint.append('Label sets from ', source, '. Pick a set, or name each stage.');
       body.append(field('Preset', preset).wrapper, hint);
       inputs.forEach((input, index) => body.append(field(`Stage ${index + 1}`, input).wrapper));
-      const reset = button('Reset to default', 'ghost');
-      const doneButton = button('Done', 'secondary');
+      const reset = dialogButton('Reset to default', 'ghost');
+      const doneButton = dialogButton('Done', 'secondary');
       footer.append(reset, doneButton);
 
       preset.addEventListener('change', () => {

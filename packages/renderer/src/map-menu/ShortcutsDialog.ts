@@ -1,23 +1,20 @@
-import { CLOSE_ICON, element, uniqueId } from './dom.js';
-import { mapShortcuts, type ShortcutGroup, type ShortcutsChrome } from './shortcuts.js';
+import { createMapDialog, type DialogChrome, type MapDialog } from './dialog.js';
+import { element, uniqueId } from './dom.js';
+import {
+  mapShortcuts,
+  type MapShortcutOptions,
+  type ShortcutGroup,
+  type ShortcutsChrome,
+} from './shortcuts.js';
 
 const DIALOG_CLASS = 'wardley-shortcuts';
 
 /** What the dialog needs of the chrome around the map; a `@miragon/modeler-shell` handle fits. */
-export interface ShortcutsDialogChrome extends ShortcutsChrome {
-  /** Where the dialog lives (the shell root), so it shares the chrome's mode and fonts. */
-  readonly root: HTMLElement;
-  readonly messages: ShortcutsChrome['messages'] & { readonly close: string };
-  /** The control the focus returns to once the dialog closes. */
-  readonly menu: { readonly trigger: HTMLElement };
+export interface ShortcutsDialogChrome extends ShortcutsChrome, DialogChrome {
+  readonly messages: ShortcutsChrome['messages'] & DialogChrome['messages'];
 }
 
-export interface ShortcutsDialog {
-  open(): void;
-  isOpen(): boolean;
-  close(): void;
-  destroy(): void;
-}
+export type ShortcutsDialog = MapDialog;
 
 function shortcutTable(group: ShortcutGroup, titleId: string): HTMLElement {
   const section = element('section', `${DIALOG_CLASS}-group`);
@@ -38,67 +35,27 @@ function shortcutTable(group: ShortcutGroup, titleId: string): HTMLElement {
   return section;
 }
 
-function dialogContent(
-  chrome: ShortcutsDialogChrome,
-  titleId: string,
-  onClose: () => void,
-): HTMLElement {
-  const panel = element('div', `${DIALOG_CLASS}-panel`);
-  const header = element('header', `${DIALOG_CLASS}-header`);
-  const title = element('h3', `${DIALOG_CLASS}-title`, 'Keyboard shortcuts');
-  title.id = titleId;
-  const close = element('button', `${DIALOG_CLASS}-close`);
-  close.type = 'button';
-  close.setAttribute('aria-label', chrome.messages.close);
-  close.innerHTML = CLOSE_ICON;
-  close.addEventListener('click', onClose);
-  header.append(title, close);
-
-  const body = element('div', `${DIALOG_CLASS}-body`);
-  body.append(
-    ...mapShortcuts(chrome).map((group, index) => shortcutTable(group, `${titleId}-${index}`)),
-  );
-  panel.append(header, body);
-  return panel;
-}
-
 /**
- * The "Keyboard shortcuts…" dialog of the Help group (guide §5.4, §8), a native modal <dialog>
- * inside the chrome's root: the browser keeps the focus inside it and closes it on Escape. Built on
- * the first open and kept (closed) afterwards; `destroy()` removes it, the host calls it with the
- * diagram's teardown, since the chrome removes only what it added itself.
+ * The "Keyboard shortcuts…" dialog of the Help group (guide §5.4, §8): one table per group, the
+ * keys as chips like the chrome tooltip's. A web app that binds keys of its own (Open…, the map
+ * file's export, `?`) passes them in `options`, so the dialog lists them as well.
  */
-export function createShortcutsDialog(chrome: ShortcutsDialogChrome): ShortcutsDialog {
-  let dialog: HTMLDialogElement | undefined;
-
-  function build(): HTMLDialogElement {
-    const titleId = uniqueId(`${DIALOG_CLASS}-title`);
-    const created = element('dialog', DIALOG_CLASS);
-    created.setAttribute('aria-labelledby', titleId);
-    created.append(dialogContent(chrome, titleId, () => created.close()));
-    // A click on the backdrop targets the <dialog> itself; the panel covers all of its own box.
-    created.addEventListener('click', (event) => {
-      if (event.target === created) created.close();
-    });
-    created.addEventListener('close', () => {
-      if (!chrome.menu.trigger.hidden) chrome.menu.trigger.focus({ preventScroll: true });
-    });
-    chrome.root.append(created);
-    return created;
-  }
-
-  return {
-    open() {
-      dialog ??= build();
-      if (!dialog.open) dialog.showModal();
+export function createShortcutsDialog(
+  chrome: ShortcutsDialogChrome,
+  options: MapShortcutOptions = {},
+): ShortcutsDialog {
+  return createMapDialog(chrome, {
+    className: DIALOG_CLASS,
+    title: 'Keyboard shortcuts',
+    content() {
+      const body = element('div', `wardley-dialog-body ${DIALOG_CLASS}-body`);
+      const prefix = uniqueId(`${DIALOG_CLASS}-group`);
+      body.append(
+        ...mapShortcuts(chrome, options).map((group, index) =>
+          shortcutTable(group, `${prefix}-${index}`),
+        ),
+      );
+      return [body];
     },
-    close() {
-      dialog?.close();
-    },
-    isOpen: () => dialog?.open === true,
-    destroy() {
-      dialog?.remove();
-      dialog = undefined;
-    },
-  };
+  });
 }

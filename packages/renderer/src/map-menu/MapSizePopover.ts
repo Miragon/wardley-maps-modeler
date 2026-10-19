@@ -8,8 +8,8 @@ import {
 import type { Modeler } from '../Modeler.js';
 import type { MapSizeInfo } from '../WardleyBaseViewer.js';
 import { element } from './dom.js';
+import { dialogButton } from './dialog.js';
 import {
-  button,
   createPopover,
   field,
   withMapListeners,
@@ -50,7 +50,7 @@ export function createMapSizePopover(chrome: PopoverChrome, modeler: Modeler): P
   preset.append(custom);
   const width = numberInput(PLOT_MIN.width, PLOT_MAX.width);
   const height = numberInput(PLOT_MIN.height, PLOT_MAX.height);
-  const reset = button('Reset to default', 'ghost');
+  const reset = dialogButton('Reset to default', 'ghost');
   const sizeField = field('Size', preset);
   const widthField = field('Width', width);
   const heightField = field('Height', height);
@@ -98,7 +98,7 @@ export function createMapSizePopover(chrome: PopoverChrome, modeler: Modeler): P
       lengths.append(widthField.wrapper, times, heightField.wrapper);
       const hint = element('p', 'wardley-popover-hint', 'Or drag the plot’s right or bottom edge.');
       body.append(sizeField.wrapper, lengths, hint);
-      const doneButton = button('Done', 'secondary');
+      const doneButton = dialogButton('Done', 'secondary');
       doneButton.addEventListener('click', done);
       footer.append(reset, doneButton);
 

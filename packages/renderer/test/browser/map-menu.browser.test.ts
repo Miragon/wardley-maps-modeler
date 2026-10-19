@@ -4,6 +4,7 @@ import {
   createAxisLabelsPopover,
   createMapSizePopover,
   createShortcutsDialog,
+  createTitleDialog,
   type EvolutionGrid,
   type PopoverHandle,
   type WardleyReadOnly,
@@ -94,7 +95,7 @@ describe('the keyboard shortcuts dialog', () => {
     expect(element.matches(':modal')).toBe(true);
     const title = document.getElementById(element.getAttribute('aria-labelledby')!);
     expect(title?.textContent).toBe('Keyboard shortcuts');
-    expect(element.querySelector('.wardley-shortcuts-close')?.getAttribute('aria-label')).toBe(
+    expect(element.querySelector('.wardley-dialog-close')?.getAttribute('aria-label')).toBe(
       'Close',
     );
     expect([...element.querySelectorAll('h4')].map((heading) => heading.textContent)).toEqual([
@@ -105,6 +106,102 @@ describe('the keyboard shortcuts dialog', () => {
     ]);
     element.close();
     expect(document.activeElement).toBe(target.trigger);
+  });
+});
+
+describe('the shortcuts dialog of a web app', () => {
+  it('leads with the File keys the app binds itself', async () => {
+    const target = await mount();
+    const dialog = keep(
+      createShortcutsDialog(chromeOf(target), { fileKeys: true, shortcutsKey: '?' }),
+    );
+    dialog.open();
+    const element = target.root.querySelector<HTMLDialogElement>('dialog.wardley-shortcuts')!;
+    expect([...element.querySelectorAll('h4')].map((heading) => heading.textContent)).toEqual([
+      'File',
+      'View',
+      'Edit',
+      'Tools',
+      'Map',
+    ]);
+    expect(element.querySelector('table')?.textContent).toBe('Open…⌘OExport as .wmap⌘S');
+    dialog.close();
+  });
+});
+
+describe('the map title dialog', () => {
+  function titleOf(target: Modeler): string | undefined {
+    return target.exportMap().config.title;
+  }
+  function undoDepth(target: Modeler): number {
+    let depth = 0;
+    while (target.canUndo()) {
+      target.undo();
+      depth += 1;
+    }
+    for (let step = 0; step < depth; step++) target.redo();
+    return depth;
+  }
+
+  async function opened() {
+    const target = await mount();
+    const dialog = keep(createTitleDialog(chromeOf(target), target.modeler));
+    target.trigger.focus();
+    dialog.open();
+    const element = target.root.querySelector<HTMLDialogElement>('dialog.wardley-title-dialog')!;
+    const field = element.querySelector<HTMLInputElement>('input')!;
+    return { target, dialog, element, field };
+  }
+
+  it('is a modal dialog with the title selected in its field (guide §8)', async () => {
+    const { element, field } = await opened();
+    expect(element.matches(':modal')).toBe(true);
+    expect(document.getElementById(element.getAttribute('aria-labelledby')!)?.textContent).toBe(
+      'Map title',
+    );
+    expect(document.activeElement).toBe(field);
+    expect(field.value).toBe('Menu');
+    expect([field.selectionStart, field.selectionEnd]).toEqual([0, 4]);
+    expect(field.labels?.[0]?.textContent).toBe('Title');
+    const buttons = [
+      ...element.querySelectorAll<HTMLButtonElement>('.wardley-dialog-footer button'),
+    ];
+    expect(buttons.map((button) => [button.textContent, button.dataset['variant']])).toEqual([
+      ['Cancel', 'secondary'],
+      ['Apply', 'primary'],
+    ]);
+  });
+
+  it('applies the trimmed title as one undo step and gives the focus back', async () => {
+    const { target, element, field } = await opened();
+    field.value = '  Payments   platform ';
+    element.querySelector<HTMLFormElement>('form')!.requestSubmit();
+    expect(element.open).toBe(false);
+    expect(titleOf(target.modeler)).toBe('Payments platform');
+    expect(undoDepth(target.modeler)).toBe(1);
+    expect(document.activeElement).toBe(target.trigger);
+  });
+
+  it('writes nothing for an unchanged title or on Cancel', async () => {
+    const { target, dialog, element, field } = await opened();
+    element.querySelector<HTMLFormElement>('form')!.requestSubmit();
+    expect(target.modeler.canUndo()).toBe(false);
+
+    dialog.open();
+    expect(field.value).toBe('Menu');
+    field.value = 'Discarded';
+    element.querySelector<HTMLButtonElement>('[data-variant="secondary"]')!.click();
+    expect(element.open).toBe(false);
+    expect(titleOf(target.modeler)).toBe('Menu');
+    expect(target.modeler.canUndo()).toBe(false);
+  });
+
+  it('closes without writing once the canvas turns read-only', async () => {
+    const { target, element, field } = await opened();
+    field.value = 'Locked';
+    target.modeler.get<WardleyReadOnly>('wardleyReadOnly').setReadOnly(true);
+    expect(element.open).toBe(false);
+    expect(titleOf(target.modeler)).toBe('Menu');
   });
 });
 

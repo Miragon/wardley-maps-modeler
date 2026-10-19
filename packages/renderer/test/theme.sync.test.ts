@@ -48,14 +48,24 @@ describe('theme.sync — wardley.css takes every colour from the roles', () => {
     expect(withoutComments(css)).not.toMatch(/#[0-9a-f]{3,8}\b|rgba?\(|hsla?\(/i);
   });
 
-  it('reads only roles and mode-independent tokens, never a fixed palette colour', () => {
-    const tokens = [...withoutComments(css).matchAll(/var\((--[\w-]+)/g)].map((m) => m[1]!);
-    expect(tokens.length).toBeGreaterThan(20);
-    for (const token of tokens) {
-      expect(token).toMatch(
-        /^--cd-(ui-[\w-]+|shell-[\w-]+|radius-\w+|shadow-\d|ease(-out)?|motion-\w+)$/,
-      );
+  it('reads only roles and mode-independent tokens; fixed colours only on the primary button', () => {
+    // Guide §8: the primary button's fill is blue with white text in both modes.
+    const PRIMARY_BUTTON_COLOURS = new Set(['--cd-blau', '--cd-blau-link', '--cd-weiss']);
+    const rules = [...withoutComments(css).matchAll(/([^{}]+)\{([^{}]*)\}/g)];
+    let tokenCount = 0;
+    for (const [, selectors, body] of rules) {
+      for (const [, token] of body!.matchAll(/var\((--[\w-]+)/g)) {
+        tokenCount += 1;
+        if (PRIMARY_BUTTON_COLOURS.has(token!)) {
+          expect(selectors!.trim()).toMatch(/^\.wardley-button\[data-variant='primary'\]/);
+          continue;
+        }
+        expect(token).toMatch(
+          /^--cd-(ui-[\w-]+|shell-[\w-]+|radius-\w+|shadow-\d|ease(-out)?|motion-\w+)$/,
+        );
+      }
     }
+    expect(tokenCount).toBeGreaterThan(20);
   });
 
   it('never renders the DSL `style` directive (guide §10.7: no navy surround)', () => {

@@ -52,6 +52,51 @@ describe('mapMenu', () => {
     expect(menu.help.map((entry) => [entry.kind, entry.label, entry.icon])).toEqual([
       ['dialog', 'Keyboard shortcuts…', 'keyboard'],
     ]);
+    expect(menu.help[0]).not.toHaveProperty('shortcut');
+  });
+
+  it('puts "Map title…" first in the Model group where the host offers it', () => {
+    let opened = 0;
+    const withTitle = mapMenu({
+      mapTitle: () => (opened += 1),
+      mapSize: noop,
+      axisLabels: noop,
+      exports: { png: { onSelect: noop }, svg: { onSelect: noop } },
+      showKeyboardShortcuts: noop,
+      shortcutsKey: '?',
+    });
+    expect(withTitle.model.map((entry) => [entry.kind, entry.id, entry.label])).toEqual([
+      ['dialog', 'map-title', 'Map title…'],
+      ['dialog', 'map-size', 'Map size…'],
+      ['dialog', 'x-axis-labels', 'X-axis labels…'],
+    ]);
+    expect(withTitle.model[0]!.keepEnabledWhenReadOnly).toBeUndefined();
+    withTitle.model[0]!.onSelect();
+    expect(opened).toBe(1);
+    expect(withTitle.help[0]).toMatchObject({ kind: 'dialog', shortcut: '?' });
+  });
+
+  it('adds the map file and JSON to the Export group, the file with its key chip', () => {
+    const web = mapMenu({
+      mapSize: noop,
+      axisLabels: noop,
+      exports: {
+        png: { onSelect: noop },
+        svg: { onSelect: noop },
+        transparentPng: { onSelect: noop },
+        json: { onSelect: noop },
+        wmap: { onSelect: noop, shortcut: '⌘S' },
+      },
+      showKeyboardShortcuts: noop,
+    });
+    expect(web.export.map((entry) => [entry.id, entry.label])).toEqual([
+      ['export-png', 'Export as PNG'],
+      ['export-svg', 'Export as SVG'],
+      ['export-png-transparent', 'Export as PNG (4×, transparent)'],
+      ['export-json', 'Export as JSON'],
+      ['export-wmap', 'Export as .wmap'],
+    ]);
+    expect(web.export.at(-1)).toMatchObject({ kind: 'action', shortcut: '⌘S' });
   });
 });
 
@@ -80,6 +125,29 @@ describe('mapShortcuts', () => {
       ['Zoom to 100%', 'Ctrl+0'],
       ['Fit to view', 'Shift+1'],
     ]);
+  });
+
+  it("leads with the web app's File keys and lists its shortcuts key where it binds them", () => {
+    const groups = (platform: 'mac' | 'other') =>
+      mapShortcuts(chrome(platform), { fileKeys: true, shortcutsKey: '?' });
+    expect(groups('mac').map((group) => group.title)).toEqual([
+      'File',
+      'View',
+      'Edit',
+      'Tools',
+      'Map',
+    ]);
+    expect(groups('mac')[0]!.rows).toEqual([
+      { action: 'Open…', keys: ['⌘O'] },
+      { action: 'Export as .wmap', keys: ['⌘S'] },
+    ]);
+    expect(groups('other')[0]!.rows.map((row) => row.keys)).toEqual([['Ctrl+O'], ['Ctrl+S']]);
+    expect(groups('mac')[1]!.rows.at(-1)).toEqual({ action: 'Keyboard shortcuts', keys: ['?'] });
+    const localized = {
+      ...chrome('other'),
+      messages: { ...chrome('other').messages, openFile: 'Öffnen …' },
+    };
+    expect(mapShortcuts(localized, { fileKeys: true })[0]!.rows[0]!.action).toBe('Öffnen …');
   });
 
   it('lists the single-key tools the canvas binds', () => {

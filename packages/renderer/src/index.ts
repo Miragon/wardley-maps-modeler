@@ -95,12 +95,21 @@ export type {
 export {
   EXPORT_LABELS,
   createAxisLabelsPopover,
+  createMapDialog,
   createMapSizePopover,
   createShortcutsDialog,
+  createTitleDialog,
+  dialogButton,
   mapMenu,
   mapShortcuts,
 } from './map-menu/index.js';
 export type {
+  DialogChrome,
+  MapDialog,
+  MapDialogParts,
+  MapShortcutOptions,
+  TitleDialog,
+  TitleDialogChrome,
   MapExport,
   MapExports,
   MapMenu,

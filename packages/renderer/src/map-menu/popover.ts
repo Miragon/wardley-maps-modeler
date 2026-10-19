@@ -141,13 +141,6 @@ export function field(
   };
 }
 
-export function button(label: string, variant: 'secondary' | 'ghost'): HTMLButtonElement {
-  const created = element('button', 'wardley-button', label);
-  created.type = 'button';
-  created.dataset['variant'] = variant;
-  return created;
-}
-
 /**
  * Closes `popover` without committing when the map is replaced (an import: the preview went with
  * the old map) or turns read-only (the preview is put back), and stops listening on destroy.
