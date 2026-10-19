@@ -34,7 +34,10 @@ export interface ShortcutsChrome {
 
 /** Keys a web app binds itself, next to the canvas's and the chrome's. */
 export interface MapShortcutOptions {
-  /** Cmd/Ctrl+O opens a file and Cmd/Ctrl+S exports the .wmap file: a File group comes first. */
+  /**
+   * Cmd/Ctrl+O opens a file, Cmd/Ctrl+S exports the .wmap file and Cmd/Ctrl+V opens OWM text or a
+   * share link pasted onto the canvas: a File group comes first.
+   */
   readonly fileKeys?: boolean | undefined;
   /** The key that opens the dialog itself, e.g. "?", listed in the View group. */
   readonly shortcutsKey?: string | undefined;
@@ -98,6 +101,7 @@ function fileGroup(chrome: ShortcutsChrome, command: (key: string) => string): S
     rows: [
       { action: chrome.messages.openFile ?? 'Open…', keys: [command('O')] },
       { action: EXPORT_LABELS.wmap, keys: [command('S')] },
+      { action: 'Paste OWM text or a share link', keys: [command('V')] },
     ],
   };
 }

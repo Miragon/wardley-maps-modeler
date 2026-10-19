@@ -124,7 +124,9 @@ describe('the shortcuts dialog of a web app', () => {
       'Tools',
       'Map',
     ]);
-    expect(element.querySelector('table')?.textContent).toBe('Open…⌘OExport as .wmap⌘S');
+    expect(element.querySelector('table')?.textContent).toBe(
+      'Open…⌘OExport as .wmap⌘SPaste OWM text or a share link⌘V',
+    );
     dialog.close();
   });
 });

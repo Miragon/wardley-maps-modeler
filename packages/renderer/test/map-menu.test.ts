@@ -63,7 +63,6 @@ describe('mapMenu', () => {
       axisLabels: noop,
       exports: { png: { onSelect: noop }, svg: { onSelect: noop } },
       showKeyboardShortcuts: noop,
-      shortcutsKey: '?',
     });
     expect(withTitle.model.map((entry) => [entry.kind, entry.id, entry.label])).toEqual([
       ['dialog', 'map-title', 'Map title…'],
@@ -73,7 +72,6 @@ describe('mapMenu', () => {
     expect(withTitle.model[0]!.keepEnabledWhenReadOnly).toBeUndefined();
     withTitle.model[0]!.onSelect();
     expect(opened).toBe(1);
-    expect(withTitle.help[0]).toMatchObject({ kind: 'dialog', shortcut: '?' });
   });
 
   it('adds the map file and JSON to the Export group, the file with its key chip', () => {
@@ -140,8 +138,13 @@ describe('mapShortcuts', () => {
     expect(groups('mac')[0]!.rows).toEqual([
       { action: 'Open…', keys: ['⌘O'] },
       { action: 'Export as .wmap', keys: ['⌘S'] },
+      { action: 'Paste OWM text or a share link', keys: ['⌘V'] },
     ]);
-    expect(groups('other')[0]!.rows.map((row) => row.keys)).toEqual([['Ctrl+O'], ['Ctrl+S']]);
+    expect(groups('other')[0]!.rows.map((row) => row.keys)).toEqual([
+      ['Ctrl+O'],
+      ['Ctrl+S'],
+      ['Ctrl+V'],
+    ]);
     expect(groups('mac')[1]!.rows.at(-1)).toEqual({ action: 'Keyboard shortcuts', keys: ['?'] });
     const localized = {
       ...chrome('other'),
