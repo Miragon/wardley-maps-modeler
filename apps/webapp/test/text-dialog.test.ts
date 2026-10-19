@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { lineStartOffset } from '../src/text-panel.js';
+import { lineStartOffset } from '../src/text-dialog.js';
 
-describe('lineStartOffset (diagnostics jump to a line)', () => {
+describe('lineStartOffset (a diagnostic jumps to its line)', () => {
   const text = 'title A\ncomponent B [0.5, 0.5]\nB -> C';
 
   it('finds the start of each line', () => {

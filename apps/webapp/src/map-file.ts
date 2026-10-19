@@ -110,15 +110,3 @@ export function describeWarning(warning: WarningLike): WarningRow {
     ...(warning.source !== undefined ? { source: warning.source } : {}),
   };
 }
-
-/**
- * The 1-based line holding `source` in `text`, if any. The map text is regenerated on export (lines
- * that could not be read move to the end), so a warning's line in the imported text may point
- * elsewhere in it.
- */
-export function lineOfSource(text: string, source: string | undefined): number | undefined {
-  const wanted = source?.trim();
-  if (!wanted) return undefined;
-  const index = text.split('\n').findIndex((line) => line.trim() === wanted);
-  return index === -1 ? undefined : index + 1;
-}
