@@ -1,34 +1,20 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { CHROME_VARS, DARK_MAP_AXIS_TEXT, DARK_MAP_VARS, MIRAGON } from '../src/theme/palette.js';
+import { MIRAGON } from '../src/theme/palette.js';
 import { ATTITUDE_COLORS, COLORS, FONT, NOTE_COLORS } from '../src/draw/styles.js';
 
 /**
- * Drift guard: `assets/wardley.css` hand-mirrors the `--wardley-*` chrome tokens declared once in
- * `theme/palette.ts`. This test fails the moment the CSS and the TS source of truth diverge, so the
- * "keep these in sync" contract is enforced instead of hoped for. See the Miragon design system
- * (the `miragon-brand:modeler-tool-design` skill; CLAUDE.md § "Design system").
+ * Drift guard: `assets/wardley.css` reads the design-system roles only, and `MIRAGON` mirrors the
+ * design-system tokens vendored in `theme/`. This test fails the moment the CSS declares a colour
+ * of its own, the TS source of truth drifts or a partial re-copy of the vendored files diverges.
+ * See the Miragon design system (the `miragon-brand:modeler-tool-design` skill; CLAUDE.md
+ * § "Design system").
  */
 const css = readFileSync(
   fileURLToPath(new URL('../src/assets/wardley.css', import.meta.url)),
   'utf8',
 );
-
-/**
- * Pull `--name: value;` declarations out of the first CSS rule whose selector list contains
- * `selector` (tolerates combined lists like `a, b { … }`; assumes flat, un-nested token blocks).
- */
-function readVars(selector: string): Record<string, string> {
-  const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const block = new RegExp(`${escaped}[^{}]*\\{([^}]*)\\}`).exec(css);
-  if (!block) throw new Error(`selector not found in wardley.css: ${selector}`);
-  const vars: Record<string, string> = {};
-  for (const m of block[1]!.matchAll(/(--[\w-]+)\s*:\s*([^;]+);/g)) {
-    vars[m[1]!] = norm(m[2]!);
-  }
-  return vars;
-}
 
 /**
  * Compare colours by meaning, not bytes: ignore hex case and `rgba(…)` whitespace (Prettier
@@ -38,19 +24,78 @@ function norm(value: string): string {
   return value.trim().toLowerCase().replace(/\s+/g, '');
 }
 
-describe('theme.sync — wardley.css mirrors theme/palette.ts', () => {
-  it(':root declares every chrome token with the source-of-truth value', () => {
-    const root = readVars(':root');
-    for (const [name, value] of Object.entries(CHROME_VARS)) {
-      expect(root[name], `${name} in :root`).toBe(norm(value));
+function escapeForRegExp(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/** Every selector of every rule (the text in front of a `{`, split at the commas). */
+function ruleSelectors(source: string): string[] {
+  return [...withoutComments(source).matchAll(/([^{};]+)\{/g)].flatMap((match) =>
+    match[1]!.split(',').map((selector) => selector.trim().replace(/\s+/g, ' ')),
+  );
+}
+
+/** The declarations of the first rule whose selector list ends with `selector`. */
+function ruleBody(selector: string): string {
+  const rule = new RegExp(`${escapeForRegExp(selector)}\\s*\\{([^}]*)\\}`).exec(
+    withoutComments(css),
+  );
+  return rule?.[1] ?? '';
+}
+
+describe('theme.sync — wardley.css takes every colour from the roles', () => {
+  it('declares no colour literal: no hex, rgb() or hsl() value', () => {
+    expect(withoutComments(css)).not.toMatch(/#[0-9a-f]{3,8}\b|rgba?\(|hsla?\(/i);
+  });
+
+  it('reads only roles and mode-independent tokens, never a fixed palette colour', () => {
+    const tokens = [...withoutComments(css).matchAll(/var\((--[\w-]+)/g)].map((m) => m[1]!);
+    expect(tokens.length).toBeGreaterThan(20);
+    for (const token of tokens) {
+      expect(token).toMatch(/^--cd-(ui-[\w-]+|radius-\w+|shadow-\d|ease(-out)?|motion-\w+)$/);
     }
   });
 
-  it('the `style dark` map directive declares its tokens with the source-of-truth value', () => {
-    /* The per-document `style dark` directive is the only dark surface (no app-level dark mode). */
-    const dark = readVars(`.wardley-container.wardley-dark`);
-    for (const [name, value] of Object.entries(DARK_MAP_VARS)) {
-      expect(dark[name], `${name} in .wardley-dark`).toBe(norm(value));
+  it('never renders the DSL `style` directive (guide §10.7: no navy surround)', () => {
+    expect(
+      ruleSelectors(css).filter((selector) => /wardley-(dark|colour|handwritten)/.test(selector)),
+    ).toEqual([]);
+    expect(withoutComments(css)).not.toMatch(/--wardley-/);
+  });
+
+  it('draws the dot grid in --cd-ui-linie at 1px (guide §10.1)', () => {
+    expect(ruleBody('.wardley-container')).toMatch(
+      /background-image:\s*radial-gradient\(var\(--cd-ui-linie\) 1px, transparent 1px\);/,
+    );
+    expect(ruleBody('.wardley-container')).toMatch(/background-color:\s*var\(--cd-ui-grund\);/);
+  });
+
+  it('marks hover and selection by the outline only, never by a filter (guide §10.4)', () => {
+    expect(withoutComments(css)).not.toMatch(/brightness\(/);
+    expect(ruleSelectors(css)).toContain('.wardley-container .djs-shape.hover > .djs-outline');
+  });
+
+  it('keeps its persistent canvas overlays at the editor layer, below the palette (guide §5.13)', () => {
+    const zIndexOf = (selector: string) => Number(/z-index:\s*(\d+)/.exec(ruleBody(selector))?.[1]);
+    expect(zIndexOf(".djs-palette.wardley-palette:where(:not([data-chrome='palette']))")).toBe(110);
+    for (const overlay of [
+      '.wardley-container .wardley-label-input',
+      '.wardley-container .wardley-label-caption',
+      '.wardley-container .wardley-map-resize-badge',
+    ]) {
+      expect(zIndexOf(overlay), overlay).toBeLessThanOrEqual(100);
+    }
+  });
+
+  it('scopes every rule of its own palette away from the shell skin', () => {
+    const paletteSelectors = ruleSelectors(css).filter((selector) =>
+      /\.djs-palette(?![\w-])/.test(selector),
+    );
+    expect(paletteSelectors.length).toBeGreaterThan(5);
+    for (const selector of paletteSelectors) {
+      expect(selector).toMatch(
+        /^\.djs-palette(\.wardley-palette)?:where\(:not\(\[data-chrome='palette'\]\)\)/,
+      );
     }
   });
 });
@@ -202,8 +247,6 @@ describe('theme.sync — MIRAGON mirrors the vendored design-system tokens', () 
     expect(COLORS.grid).toBe(MIRAGON.linie);
     expect(COLORS.axisText).toBe(MIRAGON.textLeise);
     expect(COLORS.inkSoft).toBe(MIRAGON.textLeise);
-    expect(CHROME_VARS['--wardley-ink-soft']).toBe(MIRAGON.textLeise);
-    expect(CHROME_VARS['--wardley-border']).toBe(MIRAGON.linie);
   });
 
   it('text colours reach 4.5:1 and structural strokes 3:1 on the plot and the paper', () => {
@@ -214,16 +257,6 @@ describe('theme.sync — MIRAGON mirrors the vendored design-system tokens', () 
       expect(contrast(COLORS.dependency, background)).toBeGreaterThanOrEqual(3);
       expect(contrast(COLORS.axis, background)).toBeGreaterThanOrEqual(3);
     }
-    expect(contrast(DARK_MAP_AXIS_TEXT, MIRAGON.navy)).toBeGreaterThanOrEqual(4.5);
-  });
-
-  it('the `style dark` map lifts the margin axis texts with a scoped !important override', () => {
-    const rule =
-      /\.wardley-container\.wardley-dark\s+\.layer-wardley-axes\s+\.wardley-axis-text\s*\{([^}]*)\}/.exec(
-        css,
-      );
-    expect(rule, 'dark axis-text override in wardley.css').not.toBeNull();
-    expect(norm(rule![1]!)).toBe(`fill:${norm(DARK_MAP_AXIS_TEXT)}!important;`);
   });
 
   it('keeps the notation status colours that 1.13.0 brightened: saved maps and exports keep theirs', () => {

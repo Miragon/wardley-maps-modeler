@@ -136,20 +136,12 @@ export abstract class WardleyBaseViewer {
     diagram.get<Dragging>('dragging', false)?.cancel(false);
     importer.clear();
     const warnings = importer.import(map);
-    this._applyStyleClass(map.config.style);
     // Discard the PREVIOUS map's undo history (concept doc §5.6): undo on orphaned
     // elements would otherwise crash or insert zombie elements into the new map.
     // The read-only Viewer has no command stack.
     diagram.get<CommandStack>('commandStack', false)?.clear();
     eventBus.fire('import.done', { warnings });
     return { warnings };
-  }
-
-  /** DSL `style` directive as a CSS class on the container (`wardley-dark` etc., concept §8.1). */
-  private _applyStyleClass(style?: string): void {
-    const cls = this._container.classList;
-    for (const s of ['wardley', 'handwritten', 'colour', 'dark']) cls.remove(`wardley-${s}`);
-    if (style && style !== 'wardley') cls.add(`wardley-${style}`);
   }
 
   /** Load OWM DSL text (internally parse -> importMap). Parser findings land in the warnings. */

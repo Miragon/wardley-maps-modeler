@@ -298,20 +298,22 @@ describe('settings popup', () => {
 });
 
 describe('hover and selection emphasis', () => {
-  it('darkens shapes but never the label text (no grey halo smudge)', async () => {
+  it('shows the dashed interaction outline on hover and keeps the colours (guide §10.4)', async () => {
     const target = mount();
     await target.importDSL(TEA_SHOP);
     const kettle = findByLabel(target, 'Kettle');
     const canvas = target.get<Canvas>('canvas');
-    canvas.addMarker(kettle, 'hover');
     const gfx = canvas.getGraphics(kettle);
-    const visual = gfx.querySelector('.djs-visual')!;
-    const text = visual.querySelector('text')!;
-    const circle = visual.querySelector('circle')!;
-    expect(getComputedStyle(text).filter).toBe('none');
-    expect(getComputedStyle(visual).filter).toBe('none');
-    expect(getComputedStyle(circle).filter).toContain('brightness');
-    expect(getComputedStyle(circle).filter).not.toContain('saturate');
+    // diagram-js creates the outline lazily, on the first hover or selection.
+    const outline = target
+      .get<{ createOutline(element: unknown): SVGElement }>('outline')
+      .createOutline(kettle);
+    expect(getComputedStyle(outline).visibility).toBe('hidden');
+    canvas.addMarker(kettle, 'hover');
+    expect(getComputedStyle(outline).visibility).toBe('visible');
+    expect(getComputedStyle(outline).stroke).toBe('rgb(51, 93, 229)');
+    const circle = gfx.querySelector('.djs-visual circle')!;
+    expect(getComputedStyle(circle).filter).toBe('none');
   });
 
   it('marks a selected connection with a darker, thicker line', async () => {

@@ -6,6 +6,11 @@
    contrast border. Layout mirrors the webapp: menu top left, palette top centre, zoom bottom right. */
 
 :root {
+  /* The renderer's chrome reads the design-system roles now; this chrome keeps its names for them. */
+  --wardley-surface: var(--cd-ui-flaeche-hoch);
+  --wardley-ink: var(--cd-ui-text);
+  --wardley-ink-soft: var(--cd-ui-text-leise);
+  --wardley-border: var(--cd-ui-linie);
   /* Opaque blue tints like the webapp chrome (design system: hover blue), never translucent. */
   --chrome-hover: color-mix(in srgb, var(--wardley-surface) 88%, var(--cd-blau));
   --chrome-pressed: color-mix(in srgb, var(--wardley-surface) 80%, var(--cd-blau));
