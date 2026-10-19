@@ -9,7 +9,7 @@ import {
   SHOW_SOURCE_COMMAND,
 } from '../src/commands.js';
 import { isWebviewCommand, WEBVIEW_COMMANDS } from '../src/protocol.js';
-import { EMPTY_MAP, EXAMPLE_MAP } from '../src/extension.js';
+import { EMPTY_MAP, EXAMPLE_MAP } from '../src/examples.js';
 import { asTextDocument, fakeContext, fakeDocument, fakeToken, fakeWebviewPanel } from './fakes.js';
 
 const appRoot = new URL('../', import.meta.url);
