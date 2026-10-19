@@ -82,7 +82,7 @@ export type {
   LabelDeduplicatedEvent,
 } from './label-editing/WardleyLabelEditing.js';
 export { restoreEditorState, setAsideEditorState } from './editor-state.js';
-export type { EditorState } from './editor-state.js';
+export type { EditorState, RestoreOptions } from './editor-state.js';
 export { wardleyKeyboardModule } from './keyboard/index.js';
 export type { WardleyKeyboardConfig } from './keyboard/WardleyKeyboard.js';
 export { wardleyEvolveModule, WardleyEvolveDragging } from './evolve/index.js';
