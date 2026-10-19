@@ -9,8 +9,9 @@ a web app and a VS Code extension.
 Workspaces are declared in the root `package.json` (`workspaces` array, listed in topological
 build order). **All** versions are pinned to exact values inline in each package's `package.json`
 (`.npmrc` sets `save-exact=true`) — including internal `@miragon/wardley-*` deps, which pin to the
-**current shared version** (e.g. `0.2.1`; npm links them to the local workspace because the local
-version satisfies the pin). Exact pinning is enforced in CI by
+**current version of that workspace package** (e.g. `"@miragon/wardley-dsl": "0.6.0"`; npm links them
+to the local workspace because the local version satisfies the pin, and the release PR bumps them).
+Exact pinning is enforced in CI by
 [`miragon/pin-npm-dependencies`](https://github.com/Miragon/pin-npm-dependencies) (the `pin-check`
 job).
 
@@ -68,28 +69,42 @@ Everything is managed via **Conventional Commits** — primarily `feat`, `fix`, 
 
 ## Releases
 
-One shared version for the whole monorepo, one tag (`vX.Y.Z`), one GitHub release, one root
-[`CHANGELOG.md`](CHANGELOG.md) — driven by [release-please](https://github.com/googleapis/release-please)
-on push to `main` ([`.github/workflows/release-please.yml`](.github/workflows/release-please.yml)).
-The config ([`release-please-config.json`](release-please-config.json)) uses a **single root
-component** (`"."`, `include-component-in-tag: false`); its `extra-files` list bumps `$.version` in
-every sub-package's `package.json` **and** every internal `@miragon/wardley-*` dependency reference,
-keeping all versions in lockstep. Merging the release PR tags the repo and publishes the four
-`packages/*` libraries to npm and the VS Code extension to the Marketplace.
+Every package is released on its own, driven by
+[release-please](https://github.com/googleapis/release-please) on push to `main`
+([`.github/workflows/release-please.yml`](.github/workflows/release-please.yml)). The config
+([`release-please-config.json`](release-please-config.json)) makes each workspace a **component**
+of its own (`schema-model`, `dsl`, `transforms`, `renderer`, `vscode`, `webapp`), and
+[`.release-please-manifest.json`](.release-please-manifest.json) holds each one's current version.
+All pending releases share one release PR (`separate-pull-requests: false`).
 
-**Adding a new internal dependency edge** (`@miragon/wardley-*` referenced by another package)
-requires a new `extra-files` entry for that `$.dependencies['@miragon/wardley-…']` path, or the
-reference will not be bumped on release and will go stale. Likewise add `$.version` (and any internal
-dep) entries when adding a whole new package.
+- **What gets bumped:** each component whose directory a commit touches. `feat` bumps the minor and
+  `fix` the patch; while a version is `0.x`, a breaking change bumps the minor as well
+  (`bump-minor-pre-major`). `chore`, `ci`, `docs`, `test` and `refactor` commits release nothing.
+- **Internal dependencies:** the `node-workspace` plugin bumps every `@miragon/wardley-*` reference
+  (`dependencies`, and `peerDependencies` via `updatePeerDependencies`) to the new version and gives
+  each dependent a patch release with a "Dependencies" entry. A new internal dependency edge needs no
+  release config.
+- **Merging the release PR** tags each released component as `<component>-vX.Y.Z` (e.g.
+  `renderer-v0.7.0`, `vscode-v0.8.0`; `include-component-in-tag: true`), creates its GitHub release,
+  writes its entry to the component's own `CHANGELOG.md` (`packages/*/CHANGELOG.md`,
+  `apps/*/CHANGELOG.md`; edit them in the release PR before merging), publishes the released
+  `packages/*` libraries to npm, and the VS Code extension to the Marketplace and Open VSX. The web
+  app is not published; Netlify deploys `main` ([`netlify.toml`](netlify.toml)). A manual run with
+  `dry_run` builds, packs the libraries and packages the VSIX without releasing anything.
+- **A new package** needs an entry under `packages` in `release-please-config.json`, its version in
+  `.release-please-manifest.json`, and a publish job in `release-please.yml` if it ships.
+
+The root [`CHANGELOG.md`](CHANGELOG.md) is the history of the former shared version (up to `v0.5.0`)
+and is no longer written.
 
 ## Conventions
 
 - Keep core packages (`schema-model`, `dsl`, `transforms`) strictly DOM-free (P1, above).
 - The OWM-DSL round-trip must stay lossless; JSON serialization must be deterministic.
 - Pin `dependencies` and `devDependencies` to exact versions — no version ranges (`^`/`~`/`>=`/`*`),
-  internal workspace deps included (pinned to the current shared version, kept in sync by
-  release-please). CI-enforced via `miragon/pin-npm-dependencies` (which checks `dependencies` and
-  `devDependencies`, not `peerDependencies`). **`peerDependencies` are the exception: consumer-shared
+  internal workspace deps included (pinned to that package's current version, bumped by
+  release-please's `node-workspace` plugin). CI-enforced via `miragon/pin-npm-dependencies` (which
+  checks `dependencies` and `devDependencies`, not `peerDependencies`). **`peerDependencies` are the exception: consumer-shared
   runtime libs (`zod`, the `diagram-js`/`didi`/`tiny-svg` ecosystem) are declared as ranged peers so
   they dedupe against the consumer's copy instead of installing a second — duplicate `zod`/diagram-js
   instances break `instanceof`/schema identity and the DI injector. Each such peer is mirrored by an
