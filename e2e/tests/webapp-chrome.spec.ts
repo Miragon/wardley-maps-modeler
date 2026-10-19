@@ -408,6 +408,10 @@ test.describe('files', () => {
     await expect(
       toast(page, 'Imported with 2 warnings. Details under “2 problems” bottom left.'),
     ).toHaveAttribute('data-status', 'warning');
+    await expect(page.locator('[data-chrome="toasts"] .cd-shell-toast')).toHaveText([
+      /^Imported with 2 warnings/,
+      /^Map replaced/,
+    ]);
     const pill = page.locator('[data-chrome="problems"]');
     await expect(pill).toHaveText('2 problems');
 
