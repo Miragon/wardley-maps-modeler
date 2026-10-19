@@ -82,6 +82,15 @@ export type {
   LabelDeduplicatedEvent,
 } from './label-editing/WardleyLabelEditing.js';
 export { restoreEditorState, setAsideEditorState } from './editor-state.js';
+export {
+  WARDLEY_NOTATION,
+  createCollaborativeModeler,
+  createCollaborativeViewer,
+} from './collaborative/index.js';
+export type {
+  CollaborativeWardleyModeler,
+  CollaborativeWardleyOptions,
+} from './collaborative/index.js';
 export type { EditorState, RestoreOptions } from './editor-state.js';
 export { wardleyKeyboardModule } from './keyboard/index.js';
 export type { WardleyKeyboardConfig } from './keyboard/WardleyKeyboard.js';

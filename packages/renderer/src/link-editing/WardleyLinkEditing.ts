@@ -56,7 +56,7 @@ export default class WardleyLinkEditing {
     eventBus.on(['element.mousedown', 'drag.init', 'canvas.viewbox.changing'], () =>
       this.active?.commit(),
     );
-    eventBus.on('diagram.clear', () => this.cancel());
+    eventBus.on(['diagram.clear', 'diagram.destroy'], () => this.cancel());
   }
 
   /**

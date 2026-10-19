@@ -17,6 +17,7 @@ const EXTERNAL = [
   'clsx',
   '@miragon/wardley-schema-model',
   '@miragon/wardley-dsl',
+  '@miragon/modeler-api',
 ];
 
 export default defineConfig({
