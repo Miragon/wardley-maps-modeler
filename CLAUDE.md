@@ -37,12 +37,15 @@ import fails `npm run lint` and `npm run depcruise`.
 runs in the browser tests
 ([`conformance.browser.test.ts`](packages/renderer/test/browser/conformance.browser.test.ts)), and a
 skipped case fails the run. The VS Code webview mounts `@miragon/modeler-shell`
-([`apps/vscode/src/webview/main.ts`](apps/vscode/src/webview/main.ts)); the shell's conformance kit
-runs against it in the `vscode-webview` Playwright project (`e2e/tests/vscode/`).
+([`apps/vscode/src/webview/main.ts`](apps/vscode/src/webview/main.ts)), the web app mounts its web
+host ([`apps/webapp/src/main.ts`](apps/webapp/src/main.ts)); the shell's conformance kit runs
+against both, in the `vscode-webview` Playwright project (`e2e/tests/vscode/`) and in the `webapp`
+project (`e2e/tests/webapp-shell-conformance.spec.ts`).
 
 ## Commands
 
-- `npm run build` — all packages · `npm run build:webapp` · `npm run build:vscode`
+- `npm run build` — all packages · `npm run build:webapp` (then `npm run check:build -w apps/webapp`
+  checks the mode markup and licence comment it ships) · `npm run build:vscode`
 - `npm run dev:webapp` (alias: `npm run dev`) serves the webapp via [Portless](https://portless.sh)
   at a per-worktree `https://<branch>.wardley.localhost` URL (Portless-derived from the git worktree;
   config in [`apps/webapp/portless.json`](apps/webapp/portless.json); one-time `npx portless service
@@ -132,11 +135,12 @@ the skill to update. Reference implementation in this repo: tokens
 in-canvas chrome uses only `--cd-ui-*`/`--cd-shell-*` roles, no colour literals, overlays at most
 z-index 100) · canvas colours [`packages/renderer/src/draw/styles.ts`](packages/renderer/src/draw/styles.ts)
 · in-canvas chrome [`packages/renderer/src/assets/wardley.css`](packages/renderer/src/assets/wardley.css)
-· app chrome + toast `apps/webapp/src/{style.css,toast.ts,main.ts}` · VS Code webview: the chrome of
-`@miragon/modeler-shell` (light only, `WEBVIEW_THEMES` in
-[`apps/vscode/src/themes.ts`](apps/vscode/src/themes.ts); `style dark` round-trips but is never
-painted), its sizes checked by
-[`apps/vscode/test/tokens.sync.test.ts`](apps/vscode/test/tokens.sync.test.ts).
+· web app and VS Code webview: the chrome of `@miragon/modeler-shell` (light only: `THEMES` in
+[`apps/webapp/src/themes.ts`](apps/webapp/src/themes.ts) and `WEBVIEW_THEMES` in
+[`apps/vscode/src/themes.ts`](apps/vscode/src/themes.ts), kept equal by a unit test; `style dark`
+round-trips but is never painted), its sizes checked by
+[`apps/vscode/test/tokens.sync.test.ts`](apps/vscode/test/tokens.sync.test.ts); the web app's own
+content is the map-as-text dialogs ([`apps/webapp/src/style.css`](apps/webapp/src/style.css)).
 
 ## Code Style
 

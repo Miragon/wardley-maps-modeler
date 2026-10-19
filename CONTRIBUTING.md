@@ -53,7 +53,9 @@ not catch this).
 
 The Playwright config has two projects, each with its own dev server started for the run:
 
-- `webapp` — the demo web app (`apps/webapp`, Vite on `E2E_PORT`, default `5180`).
+- `webapp` — the demo web app (`apps/webapp`, Vite on `E2E_PORT`, default `5180`). It runs the
+  shell's conformance kit on the web host, the app's handlers behind the chrome and the modelling
+  interactions.
 - `vscode-webview` — the VS Code webview (`apps/vscode/src/webview/main.ts`) inside the VS Code
   stub of `@miragon/modeler-shell`, served by the test page in `e2e/webview/` (Vite on
   `E2E_WEBVIEW_PORT`, default `5190`). It runs the shell's conformance kit, the webview's side of
