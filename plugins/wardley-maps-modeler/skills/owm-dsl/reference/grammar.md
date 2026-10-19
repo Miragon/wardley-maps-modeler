@@ -672,7 +672,7 @@ no effect on the map, or part of it was dropped or changed.
 
 | Message                                                                       | Cause                                                                                                                                                                                                                                  |
 | ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Line could not be interpreted (kept losslessly in rawPassthrough)`           | a known keyword with unreadable content, see the list below                                                                                                                                                                            |
+| `Line not understood — kept as written`                                       | a known keyword with unreadable content, see the list below                                                                                                                                                                            |
 | `Unknown statement "<word>"`                                                  | the first word is no keyword and the line is no link: a typo (`compnent`), free text                                                                                                                                                   |
 | `Link needs a name on both sides`                                             | `A ->`, `-> B`                                                                                                                                                                                                                         |
 | `Flow +'<v>' has no direction — add ">", "<" or "<>"`                         | `A +'5' B`                                                                                                                                                                                                                             |
@@ -687,7 +687,7 @@ no effect on the map, or part of it was dropped or changed.
 | `Pipeline "X" has no range — not drawn; add [start, end] or child components` | a pipeline with neither range nor children                                                                                                                                                                                             |
 | `Block comment "/*" is never closed — the rest of the file is a comment`      | an unclosed `/*`                                                                                                                                                                                                                       |
 
-`Line could not be interpreted` causes:
+`Line not understood` causes:
 
 - `anchor`, `component`, `market`, `ecosystem`, `note`, `accelerator`, `deaccelerator` or `submap`
   without a readable `[vis, mat]` (missing, `1e-3`, `0,5`), or, except for notes, with an empty

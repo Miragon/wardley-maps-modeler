@@ -45,7 +45,7 @@ Then list:
 | **Need below the anchor**     | The anchor links straight to infrastructure ("Customer -> Database").                                                                                             | The need is the point of the map; skipping it hides why anything exists.      |
 | **Links point down**          | A dependency `A -> B` where B has a **higher** visibility than A.                                                                                                 | Either the link is reversed or a component sits at the wrong height.          |
 | **Dangling links**            | Diagnostic `Link: "X" not found` — typo, case mismatch, renamed component, a pipeline without range, `;` in the right-hand name (left-hand: `Unknown statement`). | The link **does not exist** on the canvas; the user thinks it does.           |
-| **Lines not understood**      | Diagnostics `Unknown statement "…"` and `Line could not be interpreted …`; any non-comment `rawPassthrough` entry.                                                | The user thinks these elements or links are on the map; they are not.         |
+| **Lines not understood**      | Diagnostics `Unknown statement "…"` and `Line not understood …`; any non-comment `rawPassthrough` entry.                                                          | The user thinks these elements or links are on the map; they are not.         |
 | **Duplicate names**           | Diagnostic `Duplicate name "X" — renamed to "X 2"; links bind to the first "X"`.                                                                                  | Every link to `X` reaches the first one; the second shows up as "X 2".        |
 | **Dangling evolve**           | Diagnostic `evolve: component "X" not found`.                                                                                                                     | The movement arrow is not drawn.                                              |
 | **Orphans**                   | A component in no link at all (pipeline children excepted).                                                                                                       | It serves no need — remove it or connect it.                                  |
@@ -60,9 +60,8 @@ Other diagnostics and what causes them:
   values instead of fractions. Swapped `[maturity, visibility]` pairs inside `0..1` raise **no**
   diagnostic: find them by reading — a user need low on the map, a commodity at the top, links
   pointing uphill.
-- `Line could not be interpreted (kept losslessly in rawPassthrough)` — syntax the modeler does not
-  know, e.g. the legacy pixel form `pioneers [0.9, 0.1] 120 30`. The line survives but draws
-  nothing.
+- `Line not understood — kept as written` — syntax the modeler does not know, e.g. the legacy
+  pixel form `pioneers [0.9, 0.1] 120 30`. The line survives but draws nothing.
 - `Ignored text after the coordinates: "…"` — words, an unknown or misspelt decorator
   (`(colour …)`, `(biuld)`), a `label [dx, dy]` on a note or pipeline, or a second tuple. The text
   is dropped, so the colour, method or wording the user meant is not on the map.
