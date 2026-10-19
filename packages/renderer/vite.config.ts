@@ -33,6 +33,8 @@ export default defineConfig({
     },
     rollupOptions: {
       external: EXTERNAL,
+      // The Lucide and Feather notices of the inlined icon geometry ship with the bundle.
+      output: { comments: { legal: true } },
     },
   },
   plugins: [

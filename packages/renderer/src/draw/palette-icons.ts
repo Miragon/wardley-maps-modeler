@@ -1,3 +1,7 @@
+/*! @miragon/wardley-renderer icon geometry: square-dashed-mouse-pointer, and spline drawn with a
+ * straight segment. Lucide (lucide-static 1.59.0) @license ISC
+ * Copyright (c) 2026 Lucide Icons and Contributors
+ * Full notice: README.md of @miragon/wardley-renderer */
 import { COLORS, ATTITUDE_COLORS, FONT } from './styles.js';
 import { ICON_FAST_FORWARD, ICON_FAST_REWIND, ICON_PERSON } from './icons.js';
 
