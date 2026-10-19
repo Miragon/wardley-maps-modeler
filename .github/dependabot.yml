@@ -23,10 +23,20 @@ updates:
           - 'version-update:semver-minor'
           - 'version-update:semver-major'
     groups:
+      # The shared modeler contract and chrome change what users see and what the release says
+      # (a 0.x minor of @miragon/modeler-shell breaks the chrome), so they come in a PR of their
+      # own that is never auto-merged (dependabot-automerge.yml) and land as
+      # `fix(deps): adopt modeler-shell x.y`, which release-please releases.
+      modeler-platform:
+        applies-to: version-updates
+        patterns:
+          - '@miragon/modeler-*'
       npm-minor-patch:
         applies-to: version-updates
         patterns:
           - '*'
+        exclude-patterns:
+          - '@miragon/modeler-*'
         update-types:
           - 'minor'
           - 'patch'

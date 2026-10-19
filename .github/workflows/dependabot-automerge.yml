@@ -1,4 +1,4 @@
-# Auto-merge Dependabot patch + minor updates; majors stay manual.
+# Auto-merge Dependabot patch + minor updates; majors and the shared modeler packages stay manual.
 name: Dependabot auto-merge
 
 on: pull_request
@@ -18,8 +18,13 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
+      # A chore(deps) merge is never released, and a 0.x minor of @miragon/modeler-shell is a
+      # breaking change of the chrome: those updates are adopted by hand.
       - name: Enable auto-merge for patch and minor updates
-        if: steps.meta.outputs.update-type == 'version-update:semver-patch' || steps.meta.outputs.update-type == 'version-update:semver-minor'
+        if: >-
+          !contains(steps.meta.outputs.dependency-names, '@miragon/modeler-') &&
+          (steps.meta.outputs.update-type == 'version-update:semver-patch' ||
+          steps.meta.outputs.update-type == 'version-update:semver-minor')
         run: |
           for i in 1 2 3 4 5; do
             gh pr merge --auto --squash "$PR_URL" && exit 0
