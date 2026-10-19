@@ -19,6 +19,7 @@ import type EvolutionGrid from '../evolution-grid/EvolutionGrid.js';
 import type WardleyDrawTool from '../draw-tool/WardleyDrawTool.js';
 import type WardleyLabelEditing from '../label-editing/WardleyLabelEditing.js';
 import type { FreeRect } from '../free-rect/index.js';
+import { isReadOnly } from '../read-only/index.js';
 import {
   isWardleyConnection,
   isWardleyShape,
@@ -235,7 +236,10 @@ export default class WardleyKeyboard {
       deferredPaste = undefined;
     };
 
+    // A locked canvas (an invalid file in an IDE) keeps selection, copy and the lasso.
+    const locked = () => isReadOnly(injector);
     const onModifierShortcut = (e: KeyboardEvent, key: string) => {
+      if (locked() && !['a', 'c'].includes(key)) return;
       if (key === 'z' || key === 'y') {
         if (!undoRedoEnabled) return;
         e.preventDefault();
@@ -263,6 +267,7 @@ export default class WardleyKeyboard {
 
     const onPlainKey = (e: KeyboardEvent, key: string) => {
       const toolKey = !e.altKey;
+      if (locked() && key !== 'escape' && key !== 'l') return;
       if (key === 'escape') {
         if (!escapeOwnedByOverlay && selection.get().length) selection.select(null);
       } else if (key === 'delete' || key === 'backspace') {

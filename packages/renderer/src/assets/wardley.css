@@ -513,3 +513,15 @@
 .wardley-container.wardley-label-dragging * {
   cursor: move !important;
 }
+
+/* Read-only canvas (an invalid file in an IDE, guide §13.5): no context pad, no handles, and
+   labels and evolve targets no longer offer a drag. */
+.wardley-container.wardley-read-only .djs-context-pad,
+.wardley-container.wardley-read-only .layer-wardley-map-resize,
+.wardley-container.wardley-read-only .layer-wardley-drawing-handles {
+  display: none;
+}
+.wardley-container.wardley-read-only .wardley-label-handle,
+.wardley-container.wardley-read-only .wardley-evolve-handle {
+  cursor: default;
+}

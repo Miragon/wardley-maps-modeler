@@ -1,4 +1,6 @@
 import type Canvas from 'diagram-js/lib/core/Canvas';
+import type { Injector } from 'didi';
+import { isReadOnly } from '../read-only/index.js';
 import type EventBus from 'diagram-js/lib/core/EventBus';
 import type ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
 import type Selection from 'diagram-js/lib/features/selection/Selection';
@@ -58,6 +60,7 @@ export default class WardleyLabelDragging {
     'wardleyModeling',
     'selection',
     'evolutionGrid',
+    'injector',
   ];
 
   private active: LabelDrag | null = null;
@@ -69,6 +72,7 @@ export default class WardleyLabelDragging {
     private readonly modeling: WardleyModeling,
     private readonly selection: Selection,
     private readonly grid: EvolutionGrid,
+    private readonly injector: Injector,
   ) {
     const container = canvas.getContainer();
     this.outerContainer().classList.add(ARMED_CLASS);
@@ -98,6 +102,7 @@ export default class WardleyLabelDragging {
 
   private readonly onMouseDown = (event: MouseEvent): void => {
     if (event.button !== 0 || this.outerContainer().classList.contains('wardley-draw-mode')) return;
+    if (isReadOnly(this.injector)) return;
     const target = this.labelTarget(event);
     if (!target) return;
     event.stopPropagation();
@@ -176,7 +181,7 @@ export default class WardleyLabelDragging {
   };
 
   private readonly onDoubleClick = (event: MouseEvent): void => {
-    if (!event.altKey) return;
+    if (!event.altKey || isReadOnly(this.injector)) return;
     const target = this.labelTarget(event);
     if (!target) return;
     event.stopPropagation();

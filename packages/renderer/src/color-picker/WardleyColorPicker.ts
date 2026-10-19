@@ -1,4 +1,6 @@
 import type Canvas from 'diagram-js/lib/core/Canvas';
+import type { Injector } from 'didi';
+import { isReadOnly } from '../read-only/index.js';
 import type EventBus from 'diagram-js/lib/core/EventBus';
 import type WardleyModeling from '../modeling/WardleyModeling.js';
 import type { WardleyShape } from '../model/di-types.js';
@@ -22,7 +24,7 @@ const GRID_STEPS: Record<string, number> = {
  * Enter/Space picks, Escape closes; focus then returns to the canvas.
  */
 export default class WardleyColorPicker {
-  static $inject = ['canvas', 'eventBus', 'wardleyModeling'];
+  static $inject = ['canvas', 'eventBus', 'wardleyModeling', 'injector'];
 
   private popover: HTMLElement | undefined;
 
@@ -41,6 +43,7 @@ export default class WardleyColorPicker {
     private readonly canvas: Canvas,
     eventBus: EventBus,
     private readonly modeling: WardleyModeling,
+    private readonly injector: Injector,
   ) {
     // Close on pan/zoom, drag or re-import (otherwise the popover ends up misplaced).
     eventBus.on(['canvas.viewbox.changing', 'drag.init', 'diagram.clear'], () => this.close());
@@ -49,6 +52,7 @@ export default class WardleyColorPicker {
   /** Opens the swatch grid for `shape` at the click position (viewport coordinates). */
   open(shape: WardleyShape, clientX: number, clientY: number): void {
     this.close();
+    if (isReadOnly(this.injector)) return;
     const container = this.canvas.getContainer();
     const rect = container.getBoundingClientRect();
 

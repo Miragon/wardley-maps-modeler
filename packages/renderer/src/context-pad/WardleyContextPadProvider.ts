@@ -26,6 +26,7 @@ import type EvolutionGrid from '../evolution-grid/EvolutionGrid.js';
 import type WardleyLinkEditing from '../link-editing/WardleyLinkEditing.js';
 import { canHaveLink, linkOf, safeLinkUrl } from '../link-editing/index.js';
 import { POPUP_PROVIDER_ID } from '../popup/index.js';
+import { isReadOnly } from '../read-only/index.js';
 import {
   iconMarkup,
   struckIconMarkup,
@@ -110,6 +111,7 @@ export default class WardleyContextPadProvider implements ContextPadProvider {
   }
 
   getContextPadEntries(element: Element): ContextPadEntries {
+    if (isReadOnly(this.injector)) return {};
     if (isWardleyConnection(element)) return this.connectionEntries(element);
     if (!isWardleyShape(element)) return {};
     const shape = element as WardleyShape;

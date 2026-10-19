@@ -1,4 +1,6 @@
 import { append as svgAppend, attr as svgAttr, create as svgCreate } from 'tiny-svg';
+import type { Injector } from 'didi';
+import { isReadOnly } from '../read-only/index.js';
 import type Canvas from 'diagram-js/lib/core/Canvas';
 import type EventBus from 'diagram-js/lib/core/EventBus';
 import type Dragging from 'diagram-js/lib/features/dragging/Dragging';
@@ -159,6 +161,7 @@ export default class MapResizeHandles {
     'dragging',
     'wardleyMapProjection',
     'wardleyModeling',
+    'injector',
   ];
 
   private readonly layer: SVGGElement;
@@ -173,6 +176,7 @@ export default class MapResizeHandles {
     private readonly dragging: Dragging,
     private readonly projection: MapProjection,
     private readonly modeling: MapResizeModeling,
+    private readonly injector: Injector,
   ) {
     this.layer = svgCreate('g', { class: 'wardley-map-resize' }) as SVGGElement;
     svgAppend(canvas.getLayer(LAYER_NAME, LAYER_INDEX), this.layer);
@@ -184,6 +188,7 @@ export default class MapResizeHandles {
     this.handles.xy.group.addEventListener('dblclick', (event) => {
       event.stopPropagation();
       event.preventDefault();
+      if (isReadOnly(this.injector)) return;
       this.modeling.resizeMap(undefined);
     });
 
@@ -203,6 +208,7 @@ export default class MapResizeHandles {
 
   /** Starts a resize drag on `axis` (also usable programmatically, e.g. from tests). */
   start(event: MouseEvent, axis: ResizeAxis): void {
+    if (isReadOnly(this.injector)) return;
     const context: MapResizeContext = { axis, startSize: this.grid.getPlotSize() };
     this.dragging.init(event, MAP_RESIZE_PREFIX, {
       cursor: CURSORS[axis],

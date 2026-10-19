@@ -37,6 +37,7 @@ import { ResizeAwareAutoScroll, mapResizeModule } from './map-resize/index.js';
 import { linkEditingModule } from './link-editing/index.js';
 import { wardleyLabelDragModule } from './label-drag/index.js';
 import { canvasAccessibilityModule } from './a11y/index.js';
+import { readOnlyModule } from './read-only/index.js';
 
 /** Replaces diagram-js AutoScroll: no scrolling under a map-resize drag. */
 const resizeAwareAutoScrollModule: ModuleDeclaration = {
@@ -86,6 +87,7 @@ export class Modeler extends NavigatedViewer {
       linkEditingModule,
       canvasAccessibilityModule,
       wardleyLabelDragModule,
+      readOnlyModule,
     ];
   }
 
