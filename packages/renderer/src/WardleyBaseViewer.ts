@@ -13,6 +13,7 @@ import {
   presetIdForSize,
   validateMap,
   type MapConfig,
+  type MapSize,
   type MapSizePresetId,
   type WardleyMap,
 } from '@miragon/wardley-schema-model';
@@ -27,6 +28,8 @@ import {
   configWithSize,
   wardleyRootOf,
   withoutRawSizeStatements,
+  type default as MapProjection,
+  type ProjectionSnapshot,
 } from './map-resize/MapProjection.js';
 import type WardleyModeling from './modeling/WardleyModeling.js';
 import type { FreeRectInsets } from './free-rect/index.js';
@@ -75,6 +78,11 @@ export interface SetEvolutionLabelsOptions {
   transient?: boolean;
 }
 
+export interface SetMapSizeOptions {
+  /** Live preview: drawn at once, without an undo step (commit later without this flag). */
+  transient?: boolean;
+}
+
 type EvolutionLabels = readonly [string, string, string, string];
 
 /** diagram-js names its implicit roots so; an element of that id would replace the plane. */
@@ -108,6 +116,8 @@ export abstract class WardleyBaseViewer {
   private readonly _options: WardleyViewerOptions;
   /** Labels before the first transient preview, so the commit becomes one undo step from there. */
   private _labelsBeforePreview: { labels: EvolutionLabels | undefined } | undefined;
+  /** The map before the first transient size preview, put back before the size is committed. */
+  private _sizePreview: { snapshot: ProjectionSnapshot; model: WardleyMap } | undefined;
 
   constructor(options: WardleyViewerOptions = {}) {
     this._options = options;
@@ -163,6 +173,7 @@ export abstract class WardleyBaseViewer {
     // Kept to put back if rendering fails half-way: a blank canvas is no way to fail an import.
     const previous = this._rootBusinessObject() ? this.exportMap() : undefined;
     this._labelsBeforePreview = undefined;
+    this._sizePreview = undefined;
     // A running drag (move, connect, create, resize) holds the previous map's shapes. Released after
     // the import, its command would fail half-way and leave the command stack stuck, so no later
     // edit would fire commandStack.changed again (VS Code: external edit during a drag).
@@ -216,26 +227,51 @@ export abstract class WardleyBaseViewer {
    * PLOT_MIN..PLOT_MAX); non-finite input throws a RangeError before anything changes. In the
    * Modeler this is one undoable step that re-projects the shapes in place (selection, viewport and
    * history survive); the read-only viewers re-import. An explicit size line is written even for
-   * the default size — only `resetMapSize` removes it.
+   * the default size — only `resetMapSize` removes it. In the Modeler `{ transient: true }` shows
+   * a live preview without an undo step, and the next call without it commits ONE step from the
+   * size before the preview (none when the size ends where the preview started), like
+   * `setEvolutionLabels`.
    */
-  async setMapSize(width: number, height: number): Promise<{ warnings: ImportWarning[] }> {
-    const size = normalizeMapSize(width, height);
-    const modeling = this._wardleyModeling();
-    if (modeling) {
-      modeling.resizeMap(size);
-      return { warnings: [] };
-    }
-    return this._reimportWithSize(size);
+  async setMapSize(
+    width: number,
+    height: number,
+    options: SetMapSizeOptions = {},
+  ): Promise<{ warnings: ImportWarning[] }> {
+    return this._resizeMap(normalizeMapSize(width, height), options);
   }
 
   /** Removes the `size` line: the map is drawn at the default plot size again. */
-  async resetMapSize(): Promise<{ warnings: ImportWarning[] }> {
+  async resetMapSize(options: SetMapSizeOptions = {}): Promise<{ warnings: ImportWarning[] }> {
+    return this._resizeMap(undefined, options);
+  }
+
+  private async _resizeMap(
+    size: MapSize | undefined,
+    options: SetMapSizeOptions,
+  ): Promise<{ warnings: ImportWarning[] }> {
     const modeling = this._wardleyModeling();
-    if (modeling) {
-      modeling.resizeMap(undefined);
+    if (!modeling) return this._reimportWithSize(size);
+    const projection = this.get<MapProjection>('wardleyMapProjection');
+    if (options.transient) {
+      if (!this._sizePreview) {
+        const snapshot = projection.snapshot();
+        if (!snapshot) return { warnings: [] };
+        this._sizePreview = { snapshot, model: projection.captureModel() };
+      }
+      const { snapshot, model } = this._sizePreview;
+      const config = configWithSize(snapshot.businessObject.config, size);
+      projection.redraw(
+        projection.apply({ ...snapshot.businessObject, config }, model, { transient: true }),
+      );
       return { warnings: [] };
     }
-    return this._reimportWithSize(undefined);
+    if (this._sizePreview) {
+      // The command must take the size before the preview as its old state.
+      projection.redraw(projection.restore(this._sizePreview.snapshot, { transient: true }));
+      this._sizePreview = undefined;
+    }
+    modeling.resizeMap(size);
+    return { warnings: [] };
   }
 
   getMapSize(): MapSizeInfo {

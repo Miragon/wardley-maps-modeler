@@ -187,6 +187,39 @@ Customer -> Product
     expect(patchDSL(source, modeler.exportMap())).toBe(source);
   });
 
+  describe('a transient size preview (the map size popover)', () => {
+    it('draws the size at once and commits one step from the size before the preview', async () => {
+      const grid = modeler.get<EvolutionGrid>('evolutionGrid');
+      const before = modeler.exportDSL();
+      await modeler.setMapSize(1440, 900, { transient: true });
+      await modeler.setMapSize(1500, 950, { transient: true });
+      expect(grid.getPlotSize()).toEqual({ width: 1500, height: 950 });
+      expect(modeler.canUndo()).toBe(false);
+
+      await modeler.setMapSize(1500, 950);
+      expect(modeler.exportDSL()).toContain('size [1500, 950]');
+      modeler.undo();
+      expect(modeler.exportDSL()).toBe(before);
+      expect(modeler.canUndo()).toBe(false);
+    });
+
+    it('adds no step when the preview ends where it started', async () => {
+      const before = modeler.exportDSL();
+      await modeler.setMapSize(1440, 900, { transient: true });
+      await modeler.resetMapSize();
+      expect(modeler.exportDSL()).toBe(before);
+      expect(modeler.canUndo()).toBe(false);
+    });
+
+    it('is dropped by an import', async () => {
+      await modeler.setMapSize(1440, 900, { transient: true });
+      await modeler.importDSL('title Next\ncomponent A [0.5, 0.5]');
+      await modeler.resetMapSize();
+      expect(modeler.exportDSL()).not.toContain('size [');
+      expect(modeler.canUndo()).toBe(false);
+    });
+  });
+
   it('leaves the view where it is when the smaller plot stays fully visible', async () => {
     const canvas = modeler.get<Canvas>('canvas');
     const grid = modeler.get<EvolutionGrid>('evolutionGrid');

@@ -9,6 +9,7 @@ export type {
   EventCallback,
   MapSizeInfo,
   SetEvolutionLabelsOptions,
+  SetMapSizeOptions,
   WardleyConfigChangedEvent,
 } from './WardleyBaseViewer.js';
 
