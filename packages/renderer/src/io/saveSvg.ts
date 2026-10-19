@@ -15,8 +15,8 @@ export interface SvgBounds {
  * area is used. Independent of the current zoom/scroll.
  */
 export function saveSVG(canvas: Canvas, bounds?: SvgBounds): { svg: string } {
-  const container = canvas.getContainer();
-  const source = container.querySelector('svg');
+  // The canvas's own <svg> child: a host chrome may move a palette with <svg> icons in front of it.
+  const source = canvas.getContainer().querySelector(':scope > svg');
   if (!source) throw new Error('No SVG found in the canvas container.');
 
   const clone = source.cloneNode(true) as SVGSVGElement;
@@ -39,8 +39,9 @@ export function saveSVG(canvas: Canvas, bounds?: SvgBounds): { svg: string } {
     width: PLOT.marginLeft + PLOT.width + PLOT.marginRight,
     height: PLOT.marginTop + PLOT.height + PLOT.marginBottom,
   };
-  // The editor's canvas semantics (an interactive application) do not apply to a static image.
-  for (const attribute of ['role', 'aria-roledescription', 'aria-label']) {
+  // The editor's canvas semantics (an interactive, focusable application) do not apply to a
+  // static image.
+  for (const attribute of ['tabindex', 'role', 'aria-roledescription', 'aria-label']) {
     clone.removeAttribute(attribute);
   }
   clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');

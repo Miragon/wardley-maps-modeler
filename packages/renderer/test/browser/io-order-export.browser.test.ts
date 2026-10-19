@@ -200,6 +200,29 @@ component Content Delivery Network Service [0.5, 0.97]`);
     });
   });
 
+  describe('the exported svg element', () => {
+    it('is the canvas itself, also when a host chrome puts icons in front of it', async () => {
+      await modeler.importDSL(`title Chrome
+component Platform [0.5, 0.5]`);
+      const canvasContainer = modeler.get<Canvas>('canvas').getContainer();
+      const palette = document.createElement('div');
+      palette.innerHTML = '<svg class="palette-icon" width="20" height="20"></svg>';
+      canvasContainer.insertBefore(palette, canvasContainer.firstChild);
+
+      const root = new DOMParser().parseFromString(
+        (await modeler.saveSVG()).svg,
+        'image/svg+xml',
+      ).documentElement;
+
+      expect(root.getAttribute('class') ?? '').not.toContain('palette-icon');
+      expect(root.querySelector('.layer-wardley-axes')).not.toBeNull();
+      for (const attribute of ['tabindex', 'role', 'aria-label', 'aria-roledescription']) {
+        expect(root.hasAttribute(attribute), attribute).toBe(false);
+      }
+      palette.remove();
+    });
+  });
+
   describe('selection in the export', () => {
     it('exports the same picture whether or not something is selected or hovered', async () => {
       await modeler.importDSL(`title Selection
