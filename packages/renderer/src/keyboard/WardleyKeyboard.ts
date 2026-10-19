@@ -18,6 +18,7 @@ import type WardleyElementFactory from '../model/WardleyElementFactory.js';
 import type EvolutionGrid from '../evolution-grid/EvolutionGrid.js';
 import type WardleyDrawTool from '../draw-tool/WardleyDrawTool.js';
 import type WardleyLabelEditing from '../label-editing/WardleyLabelEditing.js';
+import type { FreeRect } from '../free-rect/index.js';
 import {
   isWardleyConnection,
   isWardleyShape,
@@ -106,9 +107,15 @@ function isButtonSafeKey(event: KeyboardEvent): boolean {
  * Decides whether a keydown belongs to the host page rather than the canvas. Canvas shortcuts
  * only run when focus is on the canvas, the palette, or nowhere in particular (body) — so a
  * focused host button or select never deletes or nudges map elements. A focused plain button
- * (zoom, share, menu) still lets undo/redo and the single-key tools through.
+ * (zoom, share, menu) still lets undo/redo and the single-key tools through, unless the host's
+ * chrome owns every key aimed at it (`canvasTargetsOnly`, the Miragon modeler shell: its zoom
+ * panel's buttons do not stop the keys they leave alone).
  */
-export function shouldIgnoreKeyEvent(event: KeyboardEvent, canvasContainer: HTMLElement): boolean {
+export function shouldIgnoreKeyEvent(
+  event: KeyboardEvent,
+  canvasContainer: HTMLElement,
+  canvasTargetsOnly = false,
+): boolean {
   if (event.defaultPrevented) return true;
   const target = event.target;
   if (!(target instanceof globalThis.Element)) return false;
@@ -116,6 +123,7 @@ export function shouldIgnoreKeyEvent(event: KeyboardEvent, canvasContainer: HTML
   if (target.closest(OWN_KEYS_SELECTOR)) return true;
   if (target === document.body || target === document.documentElement) return false;
   if (canvasContainer.contains(target)) return false;
+  if (canvasTargetsOnly) return true;
   if (target.closest('.djs-palette')) return false;
   if (target.closest('button, [role="button"]') && isButtonSafeKey(event)) return false;
   return true;
@@ -147,6 +155,7 @@ export default class WardleyKeyboard {
   private pointerOverCanvas = false;
   private readonly labelEditing: WardleyLabelEditing | null;
   private readonly grid: EvolutionGrid | null;
+  private readonly freeRect: FreeRect | null;
 
   constructor(
     private readonly canvas: Canvas,
@@ -173,6 +182,8 @@ export default class WardleyKeyboard {
     this.labelEditing =
       injector.get<WardleyLabelEditing | null>('wardleyLabelEditing', false) ?? null;
     this.grid = injector.get<EvolutionGrid | null>('evolutionGrid', false) ?? null;
+    this.freeRect = injector.get<FreeRect | null>('wardleyFreeRect', false) ?? null;
+    const canvasTargetsOnly = !!injector.get('modelerShell', false);
 
     // getLastMoveEvent() never returns null (it fabricates an event at 0,0), so whether the
     // pointer really is over the canvas has to be tracked here.
@@ -282,7 +293,7 @@ export default class WardleyKeyboard {
     // Bound on the DOCUMENT (not the canvas container): single-key tools must work without the
     // canvas having focus first — same trade-off bpmn-js makes for its keyboard.
     const onKeydown = (e: KeyboardEvent) => {
-      if (shouldIgnoreKeyEvent(e, container)) return;
+      if (shouldIgnoreKeyEvent(e, container, canvasTargetsOnly)) return;
       const key = e.key.toLowerCase();
       if (e.ctrlKey || e.metaKey) onModifierShortcut(e, key);
       else onPlainKey(e, key);
@@ -309,8 +320,8 @@ export default class WardleyKeyboard {
 
   /**
    * With the pointer over the canvas the new node attaches to it (like palette create; placing it
-   * opens the name editor). Without one — keyboard only — it lands at the visible plot centre and
-   * the name editor opens right away.
+   * opens the name editor). Without one — keyboard only — it lands in the centre of the free
+   * rectangle (within the plot) and the name editor opens right away.
    */
   private quickCreate(type: WardleyShapeType, label: string): void {
     const shape = this.factory.createNew(type, label) as unknown as Shape;
@@ -342,7 +353,10 @@ export default class WardleyKeyboard {
 
   private visiblePlotCenter(bounds: PlotBounds | null): { x: number; y: number } {
     const viewbox = this.canvas.viewbox();
-    const center = { x: viewbox.x + viewbox.width / 2, y: viewbox.y + viewbox.height / 2 };
+    const center = this.freeRect?.center() ?? {
+      x: viewbox.x + viewbox.width / 2,
+      y: viewbox.y + viewbox.height / 2,
+    };
     if (!bounds) return center;
     return {
       x: clamp(center.x, bounds.left, bounds.right),

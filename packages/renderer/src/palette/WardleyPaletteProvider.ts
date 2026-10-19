@@ -16,6 +16,7 @@ import type Selection from 'diagram-js/lib/features/selection/Selection';
 import type { Parent, Shape } from 'diagram-js/lib/model/Types';
 import type { Injector } from 'didi';
 import type EvolutionGrid from '../evolution-grid/EvolutionGrid.js';
+import type { FreeRect } from '../free-rect/index.js';
 import { isWardleyShape, type WardleyShape, type WardleyShapeType } from '../model/di-types.js';
 import { PALETTE_ICONS, attitudeIcon } from '../draw/palette-icons.js';
 
@@ -157,27 +158,37 @@ interface ToolSpec {
   icon: string;
 }
 
+// Names in sentence case, keys apart (guide §5.6): the chrome tooltip shows the key as a chip, and
+// the gestures (Shift+drag, how a drawing ends) are listed in the keyboard shortcuts.
 const LASSO_TOOL: ToolSpec = {
   key: 'lasso-tool',
-  title: 'Selection tool (or Shift+drag)',
+  title: 'Lasso',
   shortcut: 'L',
   icon: PALETTE_ICONS.lasso!,
 };
 
 const DRAW_TOOL: ToolSpec = {
   key: 'draw-tool',
-  title: 'Draw — click point by point, double-click/Enter finishes, click the start point to close',
+  title: 'Draw',
   icon: PALETTE_ICONS.draw!,
 };
 
 /** Leaves room so a keyboard-created shape is not clipped by the plot edge. */
 const PLOT_INSET = 24;
-/** Diagonal offset when the plot centre is already occupied by an earlier keyboard-created shape. */
+/** Diagonal step while the free centre is taken (guide §5.5). */
 const STACK_OFFSET = 24;
 const MAX_STACK_STEPS = 12;
 
 function escapeAttribute(value: string): string {
   return value.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+}
+
+/**
+ * Enter or Space on an entry arrives as a click without a pointer: the keyboard of the Miragon
+ * modeler shell dispatches it with `detail === 0`, every pointer click has 1 or more.
+ */
+function isKeyboardClick(event: Event): boolean {
+  return event.type === 'click' && (event as MouseEvent).detail === 0;
 }
 
 export default class WardleyPaletteProvider implements PaletteProvider {
@@ -190,8 +201,11 @@ export default class WardleyPaletteProvider implements PaletteProvider {
     'injector',
   ];
 
-  /** diagram-js >= 15.28 renders `title` + `shortcut` as a styled tooltip; older ones need `title`. */
-  private readonly hasStyledTooltip: boolean;
+  /**
+   * diagram-js >= 15.28 renders `title` + `shortcut` as a styled tooltip, and the Miragon modeler
+   * shell shows its chrome tooltip instead; only without either does an entry need a native title.
+   */
+  private readonly needsNativeTitle: boolean;
 
   constructor(
     palette: Palette,
@@ -204,7 +218,8 @@ export default class WardleyPaletteProvider implements PaletteProvider {
     // The horizontal toolbar never needs diagram-js' vertical two-column collapse, which would
     // squeeze it to 94px on canvases lower than ~694px and spill the entries out of the bar.
     (palette as unknown as { _needsCollapse: () => boolean })._needsCollapse = () => false;
-    this.hasStyledTooltip = !!injector.get('paletteTooltip', false);
+    this.needsNativeTitle =
+      !injector.get('paletteTooltip', false) && !injector.get('modelerShell', false);
     palette.registerProvider(this);
   }
 
@@ -235,22 +250,28 @@ export default class WardleyPaletteProvider implements PaletteProvider {
       const start = (event: Event) => {
         this.create.start(event, this.createShapeFor(spec));
       };
+      // diagram-js's create follows the pointer and never ends without one.
+      const click = (event: Event) => {
+        if (isKeyboardClick(event)) this.createAtFreeCenter(`create.${spec.key}`);
+        else start(event);
+      };
       entries[`create.${spec.key}`] = {
         group: spec.group,
         ...this.describe(spec.title, spec.shortcut),
         html: this.entryHtml(spec.title, spec.icon, spec.shortcut, true),
-        action: { dragstart: start, click: start },
+        action: { dragstart: start, click },
       };
     }
     return entries;
   }
 
   /**
-   * Keyboard path for a create entry: places the new element at the centre of the visible part of
-   * the plot (no pointer position to attach it to), selects it and opens its label editor.
-   * Returns the created shape, or undefined for non-create entries.
+   * Keyboard path for a create entry (guide §5.5): places the new element in the centre of the
+   * free rectangle (no pointer position to attach it to), 24px further diagonally while that spot
+   * is taken, selects it and opens its label editor, or focuses the canvas where there is nothing
+   * to name. Returns the created shape, or undefined for non-create entries.
    */
-  createAtVisibleCenter(entryId: string): WardleyShape | undefined {
+  createAtFreeCenter(entryId: string): WardleyShape | undefined {
     const spec = SPECS.find((candidate) => `create.${candidate.key}` === entryId);
     if (!spec) return undefined;
     const modeling = this.injector.get<Modeling>('modeling');
@@ -266,6 +287,7 @@ export default class WardleyPaletteProvider implements PaletteProvider {
     );
 
     this.injector.get<Selection>('selection', false)?.select(shape as unknown as Shape);
+    canvas.focus();
     // Regions are unlabelled (OWM canon), so there is nothing to name.
     if (spec.type !== 'attitude') {
       this.injector.get<LabelEditingLike>('wardleyLabelEditing', false)?.activate(shape);
@@ -282,7 +304,9 @@ export default class WardleyPaletteProvider implements PaletteProvider {
     canvas: Canvas,
     grid: EvolutionGrid,
   ): { x: number; y: number } {
-    const viewbox = canvas.viewbox();
+    const freeCenter =
+      this.injector.get<FreeRect | null>('wardleyFreeRect', false)?.center() ??
+      (({ x, y, width, height }) => ({ x: x + width / 2, y: y + height / 2 }))(canvas.viewbox());
     const plotTopLeft = grid.toCanvas({ evolution: 0, visibility: 1 });
     const plotBottomRight = grid.toCanvas({ evolution: 1, visibility: 0 });
     const clampAxis = (value: number, min: number, max: number, extent: number) => {
@@ -292,13 +316,13 @@ export default class WardleyPaletteProvider implements PaletteProvider {
     };
     const centerOf = (step: number) => ({
       x: clampAxis(
-        viewbox.x + viewbox.width / 2 + step * STACK_OFFSET,
+        freeCenter.x + step * STACK_OFFSET,
         plotTopLeft.x,
         plotBottomRight.x,
         shape.width,
       ),
       y: clampAxis(
-        viewbox.y + viewbox.height / 2 + step * STACK_OFFSET,
+        freeCenter.y + step * STACK_OFFSET,
         plotTopLeft.y,
         plotBottomRight.y,
         shape.height,
@@ -330,10 +354,10 @@ export default class WardleyPaletteProvider implements PaletteProvider {
   }
 
   private entryHtml(title: string, icon: string, shortcut?: string, draggable = false): string {
-    // With the styled diagram-js tooltip a native `title` would pop up a second, slower tooltip.
-    const nativeTitle = this.hasStyledTooltip
-      ? ''
-      : ` title="${escapeAttribute(shortcut ? `${title} — ${shortcut}` : title)}"`;
+    // Next to a styled tooltip a native `title` would pop up a second, slower one.
+    const nativeTitle = this.needsNativeTitle
+      ? ` title="${escapeAttribute(shortcut ? `${title} — ${shortcut}` : title)}"`
+      : '';
     const keyShortcut = shortcut ? ` aria-keyshortcuts="${escapeAttribute(shortcut)}"` : '';
     return `<div class="entry wardley-palette-entry"${draggable ? ' draggable="true"' : ''}${nativeTitle}${keyShortcut}>${icon}</div>`;
   }

@@ -170,13 +170,19 @@ describe('palette', () => {
     expect(document.activeElement?.classList.contains('wardley-label-input')).toBe(true);
   });
 
-  it('draws the tool glyphs in currentColor so the armed state can invert them', () => {
+  it('draws the tools with the Lucide icons in currentColor, so the chrome colours them', () => {
     const target = mount();
     void target.get<Canvas>('canvas');
-    const lassoGlyph = target.container.querySelector(
-      '.djs-palette .entry[data-action="lasso-tool"] svg rect',
-    );
-    expect(lassoGlyph?.getAttribute('stroke')).toBe('currentColor');
+    for (const tool of ['lasso-tool', 'draw-tool']) {
+      const glyph = target.container.querySelector(
+        `.djs-palette .entry[data-action="${tool}"] svg`,
+      );
+      expect(glyph?.getAttribute('stroke'), tool).toBe('currentColor');
+      expect(glyph?.getAttribute('fill'), tool).toBe('none');
+      expect(glyph?.getAttribute('width'), tool).toBe('20');
+    }
+    const draw = target.container.querySelector('.djs-palette .entry[data-action="draw-tool"] svg');
+    expect(draw?.innerHTML).toContain('M6.5 17.5 17.5 6.5');
   });
 });
 
