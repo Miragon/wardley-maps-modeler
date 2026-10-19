@@ -176,5 +176,6 @@ straight segment) and the Close icon of the dialogs (`x`) are copied from
 > DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 > OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-The other icons (`ICON_*`, the context pad) are
+The other icons (the context pad, and the `ICON_*` exports with `iconMarkup`, which are deprecated
+since the chrome's icons come from `@miragon/modeler-shell` and go in a later minor) are
 [Material Icons](https://fonts.google.com/icons) by Google, under the Apache License 2.0.
