@@ -24,9 +24,21 @@ job).
 | `apps/vscode`                   | VS Code extension: custom editor for `.wmap`/`.owm`             | yes |
 
 **P1 — DOM boundary:** the DOM-free packages (`schema-model`, `dsl`, `transforms`) must **never**
-import `diagram-js`/DOM libraries (`tiny-svg`, `min-dom`) or use the DOM (`window`/`document`).
-Enforced twice — ESLint (`no-restricted-imports`/`no-restricted-globals`) **and** `dependency-cruiser`
-— so a violating import fails `npm run lint` and `npm run depcruise`.
+import `diagram-js`/DOM libraries (`tiny-svg`, `min-dom`) or use the DOM (`window`/`document`); of
+`@miragon/modeler-api` they may import types only. No package under `packages/` imports
+`@miragon/modeler-shell` — the shared modeler chrome belongs to the apps. Enforced twice — ESLint
+(`no-restricted-imports`/`no-restricted-globals`) **and** `dependency-cruiser` — so a violating
+import fails `npm run lint` and `npm run depcruise`.
+
+**Contract and shell:** the renderer implements the
+[`@miragon/modeler-api`](https://github.com/Miragon/modeler-api) collaborative-modeler contract
+(`createCollaborativeModeler`/`createCollaborativeViewer` in
+[`packages/renderer/src/collaborative/`](packages/renderer/src/collaborative/)); its conformance kit
+runs in the browser tests
+([`conformance.browser.test.ts`](packages/renderer/test/browser/conformance.browser.test.ts)), and a
+skipped case fails the run. The VS Code webview mounts `@miragon/modeler-shell`
+([`apps/vscode/src/webview/main.ts`](apps/vscode/src/webview/main.ts)); the shell's conformance kit
+runs against it in the `vscode-webview` Playwright project (`e2e/tests/vscode/`).
 
 ## Commands
 
@@ -36,7 +48,10 @@ Enforced twice — ESLint (`no-restricted-imports`/`no-restricted-globals`) **an
   config in [`apps/webapp/portless.json`](apps/webapp/portless.json); one-time `npx portless service
 install` — see [`CONTRIBUTING.md`](CONTRIBUTING.md)). `npm run dev:webapp:plain` for plain Vite on
   `:5180`. · `npm run dev:vscode`
-- `npm test` — Vitest · `npm run typecheck` · `npm run lint` (ESLint + typecheck)
+- `npm test` — Vitest · `npm run test:browser` — Vitest browser mode · `npm run typecheck` ·
+  `npm run lint` (ESLint + typecheck)
+- `npm run test:e2e` — Playwright, two projects: `webapp` and `vscode-webview` (ports `E2E_PORT`,
+  default 5180, and `E2E_WEBVIEW_PORT`, default 5190)
 - `npm run format` — Prettier · `npm run depcruise` — check the module graph
 
 Requirements: Node ≥ 22.13, npm. Build packages before running tests (workspace deps resolve to
@@ -108,14 +123,20 @@ https://raw.githubusercontent.com/Miragon/corporate-identity/main/plugins/mirago
 Install once: `/plugin marketplace add Miragon/corporate-identity` then
 `/plugin install miragon-brand@miragon`.
 
-Brand tokens are vendored from that skill (`cd-tokens.generated.css`) — do not fork hex values;
-re-copy from the skill to update. Reference implementation in this repo: tokens
+The skill's design-system files are vendored **verbatim** (guide 1.13.0) into
+[`packages/renderer/src/theme/`](packages/renderer/src/theme/): `cd-tokens.generated.css`,
+`cd-tokens.generated.json` and `cd-canvas.css` — do not fork hex values or edit them; re-copy from
+the skill to update. Reference implementation in this repo: tokens
 [`packages/renderer/src/theme/palette.ts`](packages/renderer/src/theme/palette.ts) · drift test
-[`packages/renderer/test/theme.sync.test.ts`](packages/renderer/test/theme.sync.test.ts) · canvas
-colours [`packages/renderer/src/draw/styles.ts`](packages/renderer/src/draw/styles.ts) · in-canvas
-chrome [`packages/renderer/src/assets/wardley.css`](packages/renderer/src/assets/wardley.css) · app
-chrome + toast `apps/webapp/src/{style.css,toast.ts,main.ts}` · VS Code webview
-[`apps/vscode/src/webview/style.css`](apps/vscode/src/webview/style.css).
+[`packages/renderer/test/theme.sync.test.ts`](packages/renderer/test/theme.sync.test.ts) (also: the
+in-canvas chrome uses only `--cd-ui-*`/`--cd-shell-*` roles, no colour literals, overlays at most
+z-index 100) · canvas colours [`packages/renderer/src/draw/styles.ts`](packages/renderer/src/draw/styles.ts)
+· in-canvas chrome [`packages/renderer/src/assets/wardley.css`](packages/renderer/src/assets/wardley.css)
+· app chrome + toast `apps/webapp/src/{style.css,toast.ts,main.ts}` · VS Code webview: the chrome of
+`@miragon/modeler-shell` (light only, `WEBVIEW_THEMES` in
+[`apps/vscode/src/themes.ts`](apps/vscode/src/themes.ts); `style dark` round-trips but is never
+painted), its sizes checked by
+[`apps/vscode/test/tokens.sync.test.ts`](apps/vscode/test/tokens.sync.test.ts).
 
 ## Code Style
 
