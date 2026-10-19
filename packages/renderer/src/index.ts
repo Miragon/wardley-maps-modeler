@@ -92,6 +92,33 @@ export type {
   CollaborativeWardleyModeler,
   CollaborativeWardleyOptions,
 } from './collaborative/index.js';
+export {
+  EXPORT_LABELS,
+  createAxisLabelsPopover,
+  createMapSizePopover,
+  createShortcutsDialog,
+  mapMenu,
+  mapShortcuts,
+} from './map-menu/index.js';
+export type {
+  MapExport,
+  MapExports,
+  MapMenu,
+  MapMenuAction,
+  MapMenuActions,
+  MapMenuDialog,
+  MapMenuEntry,
+  MapMenuIcon,
+  PopoverChrome,
+  PopoverHandle,
+  ShortcutGroup,
+  ShortcutKeyNames,
+  ShortcutPlatform,
+  ShortcutRow,
+  ShortcutsChrome,
+  ShortcutsDialog,
+  ShortcutsDialogChrome,
+} from './map-menu/index.js';
 export type { EditorState, RestoreOptions } from './editor-state.js';
 export { wardleyKeyboardModule } from './keyboard/index.js';
 export type { WardleyKeyboardConfig } from './keyboard/WardleyKeyboard.js';

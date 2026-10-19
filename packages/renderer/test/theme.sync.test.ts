@@ -52,7 +52,9 @@ describe('theme.sync — wardley.css takes every colour from the roles', () => {
     const tokens = [...withoutComments(css).matchAll(/var\((--[\w-]+)/g)].map((m) => m[1]!);
     expect(tokens.length).toBeGreaterThan(20);
     for (const token of tokens) {
-      expect(token).toMatch(/^--cd-(ui-[\w-]+|radius-\w+|shadow-\d|ease(-out)?|motion-\w+)$/);
+      expect(token).toMatch(
+        /^--cd-(ui-[\w-]+|shell-[\w-]+|radius-\w+|shadow-\d|ease(-out)?|motion-\w+)$/,
+      );
     }
   });
 

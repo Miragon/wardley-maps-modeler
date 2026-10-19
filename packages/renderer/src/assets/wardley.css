@@ -525,3 +525,306 @@
 .wardley-container.wardley-read-only .wardley-evolve-handle {
   cursor: default;
 }
+
+/* The popovers of the Model menu ("Map size…", "X-axis labels…", guide §5.4): opaque, at the
+   dropdown's place in the chrome's root, without a backdrop. Fields and buttons after guide §8. */
+.wardley-popover {
+  position: absolute;
+  top: calc(var(--cd-shell-rand) + var(--cd-shell-zeile) + var(--cd-shell-luecke));
+  left: var(--cd-shell-rand);
+  z-index: var(--cd-shell-ebene-aufklapper);
+  box-sizing: border-box;
+  width: min(320px, calc(100cqw - 24px));
+  max-height: calc(100cqh - 72px);
+  overflow: auto;
+  padding: 16px;
+  border: 1px solid var(--cd-ui-linie);
+  border-radius: var(--cd-radius-md);
+  background: var(--cd-ui-flaeche-hoch);
+  box-shadow: var(--cd-shadow-3);
+  color: var(--cd-ui-text);
+  font:
+    400 13px/1.5 'Geist Variable',
+    'Geist',
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
+  text-align: left;
+  animation: wardley-pop-in var(--cd-motion-fast) var(--cd-ease-out);
+}
+.wardley-popover[hidden] {
+  display: none;
+}
+@keyframes wardley-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+.wardley-popover-title {
+  margin: 0 0 16px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+.wardley-popover-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.wardley-popover-hint {
+  margin: 0;
+  color: var(--cd-ui-text-leise);
+}
+.wardley-popover-link {
+  color: var(--cd-ui-link);
+}
+.wardley-popover-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+.wardley-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.wardley-field-label {
+  color: var(--cd-ui-text);
+  font-weight: 600;
+}
+.wardley-field-input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 36px;
+  padding: 8px 12px;
+  border: 1px solid var(--cd-ui-kontur);
+  border-radius: var(--cd-radius-sm);
+  background: var(--cd-ui-grund);
+  color: var(--cd-ui-text);
+  font: inherit;
+}
+.wardley-field-input:focus {
+  border-color: var(--cd-ui-interaktion);
+  outline: 2px solid var(--cd-ui-fokus);
+  outline-offset: 2px;
+}
+.wardley-field-input[aria-invalid='true'] {
+  border-color: var(--cd-ui-danger);
+}
+.wardley-field-error {
+  margin: 0;
+  color: var(--cd-ui-danger);
+}
+.wardley-field-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+.wardley-field-row .wardley-field {
+  flex: 1;
+}
+.wardley-field-times {
+  padding-bottom: 8px;
+  color: var(--cd-ui-text-leise);
+}
+.wardley-button {
+  min-height: 36px;
+  padding: 0 16px;
+  border: 1px solid transparent;
+  border-radius: var(--cd-radius-md);
+  background: transparent;
+  color: var(--cd-ui-text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color var(--cd-motion-fast) var(--cd-ease),
+    border-color var(--cd-motion-fast) var(--cd-ease),
+    color var(--cd-motion-fast) var(--cd-ease);
+}
+.wardley-button[data-variant='secondary'] {
+  border-color: var(--cd-ui-linie);
+  background: var(--cd-ui-flaeche-hoch);
+}
+.wardley-button[data-variant='secondary']:hover {
+  border-color: var(--cd-ui-interaktion);
+  background: var(--cd-ui-hover);
+  color: var(--cd-ui-link);
+}
+.wardley-button[data-variant='ghost']:hover {
+  background: var(--cd-ui-hover);
+}
+.wardley-button:disabled,
+.wardley-button:disabled:hover {
+  border-color: transparent;
+  background: transparent;
+  color: var(--cd-ui-text-leise);
+  cursor: not-allowed;
+}
+.wardley-button:focus-visible,
+.wardley-popover-link:focus-visible {
+  outline: 2px solid var(--cd-ui-fokus);
+  outline-offset: 2px;
+}
+
+/* The "Keyboard shortcuts…" dialog (guide §8): a native modal <dialog> in the chrome's root, in
+   the browser's top layer above every island. */
+.wardley-shortcuts {
+  box-sizing: border-box;
+  width: min(560px, calc(100cqw - 32px));
+  max-width: none;
+  max-height: calc(100cqh - 32px);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--cd-ui-text);
+  font:
+    400 13px/1.5 'Geist Variable',
+    'Geist',
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
+  overflow: visible;
+}
+.wardley-shortcuts::backdrop {
+  background: var(--cd-ui-backdrop);
+  backdrop-filter: blur(3px) grayscale(1);
+}
+.wardley-shortcuts-panel {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100cqh - 32px);
+  border: 1px solid var(--cd-ui-linie);
+  border-radius: var(--cd-radius-md);
+  background: var(--cd-ui-flaeche-hoch);
+  box-shadow: var(--cd-shadow-3);
+}
+.wardley-shortcuts-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 16px 8px 24px;
+}
+.wardley-shortcuts-title {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.wardley-shortcuts-close {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--cd-radius-sm);
+  background: transparent;
+  color: var(--cd-ui-text);
+  cursor: pointer;
+}
+.wardley-shortcuts-close:hover {
+  background: var(--cd-ui-hover);
+  color: var(--cd-ui-interaktion);
+}
+.wardley-shortcuts-close:focus-visible {
+  outline: 2px solid var(--cd-ui-fokus);
+  outline-offset: 2px;
+}
+.wardley-shortcuts-body {
+  overflow: auto;
+  padding: 8px 24px 24px;
+}
+.wardley-shortcuts-group + .wardley-shortcuts-group {
+  margin-top: 16px;
+}
+.wardley-shortcuts-group-title {
+  margin: 0 0 4px;
+  color: var(--cd-ui-text-leise);
+  font-size: 13px;
+  font-weight: 600;
+}
+.wardley-shortcuts-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.wardley-shortcuts-table tr + tr > * {
+  border-top: 1px solid var(--cd-ui-linie);
+}
+.wardley-shortcuts-action {
+  padding: 6px 16px 6px 0;
+  font-weight: 400;
+  text-align: left;
+  vertical-align: baseline;
+}
+.wardley-shortcuts-keys {
+  padding: 6px 0;
+  text-align: right;
+  vertical-align: baseline;
+}
+/* The chips look like the chrome tooltip's (guide §5.6), also against a host's own kbd style. */
+.wardley-shortcuts-key {
+  display: inline-block;
+  margin: 2px 0 2px 6px;
+  padding: 1px 6px;
+  border: 1px solid var(--cd-ui-linie);
+  border-radius: var(--cd-radius-sm);
+  background: var(--cd-ui-grund);
+  box-shadow: none;
+  color: var(--cd-ui-text-leise);
+  font:
+    400 13px/1.5 'Geist Mono Variable',
+    'Geist Mono',
+    ui-monospace,
+    monospace;
+  vertical-align: baseline;
+  white-space: nowrap;
+}
+
+/* High contrast (guide §6, §5.14): no shadows, contour borders, 3px focus. Forced colours: the
+   system's colours, so nothing disappears. */
+[data-cd-kontrast='hoch'] :is(.wardley-popover, .wardley-shortcuts-panel) {
+  border-color: var(--cd-ui-kontur);
+  box-shadow: none;
+}
+[data-cd-kontrast='hoch']
+  :is(
+    .wardley-field-input,
+    .wardley-button,
+    .wardley-popover-link,
+    .wardley-shortcuts-close
+  ):focus-visible {
+  outline-width: 3px;
+}
+@media (forced-colors: active) {
+  :is(.wardley-popover, .wardley-shortcuts-panel) {
+    border-color: CanvasText;
+  }
+  :is(
+    .wardley-field-input,
+    .wardley-button,
+    .wardley-popover-link,
+    .wardley-shortcuts-close
+  ):focus-visible {
+    outline-color: Highlight;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wardley-popover {
+    animation: none;
+  }
+}
+/* VS Code's own reduce-motion setting, mirrored onto <html> by the Miragon modeler shell. */
+.cd-shell-reduce-motion .wardley-popover {
+  animation: none;
+}
