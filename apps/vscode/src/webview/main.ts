@@ -296,7 +296,11 @@ window.addEventListener('message', (event: MessageEvent<unknown>) => {
       shell.setProblems({ count: message.count, errors: message.errors });
       break;
     case 'command':
-      if (isWebviewCommand(message.name)) COMMANDS[message.name]();
+      // Checked against COMMANDS itself, so a name such as "constructor" never reaches
+      // Object.prototype even if the protocol's list and COMMANDS drift apart.
+      if (isWebviewCommand(message.name) && Object.hasOwn(COMMANDS, message.name)) {
+        COMMANDS[message.name]();
+      }
       break;
   }
 });
