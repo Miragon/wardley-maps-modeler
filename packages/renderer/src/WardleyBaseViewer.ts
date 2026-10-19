@@ -11,6 +11,7 @@ import {
   normalizeMapSize,
   sameEvolutionLabels,
   presetIdForSize,
+  validateMap,
   type MapConfig,
   type MapSizePresetId,
   type WardleyMap,
@@ -21,7 +22,7 @@ import { exportBounds } from './io/exportBounds.js';
 import type WardleyImporter from './io/WardleyImporter.js';
 import type WardleyExporter from './io/WardleyExporter.js';
 import type EvolutionGrid from './evolution-grid/EvolutionGrid.js';
-import type { ImportWarning, RootBusinessObject } from './io/types.js';
+import { ROOT_ID, type ImportWarning, type RootBusinessObject } from './io/types.js';
 import {
   configWithSize,
   wardleyRootOf,
@@ -75,6 +76,19 @@ export interface SetEvolutionLabelsOptions {
 }
 
 type EvolutionLabels = readonly [string, string, string, string];
+
+/** diagram-js names its implicit roots so; an element of that id would replace the plane. */
+const IMPLICIT_ROOT_PREFIX = '__implicitroot';
+
+/** `map`, validated, or a throw when the canvas cannot hold it. */
+function importableMap(map: WardleyMap): WardleyMap {
+  const checked = validateMap(map);
+  const reserved = [...checked.elements, ...checked.edges].find(
+    ({ id }) => id === ROOT_ID || id.startsWith(IMPLICIT_ROOT_PREFIX),
+  );
+  if (reserved) throw new Error(`The id "${reserved.id}" is reserved for the canvas itself.`);
+  return checked;
+}
 
 function sizeToCss(value: number | string): string {
   return typeof value === 'number' ? `${value}px` : value;
@@ -135,22 +149,40 @@ export abstract class WardleyBaseViewer {
     this.get<EventBus>('eventBus').off(event, callback);
   }
 
-  /** Load a model into the canvas (replaces existing content). */
+  /**
+   * Load a model into the canvas (replaces existing content). Rejects a map the canvas cannot
+   * hold (invalid, or ids the canvas reserves for itself) before anything changes, so the current
+   * map, its rendering and its undo history stay as they were.
+   */
   async importMap(map: WardleyMap): Promise<{ warnings: ImportWarning[] }> {
+    const checked = importableMap(map);
     const diagram = this._ensureDiagram();
     const eventBus = diagram.get<EventBus>('eventBus');
     const importer = diagram.get<WardleyImporter>('wardleyImporter');
+    const commandStack = diagram.get<CommandStack>('commandStack', false);
+    // Kept to put back if rendering fails half-way: a blank canvas is no way to fail an import.
+    const previous = this._rootBusinessObject() ? this.exportMap() : undefined;
     this._labelsBeforePreview = undefined;
     // A running drag (move, connect, create, resize) holds the previous map's shapes. Released after
     // the import, its command would fail half-way and leave the command stack stuck, so no later
     // edit would fire commandStack.changed again (VS Code: external edit during a drag).
     diagram.get<Dragging>('dragging', false)?.cancel(false);
     importer.clear();
-    const warnings = importer.import(map);
+    let warnings: ImportWarning[];
+    try {
+      warnings = importer.import(checked);
+    } catch (error) {
+      importer.clear();
+      if (previous) importer.import(previous);
+      // The history pointed at the shapes the failed render removed.
+      commandStack?.clear();
+      eventBus.fire('import.done', { warnings: [] });
+      throw error;
+    }
     // Discard the PREVIOUS map's undo history (concept doc §5.6): undo on orphaned
     // elements would otherwise crash or insert zombie elements into the new map.
     // The read-only Viewer has no command stack.
-    diagram.get<CommandStack>('commandStack', false)?.clear();
+    commandStack?.clear();
     eventBus.fire('import.done', { warnings });
     return { warnings };
   }

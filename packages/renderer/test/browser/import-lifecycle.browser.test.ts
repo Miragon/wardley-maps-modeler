@@ -91,4 +91,59 @@ describe('import lifecycle', () => {
     expect(changes).toBe(1);
     expect(editor.exportMap().elements.map((element) => element.label)).toEqual(['A', 'B', 'C']);
   });
+
+  describe('a rejected import leaves no trace', () => {
+    const MAP = 'title Before\ncomponent A [0.5, 0.5]\ncomponent B [0.3, 0.3]\nA -> B';
+
+    async function withHistory(): Promise<{ editor: Modeler; edited: string }> {
+      const editor = createModeler();
+      await editor.importDSL(MAP);
+      editor.setTitle('Edited');
+      return { editor, edited: editor.exportDSL() };
+    }
+
+    it('rejects an invalid map before touching the canvas or the undo history', async () => {
+      const { editor, edited } = await withHistory();
+      const invalid = {
+        ...editor.exportMap(),
+        edges: [{ id: 'e', edgeType: 'dependency', from: 'x', to: 'y' }],
+      };
+      await expect(editor.importMap(invalid as never)).rejects.toThrow();
+      expect(editor.exportDSL()).toBe(edited);
+      editor.undo();
+      expect(editor.exportDSL()).toContain('title Before');
+    });
+
+    it('rejects ids the canvas reserves for itself', async () => {
+      const { editor, edited } = await withHistory();
+      const map = editor.exportMap();
+      const [first, ...rest] = map.elements;
+      await expect(
+        editor.importMap({
+          ...map,
+          elements: [{ ...first!, id: 'wardley-root' }, ...rest],
+          edges: [],
+        }),
+      ).rejects.toThrow(/reserved/);
+      expect(editor.exportDSL()).toBe(edited);
+    });
+
+    it('puts the previous map back when rendering fails half-way', async () => {
+      const { editor, edited } = await withHistory();
+      const factory = editor.get<{ createFromModel(element: unknown): unknown }>(
+        'wardleyElementFactory',
+      );
+      const createFromModel = factory.createFromModel.bind(factory);
+      factory.createFromModel = (element: unknown) => {
+        if ((element as { label?: string }).label === 'Broken') throw new Error('render failed');
+        return createFromModel(element);
+      };
+      await expect(editor.importDSL('title Next\ncomponent Broken [0.5, 0.5]')).rejects.toThrow(
+        'render failed',
+      );
+      factory.createFromModel = createFromModel;
+      expect(editor.exportDSL()).toBe(edited);
+      expect(editor.get<ElementRegistry>('elementRegistry').get('cmp_a')).toBeDefined();
+    });
+  });
 });
