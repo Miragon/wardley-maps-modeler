@@ -1,7 +1,8 @@
 /**
  * DOM-boundary enforcement at the module-graph level (concept doc §9.1, P1).
  * Complements the ESLint rule: forbids DOM-free packages from depending on diagram-js /
- * DOM libraries or on the DOM-dependent @miragon/wardley-renderer.
+ * DOM libraries or on the DOM-dependent @miragon/wardley-renderer, and keeps the shared modeler
+ * chrome (@miragon/modeler-shell) out of every package.
  */
 /** @type {import('dependency-cruiser').IConfiguration} */
 module.exports = {
@@ -19,6 +20,23 @@ module.exports = {
       severity: 'error',
       from: { path: '^packages/(schema-model|dsl|transforms)/src' },
       to: { path: '^packages/renderer/src' },
+    },
+    {
+      name: 'packages-no-shell',
+      comment:
+        'The renderer and the DOM-free packages never import @miragon/modeler-shell; only the apps ' +
+        'mount the shell (dependency direction of Miragon/modeler-api#4).',
+      severity: 'error',
+      from: { path: '^packages/[^/]+/src' },
+      // Matches the specifier too, so an import that does not resolve from the package fails.
+      to: { path: '@miragon/modeler-shell' },
+    },
+    {
+      name: 'dom-free-contract-types-only',
+      comment: 'DOM-free packages take only types from @miragon/modeler-api, never runtime code.',
+      severity: 'error',
+      from: { path: '^packages/(schema-model|dsl|transforms)/src' },
+      to: { path: '@miragon/modeler-api', dependencyTypesNot: ['type-only'] },
     },
     {
       name: 'renderer-feature-encapsulation',

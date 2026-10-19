@@ -16,13 +16,30 @@ const DOM_RESTRICTED_IMPORTS = {
     { name: 'diagram-js', message: 'DOM-free packages must not import diagram-js (P1).' },
     { name: 'tiny-svg', message: 'DOM-free packages must not import tiny-svg (P1).' },
     { name: 'min-dom', message: 'DOM-free packages must not import min-dom (P1).' },
+    { name: '@miragon/modeler-shell', message: 'Only the apps mount the shell.' },
+    {
+      name: '@miragon/modeler-api',
+      allowTypeImports: true,
+      message: 'DOM-free packages take only types from the contract.',
+    },
   ],
   patterns: [
     {
       group: ['diagram-js/*'],
       message: 'DOM-free packages must not import diagram-js (P1).',
     },
+    { group: ['@miragon/modeler-shell/*'], message: 'Only the apps mount the shell.' },
+    {
+      group: ['@miragon/modeler-api/*'],
+      allowTypeImports: true,
+      message: 'DOM-free packages take only types from the contract.',
+    },
   ],
+};
+
+const SHELL_RESTRICTED_IMPORTS = {
+  paths: [{ name: '@miragon/modeler-shell', message: 'Renderers never import the shell.' }],
+  patterns: [{ group: ['@miragon/modeler-shell/*'], message: 'Renderers never import the shell.' }],
 };
 
 export default tseslint.config(
@@ -89,6 +106,12 @@ export default tseslint.config(
     files: ['packages/renderer/**/*.ts', 'apps/**/*.ts', 'e2e/**/*.ts'],
     languageOptions: {
       globals: { ...globals.browser },
+    },
+  },
+  {
+    files: ['packages/renderer/src/**/*.ts'],
+    rules: {
+      'no-restricted-imports': ['error', SHELL_RESTRICTED_IMPORTS],
     },
   },
   {
