@@ -66,6 +66,7 @@ export function lastEdit(edit: WorkspaceEdit): { range: Range; text: string } {
 
 export interface FakePanel {
   panel: vscode.WebviewPanel;
+  /** Everything the host posted, the shell's appearance messages included. */
   posted: HostToWebview[];
   updates: () => string[];
   receive: (msg: WebviewToHost) => Promise<unknown>;
@@ -92,16 +93,21 @@ export function fakeWebviewPanel(): FakePanel {
       return new Disposable(() => {});
     },
   };
+  const viewStateListeners = new Set<(event: { webviewPanel: unknown }) => void>();
+  const disposeListeners = new Set<() => void>();
   const panel = {
     webview,
     active: true,
-    onDidChangeViewState: (listener: () => void) => {
-      onViewState = listener;
-      return new Disposable(() => {});
+    visible: true,
+    onDidChangeViewState: (listener: (event: { webviewPanel: unknown }) => void) => {
+      viewStateListeners.add(listener);
+      onViewState = () => viewStateListeners.forEach((each) => each({ webviewPanel: panel }));
+      return new Disposable(() => viewStateListeners.delete(listener));
     },
     onDidDispose: (listener: () => void) => {
-      onDispose = listener;
-      return new Disposable(() => {});
+      disposeListeners.add(listener);
+      onDispose = () => disposeListeners.forEach((each) => each());
+      return new Disposable(() => disposeListeners.delete(listener));
     },
   };
   return {

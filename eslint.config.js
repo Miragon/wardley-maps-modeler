@@ -129,6 +129,13 @@ export default tseslint.config(
     },
   },
   {
+    // Build scripts run in Node (the VS Code app's third-party notices).
+    files: ['apps/*/scripts/**/*.mjs'],
+    languageOptions: {
+      globals: { ...globals.node },
+    },
+  },
+  {
     files: ['**/*.{test,spec}.ts'],
     languageOptions: {
       globals: { ...globals.node },

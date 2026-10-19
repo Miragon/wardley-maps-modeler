@@ -25,3 +25,20 @@ Hot Water -> Water
 Hot Water -> Kettle
 Kettle -> Power
 `;
+
+/** The example without its title: a document keeps its own (guide §13.5). */
+const EXAMPLE_CONTENT = EXAMPLE_MAP.replace(/^title [^\n]*\n/, '');
+
+/**
+ * The document with the example's elements and links appended, for "Insert example" on an empty
+ * map. What the file already holds (its title, comments, size or axis lines) stays, so the
+ * insertion needs no confirmation and the map keeps one title line; the line break style follows
+ * the document.
+ */
+export function withExampleInserted(documentText: string): string {
+  const lineBreak = documentText.includes('\r\n') ? '\r\n' : '\n';
+  const content = EXAMPLE_CONTENT.replace(/\n/g, lineBreak);
+  if (documentText.trim() === '') return `${documentText}${content}`;
+  const terminated = /\r?\n$/.test(documentText) ? documentText : `${documentText}${lineBreak}`;
+  return `${terminated}${content}`;
+}

@@ -90,6 +90,42 @@ describe('commands', () => {
   });
 });
 
+describe('the editor title menu (guide §13.5)', () => {
+  it('lists Fit, then the exports with PNG first', () => {
+    const title = manifest.contributes.menus['editor/title']!.filter(
+      (entry) => (entry as { group?: string }).group !== 'navigation',
+    );
+    expect(title.map((entry) => [entry.command, (entry as { group?: string }).group])).toEqual([
+      ['wardley.fitView', '1_wardley@1'],
+      ['wardley.exportPng', '2_wardley_export@1'],
+      ['wardley.exportSvg', '2_wardley_export@2'],
+      ['wardley.exportPngTransparent', '2_wardley_export@3'],
+    ]);
+  });
+
+  it('titles the commands in Title Case as VS Code does', () => {
+    const titles = Object.fromEntries(
+      manifest.contributes.commands.map((c) => [c.command, c.title]),
+    );
+    expect(titles).toMatchObject({
+      'wardley.fitView': 'Fit to View',
+      'wardley.exportPng': 'Export as PNG',
+      'wardley.exportSvg': 'Export as SVG',
+      'wardley.showSource': 'Open Source to the Side',
+    });
+  });
+
+  it('walks through creating a map, opening the source to the side and the basics', () => {
+    const walkthrough = (
+      manifest.contributes as unknown as {
+        walkthroughs: Array<{ steps: Array<{ id: string; completionEvents: string[] }> }>;
+      }
+    ).walkthroughs[0]!;
+    expect(walkthrough.steps.map((step) => step.id)).toEqual(['create', 'source', 'learn']);
+    expect(walkthrough.steps[1]!.completionEvents).toEqual(['onCommand:wardley.showSource']);
+  });
+});
+
 describe('language support', () => {
   const grammar = JSON.parse(read('syntaxes/wardley.tmLanguage.json')) as {
     scopeName: string;
