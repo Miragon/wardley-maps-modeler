@@ -6,7 +6,12 @@
  *  - Share link: shown selected when the clipboard refused the copy.
  */
 import { parseDSLWithDiagnostics } from '@miragon/wardley-dsl';
-import { createMapDialog, dialogButton, type MapDialog } from '@miragon/wardley-renderer';
+import {
+  EXPORT_LABELS,
+  createMapDialog,
+  dialogButton,
+  type MapDialog,
+} from '@miragon/wardley-renderer';
 import type { ShellHandle } from '@miragon/modeler-shell';
 import { copyText } from './clipboard.js';
 
@@ -164,7 +169,10 @@ function createTextDialog(
   text.setAttribute('aria-describedby', hint.id);
   const diagnostics = createDiagnosticsList(text);
   const copy = dialogButton('Copy', mode === 'share' ? 'primary' : 'ghost');
-  const download = dialogButton(mode === 'json' ? 'Download .json' : 'Download .wmap', 'secondary');
+  const download = dialogButton(
+    mode === 'json' ? EXPORT_LABELS.json : EXPORT_LABELS.wmap,
+    'secondary',
+  );
   const apply = dialogButton('Apply', 'primary');
   apply.setAttribute('aria-keyshortcuts', 'Control+Enter Meta+Enter');
 
@@ -173,7 +181,7 @@ function createTextDialog(
 
   const hints: Readonly<Record<TextDialogMode, string>> = {
     dsl: `Edit the map as text, then Apply (${host.applyKeys}).`,
-    json: 'Read-only. Download it or copy it to use the map elsewhere.',
+    json: 'Read-only. Export it or copy it to use the map elsewhere.',
     share: `Copying didn’t work here. The link is selected: press ${host.copyKeys} to copy it.`,
   };
   hint.textContent = hints[mode];
