@@ -64,13 +64,6 @@ interface DiagramElement {
 }
 interface ElementRegistryLike {
   getAll(): DiagramElement[];
-  get(id: string): DiagramElement | undefined;
-}
-interface SelectionLike {
-  select(elements: DiagramElement | DiagramElement[] | null): void;
-}
-interface CanvasLike {
-  scrollToElement(element: DiagramElement): void;
 }
 
 const APP_NAME = 'Wardley Maps Modeler';
@@ -96,8 +89,6 @@ const viewer = new Modeler({
 });
 viewer.get('canvas');
 const registry = viewer.get<ElementRegistryLike>('elementRegistry');
-const selection = viewer.get<SelectionLike>('selection');
-const canvas = viewer.get<CanvasLike>('canvas');
 const panConstraint = viewer.get<PanConstraint>('panConstraint');
 const currentDSL = trackSourceText(viewer);
 Object.assign(globalThis as Record<string, unknown>, { __wardleyViewer: viewer });
@@ -162,7 +153,8 @@ const shell = mountShell(app, {
     showExample: { onSelect: () => void showExample() },
   },
   menu: webMenu(),
-  problems: { onSelectItem: (item) => selectElement(item.elementId) },
+  // The findings name lines; none names an element the map still has, so no row selects one.
+  problems: {},
   // A new, empty map says how to start, as the VS Code editor does for an empty file.
   emptyHint: {},
   emptyState: {
@@ -267,7 +259,7 @@ async function openDocument(load: MapLoad): Promise<readonly ImportWarning[]> {
   shell.setEmptyState(false);
   shell.menu.refresh();
   updateDocumentTitle();
-  shell.setProblems(problemSummary(problemItems(warnings, (id) => !!registry.get(id))));
+  shell.setProblems(problemSummary(problemItems(warnings)));
   return warnings;
 }
 
@@ -299,8 +291,14 @@ const mapReplacer = createMapReplacer({
     }),
 });
 
+// The findings toast comes before the undo offer, so both stack as in the other Miragon web
+// modelers.
 async function replaceMap(load: MapLoad): Promise<void> {
-  reportWarnings(await mapReplacer.replace(() => openDocument(load)));
+  await mapReplacer.replace(async () => {
+    const warnings = await openDocument(load);
+    reportWarnings(warnings);
+    return warnings;
+  });
 }
 
 function newDiagram(): Promise<void> {
@@ -354,13 +352,6 @@ fileInput.addEventListener('change', () => {
 
 function pickFile(): void {
   fileInput.click();
-}
-
-function selectElement(id: string | undefined): void {
-  const element = id ? registry.get(id) : undefined;
-  if (!element) return;
-  selection.select(element);
-  canvas.scrollToElement(element);
 }
 
 // ---------------------------------------------------------------------------

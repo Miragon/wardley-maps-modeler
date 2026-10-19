@@ -3,18 +3,15 @@ import { importWarningsText, problemItems } from '../src/problems.js';
 
 describe('problemItems', () => {
   it('puts a parser finding’s line and source below its message', () => {
-    const items = problemItems(
-      [
-        {
-          message: 'Line 3: Unknown statement "compnent" — "compnent Typo [0.2, 0.2]"',
-          line: 3,
-          source: 'compnent Typo [0.2, 0.2]',
-        },
-        { message: 'Line 9: Link: "Nowhere" not found', line: 9 },
-        { message: 'Link: "Search" not found' },
-      ],
-      () => true,
-    );
+    const items = problemItems([
+      {
+        message: 'Line 3: Unknown statement "compnent" — "compnent Typo [0.2, 0.2]"',
+        line: 3,
+        source: 'compnent Typo [0.2, 0.2]',
+      },
+      { message: 'Line 9: Link: "Nowhere" not found', line: 9 },
+      { message: 'Link: "Search" not found' },
+    ]);
 
     expect(items).toEqual([
       {
@@ -27,17 +24,10 @@ describe('problemItems', () => {
     ]);
   });
 
-  it('keeps an element only while the map has it, so a click on the row can select it', () => {
-    const items = problemItems(
-      [
-        { message: 'Edge dep_1: endpoint missing.', elementId: 'dep_1' },
-        { message: 'Edge dep_2: endpoint missing.', elementId: 'dep_2' },
-      ],
-      (id) => id === 'dep_1',
-    );
+  it('selects no element: an edge with a missing endpoint is never drawn', () => {
+    const [item] = problemItems([{ message: 'Edge dep_1: endpoint missing.', elementId: 'dep_1' }]);
 
-    expect(items.map((item) => item.elementId)).toEqual(['dep_1', undefined]);
-    expect(items[1]).not.toHaveProperty('elementId');
+    expect(item).toEqual({ severity: 'warning', message: 'Edge dep_1: endpoint missing.' });
   });
 });
 

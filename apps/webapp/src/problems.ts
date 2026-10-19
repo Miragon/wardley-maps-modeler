@@ -10,21 +10,16 @@ function lineLocation(line: number, source: string | undefined): string {
 
 /**
  * Import warnings as rows of the problems list (guide §5.10): the message, its line and source
- * below it, and the element a click on the row selects where the map still has it.
+ * below it. No row selects an element: the only finding naming one is an edge with a missing
+ * endpoint, which the map never draws.
  */
-export function problemItems(
-  warnings: readonly ImportWarning[],
-  hasElement: (id: string) => boolean,
-): ProblemItem[] {
+export function problemItems(warnings: readonly ImportWarning[]): ProblemItem[] {
   return warnings.map((warning) => {
     const row = describeWarning(warning);
-    const elementId =
-      warning.elementId && hasElement(warning.elementId) ? warning.elementId : undefined;
     return {
       severity: 'warning',
       message: row.message,
       ...(row.line === undefined ? {} : { location: lineLocation(row.line, row.source) }),
-      ...(elementId ? { elementId } : {}),
     };
   });
 }
