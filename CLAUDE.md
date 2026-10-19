@@ -155,7 +155,8 @@ z-index 100) · canvas colours [`packages/renderer/src/draw/styles.ts`](packages
 [`apps/vscode/src/themes.ts`](apps/vscode/src/themes.ts), kept equal by a unit test; `style dark`
 round-trips but is never painted), its sizes checked by
 [`apps/vscode/test/tokens.sync.test.ts`](apps/vscode/test/tokens.sync.test.ts); the web app's own
-content is the map-as-text dialogs ([`apps/webapp/src/style.css`](apps/webapp/src/style.css)).
+content is the map-as-text dialogs and the start screen's empty canvas
+([`apps/webapp/src/style.css`](apps/webapp/src/style.css)).
 
 ## Code Style
 
