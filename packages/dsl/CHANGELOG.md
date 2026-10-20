@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/Miragon/wardley-maps-modeler/compare/dsl-v0.6.0...dsl-v0.7.0) (2026-10-20)
+
+
+### Features
+
+* implement the modeler-api contract and mount the modeler shell in VS Code and the web app ([#134](https://github.com/Miragon/wardley-maps-modeler/issues/134)) ([4510c7a](https://github.com/Miragon/wardley-maps-modeler/commit/4510c7a629be826fa27ad563ff49700e4121a1f9))
+
 ## [0.6.0](https://github.com/Miragon/wardley-maps-modeler/compare/dsl-v0.5.3...dsl-v0.6.0) (2026-10-17)
 
 
