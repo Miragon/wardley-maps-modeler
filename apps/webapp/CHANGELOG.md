@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.9.0](https://github.com/Miragon/wardley-maps-modeler/compare/webapp-v0.8.0...webapp-v0.9.0) (2026-10-20)
+
+
+### Features
+
+* implement the modeler-api contract and mount the modeler shell in VS Code and the web app ([#134](https://github.com/Miragon/wardley-maps-modeler/issues/134)) ([4510c7a](https://github.com/Miragon/wardley-maps-modeler/commit/4510c7a629be826fa27ad563ff49700e4121a1f9))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @miragon/wardley-dsl bumped from 0.6.0 to 0.7.0
+    * @miragon/wardley-renderer bumped from 0.7.0 to 0.8.0
+
 ## [0.8.0](https://github.com/Miragon/wardley-maps-modeler/compare/webapp-v0.7.0...webapp-v0.8.0) (2026-10-17)
 
 
