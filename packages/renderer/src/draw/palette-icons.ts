@@ -1,13 +1,45 @@
+/*! @miragon/wardley-renderer icon geometry: square-dashed-mouse-pointer, and spline drawn with a
+ * straight segment. Lucide (lucide-static 1.59.0) @license ISC
+ * Copyright (c) 2026 Lucide Icons and Contributors
+ * Full notice: README.md of @miragon/wardley-renderer */
 import { COLORS, ATTITUDE_COLORS, FONT } from './styles.js';
 import { ICON_FAST_FORWARD, ICON_FAST_REWIND, ICON_PERSON } from './icons.js';
 
 /**
- * Palette icons as a mini preview of the ACTUAL canvas rendering (WYSIWYG) — same colors
- * and shapes as the WardleyRenderer, so the palette shows what will be created.
+ * Palette icons: the creating entries are a mini preview of the ACTUAL canvas rendering
+ * (WYSIWYG) — same colors and shapes as the WardleyRenderer, so the palette shows what will be
+ * created.
  */
 
 const wrap = (inner: string): string =>
   `<svg width="24" height="24" viewBox="0 0 24 24" class="wardley-palette-svg">${inner}</svg>`;
+
+/**
+ * A Lucide outline icon (lucide-static 1.59.0, ISC, © Lucide Icons and Contributors) at the palette
+ * tool size of guide §5.5 (20px, stroke 2): it draws in `currentColor`, so the chrome around the
+ * entry decides the colour (hover, pressed tool, read-only).
+ */
+const toolIcon = (inner: string): string =>
+  `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" class="wardley-palette-svg">${inner}</svg>`;
+
+const LUCIDE_SQUARE_DASHED_MOUSE_POINTER =
+  '<path d="M12.034 12.681a.498.498 0 0 1 .647-.647l9 3.5a.5.5 0 0 1-.033.943l-3.444 1.068a1 1 0 0 0-.66.66l-1.067 3.443a.5.5 0 0 1-.943.033z"/>' +
+  '<path d="M5 3a2 2 0 0 0-2 2"/>' +
+  '<path d="M19 3a2 2 0 0 1 2 2"/>' +
+  '<path d="M5 21a2 2 0 0 1-2-2"/>' +
+  '<path d="M9 3h1"/>' +
+  '<path d="M9 21h2"/>' +
+  '<path d="M14 3h1"/>' +
+  '<path d="M3 9v1"/>' +
+  '<path d="M21 9v2"/>' +
+  '<path d="M3 14v1"/>';
+
+// Lucide's spline with a straight segment between its end points (guide §5.14, line-segment): the
+// curve read as a telephone receiver at 20px.
+const LINE_SEGMENT =
+  '<circle cx="19" cy="5" r="2"/>' +
+  '<circle cx="5" cy="19" r="2"/>' +
+  '<path d="M6.5 17.5 17.5 6.5"/>';
 
 const eventCircle = (extra = ''): string =>
   `<circle cx="12" cy="12" r="7" fill="${COLORS.componentFill}" stroke="${COLORS.stroke}" stroke-width="2"/>${extra}`;
@@ -16,18 +48,10 @@ const text = (content: string, attrs: string): string =>
   `<text x="12" text-anchor="middle" font-family="${FONT.family}" ${attrs}>${content}</text>`;
 
 export const PALETTE_ICONS: Record<string, string> = {
-  // Draw tool: open zigzag polyline with the start point marked. The two tool glyphs use
-  // currentColor so the armed (highlighted) state can invert them; the create glyphs keep the
+  // The tools use the common Lucide icons of the Miragon modelers; the create glyphs keep the
   // notation colours because they preview the element.
-  draw: wrap(
-    `<polyline points="3.98,16.03 8.5,7 14,14 21,4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>` +
-      `<circle cx="3" cy="18" r="2.2" fill="none" stroke="currentColor" stroke-width="1.4"/>`,
-  ),
-  // Selection tool: dashed lasso rectangle with a cursor arrow.
-  lasso: wrap(
-    `<rect x="3" y="3" width="13" height="13" rx="2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="3 2.5"/>` +
-      `<path d="M13.5 13.5l7 2.7-3 1.3-1.3 3z" fill="currentColor"/>`,
-  ),
+  draw: toolIcon(LINE_SEGMENT),
+  lasso: toolIcon(LUCIDE_SQUARE_DASHED_MOUSE_POINTER),
   component: wrap(eventCircle()),
   // Canon: market = three dots in a triangle (like drawComponent).
   market: wrap(

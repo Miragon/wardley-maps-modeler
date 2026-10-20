@@ -170,13 +170,19 @@ describe('palette', () => {
     expect(document.activeElement?.classList.contains('wardley-label-input')).toBe(true);
   });
 
-  it('draws the tool glyphs in currentColor so the armed state can invert them', () => {
+  it('draws the tools with the Lucide icons in currentColor, so the chrome colours them', () => {
     const target = mount();
     void target.get<Canvas>('canvas');
-    const lassoGlyph = target.container.querySelector(
-      '.djs-palette .entry[data-action="lasso-tool"] svg rect',
-    );
-    expect(lassoGlyph?.getAttribute('stroke')).toBe('currentColor');
+    for (const tool of ['lasso-tool', 'draw-tool']) {
+      const glyph = target.container.querySelector(
+        `.djs-palette .entry[data-action="${tool}"] svg`,
+      );
+      expect(glyph?.getAttribute('stroke'), tool).toBe('currentColor');
+      expect(glyph?.getAttribute('fill'), tool).toBe('none');
+      expect(glyph?.getAttribute('width'), tool).toBe('20');
+    }
+    const draw = target.container.querySelector('.djs-palette .entry[data-action="draw-tool"] svg');
+    expect(draw?.innerHTML).toContain('M6.5 17.5 17.5 6.5');
   });
 });
 
@@ -298,20 +304,22 @@ describe('settings popup', () => {
 });
 
 describe('hover and selection emphasis', () => {
-  it('darkens shapes but never the label text (no grey halo smudge)', async () => {
+  it('shows the dashed interaction outline on hover and keeps the colours (guide §10.4)', async () => {
     const target = mount();
     await target.importDSL(TEA_SHOP);
     const kettle = findByLabel(target, 'Kettle');
     const canvas = target.get<Canvas>('canvas');
-    canvas.addMarker(kettle, 'hover');
     const gfx = canvas.getGraphics(kettle);
-    const visual = gfx.querySelector('.djs-visual')!;
-    const text = visual.querySelector('text')!;
-    const circle = visual.querySelector('circle')!;
-    expect(getComputedStyle(text).filter).toBe('none');
-    expect(getComputedStyle(visual).filter).toBe('none');
-    expect(getComputedStyle(circle).filter).toContain('brightness');
-    expect(getComputedStyle(circle).filter).not.toContain('saturate');
+    // diagram-js creates the outline lazily, on the first hover or selection.
+    const outline = target
+      .get<{ createOutline(element: unknown): SVGElement }>('outline')
+      .createOutline(kettle);
+    expect(getComputedStyle(outline).visibility).toBe('hidden');
+    canvas.addMarker(kettle, 'hover');
+    expect(getComputedStyle(outline).visibility).toBe('visible');
+    expect(getComputedStyle(outline).stroke).toBe('rgb(51, 93, 229)');
+    const circle = gfx.querySelector('.djs-visual circle')!;
+    expect(getComputedStyle(circle).filter).toBe('none');
   });
 
   it('marks a selected connection with a darker, thicker line', async () => {

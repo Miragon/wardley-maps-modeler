@@ -61,7 +61,7 @@ Press `?` in the web app for the same list, with the keys of your platform.
 | Delete                          | `Delete` / `Backspace`                                                                                                                                                                           |
 | Nudge selection                 | Arrow keys (`Shift` = coarse)                                                                                                                                                                    |
 | Undo / redo                     | `Ctrl/Cmd+Z` / `Ctrl/Cmd+Shift+Z` or `Ctrl/Cmd+Y`                                                                                                                                                |
-| Zoom                            | `Ctrl/Cmd` + `+` / `-` / `0` (fit), controls bottom-right                                                                                                                                        |
+| Zoom                            | `Ctrl/Cmd` + `+` / `-` / `0` (100 %), `Shift+1` fits; the zoom panel bottom-right                                                                                                                |
 | Edit label / note               | Double-click (notes: `Cmd/Ctrl+Enter` saves)                                                                                                                                                     |
 | Move a label                    | Drag the label; `Alt` + double-click puts it back                                                                                                                                                |
 | Edit link annotation/flow value | Double-click the connection (or pencil in the pad)                                                                                                                                               |
@@ -71,15 +71,19 @@ Press `?` in the web app for the same list, with the keys of your platform.
 
 In the web app also:
 
-| Action                      | How                                                                                                               |
-| --------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| Rename the map              | Click the title next to the menu; `Enter` saves, `Esc` reverts. The browser tab and download names follow it      |
-| Save the map as a file      | `Ctrl/Cmd+S` or Menu › Download .wmap / .json                                                                     |
-| Edit the map as text        | Menu › View as OWM-DSL — edit, then Apply (`Ctrl/Cmd+Enter`); problems are listed by line                         |
-| Import text or a share link | Paste OWM text or a `#mz=` link onto the canvas, or drop a `.wmap` / `.owm` / `.json` file anywhere               |
-| Undo replacing the map      | Example, New, Open, paste and Apply replace the map; the "Map replaced · Undo" toast brings the previous one back |
-| Map size                    | Menu › Map size: preset, exact width × height, or Reset to default                                                |
-| Keyboard shortcuts          | `?` or Menu › Keyboard shortcuts                                                                                  |
+| Action                      | How                                                                                                                                             |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Start                       | The start card offers New diagram and Show example; open or drop a file, or open a shared link                                                  |
+| Rename the map              | Menu › Map title…; the browser tab and download names follow it                                                                                 |
+| Open a file                 | `Ctrl/Cmd+O` or Menu › Open…, or drop a `.wmap` / `.owm` / `.json` file anywhere                                                                |
+| Save the map as a file      | `Ctrl/Cmd+S` or Menu › Export as .wmap / Export as JSON                                                                                         |
+| Share                       | Share (top right) copies a link that holds the whole map                                                                                        |
+| Edit the map as text        | Menu › Edit as OWM-DSL… — edit, then Apply (`Ctrl/Cmd+Enter`); problems are listed by line. Menu › View as JSON… shows the model                |
+| Import text or a share link | Paste OWM text or a `#mz=` link onto the canvas                                                                                                 |
+| Import problems             | Lines the map could not draw are listed by line behind the problems pill, bottom left                                                           |
+| Undo replacing the map      | New diagram, Open…, Show example, paste and Apply replace the map; the "Map replaced · Undo" toast or `Ctrl/Cmd+Z` brings the previous one back |
+| Map size, axis labels       | Menu › Map size… (preset, exact width × height, or Reset to default) and Menu › X-axis labels…, previewed live                                  |
+| Keyboard shortcuts          | `?` or Menu › Keyboard shortcuts…                                                                                                               |
 
 ## Packages
 

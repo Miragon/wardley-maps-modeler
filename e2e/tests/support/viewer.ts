@@ -1,4 +1,6 @@
 import { expect, type Locator, type Page } from '@playwright/test';
+import type { ShellHandle } from '@miragon/modeler-shell';
+import type { DiagramJsConnection } from '@miragon/modeler-shell/diagram-js';
 
 /**
  * Structural handle to the app's debug surface (exposed in apps/webapp/src/main.ts). We never import
@@ -32,9 +34,18 @@ export interface WardleyViewer {
   saveSVG(): Promise<{ svg: string }>;
 }
 
+/** The web app's parts (apps/webapp/src/main.ts), published once its first map is in place. */
+export interface WardleyApp {
+  readonly ready: boolean;
+  readonly shell: ShellHandle;
+  readonly connection: DiagramJsConnection;
+  destroy(): void;
+}
+
 declare global {
   interface Window {
     __wardleyViewer: WardleyViewer;
+    __wardleyApp?: WardleyApp;
   }
 }
 
@@ -43,16 +54,47 @@ interface Point {
   y: number;
 }
 
+/** Waits until the app has started: its first map (the link's, or an empty one) is in place. */
 export async function waitForViewer(page: Page): Promise<void> {
-  await page.waitForFunction(() => typeof window.__wardleyViewer !== 'undefined');
+  await page.waitForFunction(() => window.__wardleyApp?.ready === true);
 }
 
-/** Open the app and leave the landing start-screen with an empty canvas + working chrome (palette). */
+/** The start screen's card (the shell's empty state). */
+export function startScreen(page: Page): Locator {
+  return page.locator('[data-chrome="empty-state"]');
+}
+
+/** Open the app and leave the start screen with an empty canvas and the working chrome. */
 export async function startNewMap(page: Page): Promise<void> {
   await page.goto('/');
   await waitForViewer(page);
-  await page.locator('#btn-new').click();
+  await startScreen(page).getByRole('button', { name: 'New diagram' }).click();
   await expect(page.locator('.djs-palette')).toBeVisible();
+}
+
+/** Load the Tea Shop example from the start screen of a page that has just opened. */
+export async function openExample(page: Page): Promise<void> {
+  await startScreen(page).getByRole('button', { name: 'Show example' }).click();
+  await expect.poll(async () => (await exportMap(page)).config.title).toBe('Tea Shop');
+}
+
+/** Opens the chrome's menu and returns its dropdown. */
+export async function openMenu(page: Page): Promise<Locator> {
+  const trigger = page.locator('[data-chrome="menu"]');
+  if ((await trigger.getAttribute('aria-expanded')) !== 'true') await trigger.click();
+  const dropdown = page.locator('.cd-shell-menu[role="menu"]');
+  await expect(dropdown).toBeVisible();
+  return dropdown;
+}
+
+/** Runs the menu entry `data-menu-id="<id>"`. */
+export async function menuEntry(page: Page, id: string): Promise<void> {
+  await (await openMenu(page)).locator(`[data-menu-id="${id}"]`).click();
+}
+
+/** The shell's canvas slot: diagram-js's container. */
+export function canvasSlot(page: Page): Locator {
+  return page.locator('.cd-shell-canvas');
 }
 
 export function exportMap(page: Page): Promise<WardleyMapExport> {
@@ -65,11 +107,27 @@ export function exportSvg(page: Page): Promise<string> {
   return page.evaluate(async () => (await window.__wardleyViewer.saveSVG()).svg);
 }
 
-/** Absolute page coordinate at the given fraction of the #canvas bounding box. */
+/** Absolute page coordinate at the given fraction of the canvas slot's bounding box. */
 async function canvasPoint(page: Page, fractionX: number, fractionY: number): Promise<Point> {
-  const box = await page.locator('#canvas').boundingBox();
-  if (!box) throw new Error('#canvas has no bounding box');
+  const box = await canvasSlot(page).boundingBox();
+  if (!box) throw new Error('the canvas slot has no bounding box');
   return { x: box.x + box.width * fractionX, y: box.y + box.height * fractionY };
+}
+
+/** Absolute page coordinate of a point in diagram coordinates, for the current viewbox. */
+async function diagramPoint(page: Page, x: number, y: number): Promise<Point> {
+  const box = await canvasSlot(page).boundingBox();
+  if (!box) throw new Error('the canvas slot has no bounding box');
+  const viewbox = await page.evaluate(() => {
+    const viewer = window.__wardleyViewer as unknown as {
+      get(name: string): { viewbox(): { x: number; y: number; scale: number } };
+    };
+    return viewer.get('canvas').viewbox();
+  });
+  return {
+    x: box.x + (x - viewbox.x) * viewbox.scale,
+    y: box.y + (y - viewbox.y) * viewbox.scale,
+  };
 }
 
 /**
@@ -78,7 +136,7 @@ async function canvasPoint(page: Page, fractionX: number, fractionY: number): Pr
  * pass the id returned by `createComponentAt`/`exportMap`.
  */
 export function elementGfx(page: Page, id: string): Locator {
-  return page.locator(`#canvas [data-element-id="${id}"]`);
+  return canvasSlot(page).locator(`[data-element-id="${id}"]`);
 }
 /**
  * The element's hit box (`.djs-hit` = element.width×height at the shape origin). For components this
@@ -129,8 +187,8 @@ export async function settleForSnapshot(page: Page): Promise<void> {
   await deselectAll(page);
   // Park the pointer on the menu button (HTML chrome outside the canvas SVG) so the canvas root and
   // every element fire `element.out` — no `hover` class survives into the exported markup.
-  await page.locator('#btn-menu').hover();
-  await expect(page.locator('#canvas .hover')).toHaveCount(0);
+  await page.locator('[data-chrome="menu"]').hover();
+  await expect(canvasSlot(page).locator('.hover')).toHaveCount(0);
 }
 
 /**
@@ -142,9 +200,42 @@ export async function createComponentAt(
   fractionX: number,
   fractionY: number,
 ): Promise<string> {
+  return createComponentAtPoint(page, await canvasPoint(page, fractionX, fractionY));
+}
+
+/**
+ * Shows the map at 100 % from the diagram's origin, so a whole page pixel is a whole diagram pixel
+ * and a drop lands where `createComponentAtDiagramPoint` aims, whatever the fit chose.
+ */
+export async function showDiagramOrigin(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const viewer = window.__wardleyViewer as unknown as {
+      get(name: string): {
+        getSize(): { width: number; height: number };
+        viewbox(box: { x: number; y: number; width: number; height: number }): void;
+      };
+    };
+    const canvas = viewer.get('canvas');
+    canvas.viewbox({ x: 0, y: 0, ...canvas.getSize() });
+  });
+}
+
+/**
+ * Like `createComponentAt`, but centred on a point in diagram coordinates, so the map does not
+ * depend on how the chrome fits the view.
+ */
+export async function createComponentAtDiagramPoint(
+  page: Page,
+  x: number,
+  y: number,
+): Promise<string> {
+  return createComponentAtPoint(page, await diagramPoint(page, x, y));
+}
+
+async function createComponentAtPoint(page: Page, point: Point): Promise<string> {
   const before = new Set((await exportMap(page)).elements.map((element) => element.id));
   await page.locator('.djs-palette [data-action="create.component"]').click();
-  await dropAtPoint(page, await canvasPoint(page, fractionX, fractionY));
+  await dropAtPoint(page, point);
   await expect.poll(async () => (await exportMap(page)).elements.length).toBe(before.size + 1);
   const created = (await exportMap(page)).elements.find((element) => !before.has(element.id));
   if (!created) throw new Error('no new element after create');

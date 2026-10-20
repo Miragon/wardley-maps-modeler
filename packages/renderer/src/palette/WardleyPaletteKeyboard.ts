@@ -1,5 +1,6 @@
 import type EventBus from 'diagram-js/lib/core/EventBus';
 import type Palette from 'diagram-js/lib/features/palette/Palette';
+import type { Injector } from 'didi';
 import type WardleyPaletteProvider from './WardleyPaletteProvider.js';
 
 const ENTRY_SELECTOR = '.djs-palette-entries .entry';
@@ -12,10 +13,11 @@ const ACTIVATE_KEYS = new Set(['Enter', ' ']);
  * Makes the palette a keyboard-operable toolbar (WAI-ARIA toolbar pattern): one Tab stop with a
  * roving tabindex, arrow keys / Home / End move between tools, Enter or Space activates the focused
  * one. A create tool has no pointer position to attach the new element to, so it is placed at the
- * centre of the visible plot instead (see `WardleyPaletteProvider.createAtVisibleCenter`).
+ * centre of the free rectangle instead (see `WardleyPaletteProvider.createAtFreeCenter`). Only for
+ * hosts without the Miragon modeler shell, which brings these keys itself.
  */
 export default class WardleyPaletteKeyboard {
-  static $inject = ['eventBus', 'palette', 'wardleyPaletteProvider'];
+  static $inject = ['eventBus', 'palette', 'wardleyPaletteProvider', 'injector'];
 
   private container: HTMLElement | undefined;
   private activeAction: string | undefined;
@@ -24,7 +26,11 @@ export default class WardleyPaletteKeyboard {
     eventBus: EventBus,
     private readonly palette: Palette,
     private readonly provider: WardleyPaletteProvider,
+    injector: Injector,
   ) {
+    // The Miragon modeler shell skins the palette and brings the same keys; a second roving tab
+    // stop and a second Enter handler would create every element twice.
+    if (injector.get('modelerShell', false)) return;
     eventBus.on('palette.create', (event: { container: HTMLElement }) =>
       this.attach(event.container),
     );
@@ -102,7 +108,7 @@ export default class WardleyPaletteKeyboard {
   private activate(entry: HTMLElement): void {
     const action = entry.getAttribute('data-action');
     if (!action) return;
-    if (this.provider.createAtVisibleCenter(action)) return;
+    if (this.provider.createAtFreeCenter(action)) return;
     const bounds = entry.getBoundingClientRect();
     const click = new MouseEvent('click', {
       bubbles: true,

@@ -4,7 +4,13 @@
   "compilerOptions": {
     "noEmit": true,
     "types": ["node"],
-    "lib": ["ES2022", "DOM", "DOM.Iterable"]
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "paths": {
+      "@miragon/wardley-schema-model": ["../packages/schema-model/src/index.ts"],
+      "@miragon/wardley-dsl": ["../packages/dsl/src/index.ts"],
+      "@miragon/wardley-transforms": ["../packages/transforms/src/index.ts"],
+      "@miragon/wardley-renderer": ["../packages/renderer/src/index.ts"]
+    }
   },
-  "include": ["tests/**/*.ts", "playwright.config.ts"]
+  "include": ["tests/**/*.ts", "webview/**/*.ts", "playwright.config.ts"]
 }

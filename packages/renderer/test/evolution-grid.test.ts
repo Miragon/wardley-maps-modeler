@@ -83,7 +83,7 @@ describe('EvolutionGrid.render (axis background)', () => {
     expect(texts(layer)).not.toContain('Visible');
   });
 
-  it('marks axis lines and texts so the `style dark` override can reach them', () => {
+  it('marks axis lines and texts with the classes the export keeps', () => {
     const layer = renderAxes();
     expect(layer.querySelectorAll('.wardley-axis')).toHaveLength(4);
     const axisTexts = layer.querySelectorAll('text.wardley-axis-text');

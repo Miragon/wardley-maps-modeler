@@ -1,9 +1,15 @@
 import * as vscode from 'vscode';
-import { getWebviewHtml } from './webviewHtml.js';
+import {
+  connectThemeBridge,
+  currentAppearance,
+  renderWebviewHtml,
+} from '@miragon/modeler-shell/vscode/extension';
 import { exportImageToFile } from './exportImage.js';
+import { withExampleInserted } from './examples.js';
 import { minimalLineEdit } from './minimalEdit.js';
 import type { WardleyDiagnostics } from './diagnostics.js';
 import type { HostToWebview, WebviewCommand, WebviewToHost } from './protocol.js';
+import { WEBVIEW_THEMES } from './themes.js';
 
 /** Echo keys ignore the line break style: VS Code writes inserted '\n' as the document's EOL. */
 function echoKey(text: string): string {
@@ -27,7 +33,7 @@ export class WardleyEditorProvider implements vscode.CustomTextEditorProvider {
       WardleyEditorProvider.viewType,
       provider,
       {
-        // Diagram editor: preserve state (zoom/selection) across tab switches.
+        // A hidden tab keeps document, view and selection (and reports 0 × 0 meanwhile).
         webviewOptions: { retainContextWhenHidden: true },
         supportsMultipleEditorsPerDocument: false,
       },
@@ -67,11 +73,21 @@ export class WardleyEditorProvider implements vscode.CustomTextEditorProvider {
     _token: vscode.CancellationToken,
   ): Promise<void> {
     const webview = webviewPanel.webview;
-    webview.options = {
-      enableScripts: true,
-      localResourceRoots: [vscode.Uri.joinPath(this.context.extensionUri, 'dist')],
-    };
-    webview.html = getWebviewHtml(webview, this.context.extensionUri);
+    const dist = vscode.Uri.joinPath(this.context.extensionUri, 'dist');
+    // dist/ holds webview.js, webview.css and the font files the CSS loads.
+    webview.options = { enableScripts: true, localResourceRoots: [dist] };
+    const asset = (file: string): string =>
+      webview.asWebviewUri(vscode.Uri.joinPath(dist, file)).toString();
+    webview.html = renderWebviewHtml({
+      cspSource: webview.cspSource,
+      scriptUri: asset('webview.js'),
+      styleUris: [asset('webview.css')],
+      title: 'Wardley Map',
+      lang: 'en',
+      appearance: currentAppearance(vscode, { themes: WEBVIEW_THEMES }),
+      body: '<div id="app"></div>',
+    });
+    const themeBridge = connectThemeBridge(vscode, webviewPanel, { themes: WEBVIEW_THEMES });
 
     const post = (msg: HostToWebview): Thenable<boolean> => webview.postMessage(msg);
     const key = document.uri.toString();
@@ -105,6 +121,13 @@ export class WardleyEditorProvider implements vscode.CustomTextEditorProvider {
       });
       return writes;
     };
+    // "Insert example" is no echo: the canvas learns about it through the update, imports and fits.
+    const insertExample = (): Promise<void> => {
+      writes = writes.then(async () => {
+        await this.applyMinimalEdit(document, withExampleInserted(document.getText()), undefined);
+      });
+      return writes;
+    };
 
     const changeSub = vscode.workspace.onDidChangeTextDocument((e) => {
       if (e.document.uri.toString() !== key) return;
@@ -118,8 +141,9 @@ export class WardleyEditorProvider implements vscode.CustomTextEditorProvider {
       else if (this.activePanelKey === key) this.activePanelKey = undefined;
     });
 
+    // The parser's findings are warnings: the map stays editable (guide §13.5), so no errors.
     const diagnosticsSub = this.diagnostics?.onDidChange(({ uri, count }) => {
-      if (uri.toString() === key) void post({ type: 'diagnostics', count });
+      if (uri.toString() === key) void post({ type: 'problems', count, errors: 0 });
     });
 
     const messageSub = webview.onDidReceiveMessage(async (msg: WebviewToHost) => {
@@ -130,6 +154,9 @@ export class WardleyEditorProvider implements vscode.CustomTextEditorProvider {
           break;
         case 'edit':
           await queueEdit(msg.text);
+          break;
+        case 'insertExample':
+          await insertExample();
           break;
         case 'export':
           await exportImageToFile(document.uri, msg.format, msg.data);
@@ -149,6 +176,7 @@ export class WardleyEditorProvider implements vscode.CustomTextEditorProvider {
     this.diagnostics?.refresh(document);
 
     webviewPanel.onDidDispose(() => {
+      themeBridge.dispose();
       changeSub.dispose();
       viewStateSub.dispose();
       diagnosticsSub?.dispose();
@@ -165,7 +193,7 @@ export class WardleyEditorProvider implements vscode.CustomTextEditorProvider {
   private async applyMinimalEdit(
     document: vscode.TextDocument,
     text: string,
-    suppressEcho: Set<string>,
+    suppressEcho: Set<string> | undefined,
   ): Promise<boolean> {
     if (document.getText() === text) return true;
     const lines: string[] = [];
@@ -175,7 +203,7 @@ export class WardleyEditorProvider implements vscode.CustomTextEditorProvider {
     // Register first (synchronously, before applyEdit), so the resulting change event is reliably
     // recognized as an echo. Only add when a write actually happens -> no orphaned set entries.
     const key = echoKey(text);
-    suppressEcho.add(key);
+    suppressEcho?.add(key);
     const edit = new vscode.WorkspaceEdit();
     edit.replace(
       document.uri,
@@ -191,7 +219,7 @@ export class WardleyEditorProvider implements vscode.CustomTextEditorProvider {
       (applied) => applied,
       () => false,
     );
-    if (!ok) suppressEcho.delete(key); // write failed (e.g. read-only) -> no echo
+    if (!ok) suppressEcho?.delete(key); // write failed (e.g. read-only) -> no echo
     return ok;
   }
 }

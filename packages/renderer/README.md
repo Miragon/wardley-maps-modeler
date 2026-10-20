@@ -36,26 +36,76 @@ Swap `NavigatedViewer` for `Modeler` to get the editable map (palette, context p
 
 ## API
 
-| Member                                                   | What it does                                                                                                      |
-| -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `importDSL(text)` / `importMap(map)`                     | Loads a map (replaces the content, clears the undo history). Resolves to `{ warnings }`.                          |
-| `exportDSL()` / `exportMap()` / `saveSVG()`              | The map as canonical OWM text, as the JSON model, or as a standalone SVG (never shows selection or hover state).  |
-| `setTitle(title)`                                        | Sets the map title (one undo step in the `Modeler`).                                                              |
-| `getMapSize()`                                           | The plot size as drawn, whether the map writes it (`size [w, h]`) and the matching preset.                        |
-| `setMapSize(width, height)` / `resetMapSize()`           | Changes the plot size (rounded and clamped to 480–5000 × 320–5000). In the `Modeler` one undo step, no re-import. |
-| `setEvolutionLabels(labels, { transient })`              | Sets the four X-axis stage labels (normalized, see below); `transient` previews without an undo step.             |
-| `undo()` / `redo()` / `canUndo()` / `canRedo()`          | `Modeler` only: the canvas command stack.                                                                         |
-| `commitPendingEdits()`                                   | `Modeler` only: saves an open inline editor, e.g. before a save shortcut.                                         |
-| `on(event, callback)` / `off(event, callback)`           | diagram-js events, see below.                                                                                     |
-| `svgToPng(svg, { scale, transparent })` / `blobToBase64` | Rasterizes an exported SVG (default 2×, paper background).                                                        |
-| `setAsideEditorState(modeler)` / `restoreEditorState(…)` | Keeps the selection and an open inline editor across a re-import of an externally changed map.                    |
+| Member                                                                     | What it does                                                                                                                                        |
+| -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `importDSL(text)` / `importMap(map)`                                       | Loads a map (replaces the content, clears the undo history). Resolves to `{ warnings }`.                                                            |
+| `exportDSL()` / `exportMap()` / `saveSVG()`                                | The map as canonical OWM text, as the JSON model, or as a standalone SVG (never shows selection or hover state).                                    |
+| `setTitle(title)`                                                          | Sets the map title (one undo step in the `Modeler`).                                                                                                |
+| `getMapSize()`                                                             | The plot size as drawn, whether the map writes it (`size [w, h]`) and the matching preset.                                                          |
+| `setMapSize(width, height, { transient })` / `resetMapSize({ transient })` | Changes the plot size (rounded and clamped to 480–5000 × 320–5000). In the `Modeler` one undo step, no re-import; `transient` previews without one. |
+| `setEvolutionLabels(labels, { transient })`                                | Sets the four X-axis stage labels (normalized, see below); `transient` previews without an undo step.                                               |
+| `undo()` / `redo()` / `canUndo()` / `canRedo()`                            | `Modeler` only: the canvas command stack.                                                                                                           |
+| `commitPendingEdits()`                                                     | `Modeler` only: saves an open inline editor, e.g. before a save shortcut.                                                                           |
+| `on(event, callback)` / `off(event, callback)`                             | diagram-js events, see below.                                                                                                                       |
+| `svgToPng(svg, { scale, transparent })` / `blobToBase64`                   | Rasterizes an exported SVG (default 2×, paper background).                                                                                          |
+| `setAsideEditorState(modeler)` / `restoreEditorState(…)`                   | Keeps the selection and an open inline editor across a re-import of an externally changed map.                                                      |
 
 `setEvolutionLabels` turns an empty stage into its default label and `->` into `→`, so the labels
 always write a valid `evolution` line; the default set is stored as `undefined`.
 
+An import validates the whole map first: a map that is not importable rejects before the canvas
+changes, and a rendering failure puts the previous map back.
+
 Options: `new Modeler({ container, keyboard: { undoRedo: false } })` leaves Cmd/Ctrl+Z/Y to the
-host (VS Code owns its document's undo stack). `additionalModules` adds diagram-js modules; every
-Wardley feature module is exported for custom editors.
+host (VS Code owns its document's undo stack). `freeRectInsets: () => ({ top, right, bottom, left })`
+names the canvas edges a host's chrome covers, so fitting, panning and keyboard creation keep to
+the free rectangle. `additionalModules` adds diagram-js modules; every Wardley feature module is
+exported for custom editors.
+
+The `wardleyReadOnly` service (`modeler.get<WardleyReadOnly>('wardleyReadOnly').setReadOnly(true)`)
+locks the canvas while its host cannot save an edit, e.g. while the document is invalid: every edit
+rule is vetoed, an open editor, popup or drag ends without saving, the handles hide, and selection,
+zoom, pan, select all and export stay. It fires `wardley.readOnly.changed`.
+
+## Collaborative hosts
+
+`createCollaborativeModeler()` and `createCollaborativeViewer()` implement the
+[`@miragon/modeler-api`](https://www.npmjs.com/package/@miragon/modeler-api) collaborative-modeler
+contract (notation `wardley`), for hosts that keep the map text in a shared document:
+
+```ts
+import { createCollaborativeModeler } from '@miragon/wardley-renderer';
+import '@miragon/wardley-renderer/assets/wardley.css';
+
+const modeler = createCollaborativeModeler();
+modeler.attachTo(document.querySelector('#canvas')!);
+await modeler.importText(documentText);
+modeler.onContentChanged(() => save(modeler.exportText()));
+```
+
+An import is silent (no content change is reported back) and keeps the selection, the viewbox and
+an open label editor. `elements` names components, anchors, pipelines, submaps and accelerators by
+the id the document gives them (`cmp_kettle`), also right after a canvas edit; `getViewState` and
+`setViewState` carry the viewbox. `diagram` is the wrapped `Modeler` or `NavigatedViewer` for
+host-specific wiring. The modeler takes `additionalModules`, `keyboard` and `freeRectInsets` as
+above; the viewer never edits. Both pass the contract's conformance kit without skips.
+
+### Menu entries and dialogs for a host's chrome
+
+The map's entries of a chrome menu (Model: "Map title…" where the host passes `mapTitle`, "Map
+size…" and "X-axis labels…"; Export; Help) come from `mapMenu(actions)`, in the shape the menu
+groups of [`@miragon/modeler-shell`](https://www.npmjs.com/package/@miragon/modeler-shell) take.
+`createMapSizePopover(chrome, modeler)` and `createAxisLabelsPopover(chrome, modeler)` build the two
+popovers (a live preview, one undo step when done), `createTitleDialog(chrome, modeler)` the "Map
+title…" dialog (one undo step on Apply, nothing for an unchanged title),
+`createShortcutsDialog(chrome, options)` the "Keyboard shortcuts…" dialog and
+`mapShortcuts(chrome, options)` its table. A web app that binds Cmd/Ctrl+O, Cmd/Ctrl+S, Cmd/Ctrl+V
+on the canvas and `?` itself passes `{ fileKeys: true, shortcutsKey: '?' }`, so the dialog lists
+them too.
+`createMapDialog(chrome, parts)` is the modal dialog all of them share (guide §8: header with Close,
+scrolling body, footer), for a host's own dialogs in the same look; `dialogButton(label, variant)`
+gives its buttons. `chrome` is the shell handle or anything of the same shape; the renderer never
+imports the shell itself.
 
 ## Events
 
@@ -85,3 +135,47 @@ Part of the [Wardley Maps](https://github.com/Miragon/wardley-maps-modeler) mono
 ## License
 
 MIT
+
+The tool icons of the palette (`square-dashed-mouse-pointer`, and for Draw `spline` with a
+straight segment) and the Close icon of the dialogs (`x`) are copied from
+[Lucide](https://lucide.dev) (`lucide-static` 1.59.0):
+
+> ISC License
+>
+> Copyright (c) 2026 Lucide Icons and Contributors
+>
+> Permission to use, copy, modify, and/or distribute this software for any purpose with or without
+> fee is hereby granted, provided that the above copyright notice and this permission notice
+> appear in all copies.
+>
+> THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS
+> SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
+> AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+> WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT,
+> NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+> PERFORMANCE OF THIS SOFTWARE.
+
+`x` is derived from [Feather](https://feathericons.com):
+
+> The MIT License (MIT)
+>
+> Copyright (c) 2013-present Cole Bemis
+>
+> Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+> associated documentation files (the "Software"), to deal in the Software without restriction,
+> including without limitation the rights to use, copy, modify, merge, publish, distribute,
+> sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+> furnished to do so, subject to the following conditions:
+>
+> The above copyright notice and this permission notice shall be included in all copies or
+> substantial portions of the Software.
+>
+> THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING
+> BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+> NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+> DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+> OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+The other icons (the context pad, and the `ICON_*` exports with `iconMarkup`, which are deprecated
+since the chrome's icons come from `@miragon/modeler-shell` and go in a later minor) are
+[Material Icons](https://fonts.google.com/icons) by Google, under the Apache License 2.0.

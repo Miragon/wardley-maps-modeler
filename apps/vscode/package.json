@@ -101,17 +101,17 @@
       },
       {
         "command": "wardley.fitView",
-        "title": "Fit Map to View",
-        "category": "Wardley"
-      },
-      {
-        "command": "wardley.exportSvg",
-        "title": "Export as SVG",
+        "title": "Fit to View",
         "category": "Wardley"
       },
       {
         "command": "wardley.exportPng",
         "title": "Export as PNG",
+        "category": "Wardley"
+      },
+      {
+        "command": "wardley.exportSvg",
+        "title": "Export as SVG",
         "category": "Wardley"
       },
       {
@@ -144,12 +144,12 @@
           "group": "1_wardley@1"
         },
         {
-          "command": "wardley.exportSvg",
+          "command": "wardley.exportPng",
           "when": "activeCustomEditorId == 'wardley.mapEditor'",
           "group": "2_wardley_export@1"
         },
         {
-          "command": "wardley.exportPng",
+          "command": "wardley.exportSvg",
           "when": "activeCustomEditorId == 'wardley.mapEditor'",
           "group": "2_wardley_export@2"
         },
@@ -173,11 +173,11 @@
           "when": "activeCustomEditorId == 'wardley.mapEditor'"
         },
         {
-          "command": "wardley.exportSvg",
+          "command": "wardley.exportPng",
           "when": "activeCustomEditorId == 'wardley.mapEditor'"
         },
         {
-          "command": "wardley.exportPng",
+          "command": "wardley.exportSvg",
           "when": "activeCustomEditorId == 'wardley.mapEditor'"
         },
         {
@@ -205,9 +205,20 @@
             ]
           },
           {
+            "id": "source",
+            "title": "Open the source to the side",
+            "description": "The text is the map: edit it beside the canvas and watch both stay in sync.\n[Open Source to the Side](command:wardley.showSource)",
+            "media": {
+              "markdown": "media/walkthrough/source.md"
+            },
+            "completionEvents": [
+              "onCommand:wardley.showSource"
+            ]
+          },
+          {
             "id": "learn",
             "title": "Learn the basics",
-            "description": "Add and connect components, move and evolve them, then export the map as SVG or PNG.",
+            "description": "Add and connect components, move and evolve them, then export the map as PNG or SVG.",
             "media": {
               "markdown": "media/walkthrough/learn.md"
             },
@@ -223,12 +234,14 @@
     "build": "node esbuild.config.mjs",
     "watch": "node esbuild.config.mjs --watch",
     "typecheck": "tsc -p tsconfig.json",
+    "notices": "node scripts/third-party-notices.mjs",
     "vscode:prepublish": "node esbuild.config.mjs --production",
     "package": "vsce package --no-dependencies -o wardley-mapping-modeler.vsix"
   },
   "dependencies": {
     "@fontsource-variable/geist": "5.3.0",
     "@fontsource-variable/geist-mono": "5.3.0",
+    "@miragon/modeler-shell": "0.2.1",
     "@miragon/wardley-dsl": "0.6.0",
     "@miragon/wardley-renderer": "0.7.0",
     "@miragon/wardley-schema-model": "0.6.0",

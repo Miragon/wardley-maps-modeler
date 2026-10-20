@@ -13,6 +13,7 @@ import type WardleyModeling from '../modeling/WardleyModeling.js';
 import type WardleyElementFactory from '../model/WardleyElementFactory.js';
 import { FONT, NOTE_LINE_HEIGHT } from '../draw/styles.js';
 import { createFieldError } from './fieldError.js';
+import { isReadOnly } from '../read-only/index.js';
 import {
   focusCanvasWithoutRing,
   lastInteractionWasPointer,
@@ -147,6 +148,7 @@ export default class WardleyLabelEditing {
   private active: ActiveEdit | null = null;
   private readonly contextPad: ContextPad | null;
   private readonly selection: Selection | null;
+  private readonly locked: () => boolean;
 
   constructor(
     private readonly eventBus: EventBus,
@@ -158,6 +160,7 @@ export default class WardleyLabelEditing {
     trackInputModality();
     this.contextPad = injector.get<ContextPad | null>('contextPad', false) ?? null;
     this.selection = injector.get<Selection | null>('selection', false) ?? null;
+    this.locked = () => isReadOnly(injector);
 
     eventBus.on('element.dblclick', (event: { element?: unknown }) => {
       if (isWardleyShape(event.element)) this.activate(event.element);
@@ -176,7 +179,7 @@ export default class WardleyLabelEditing {
 
   /** Opens the in-place name editor for `element` (no-op for regions and drawings). */
   activate(element: WardleyShape, options: ActivateOptions = {}): void {
-    if (!isWardleyShape(element) || NOT_EDITABLE.has(element.wardleyType)) return;
+    if (!isWardleyShape(element) || NOT_EDITABLE.has(element.wardleyType) || this.locked()) return;
     this.active?.commit('outside');
 
     const container = this.canvas.getContainer();
@@ -309,6 +312,7 @@ export default class WardleyLabelEditing {
    * `; annotation` text. An empty input clears the field. Undo-safe via updateProperties.
    */
   activateConnection(conn: WardleyConnection, options: ActivateOptions = {}): void {
+    if (this.locked()) return;
     this.active?.commit('outside');
 
     const container = this.canvas.getContainer();

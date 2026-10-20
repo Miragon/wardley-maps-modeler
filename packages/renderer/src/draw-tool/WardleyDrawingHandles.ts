@@ -1,3 +1,5 @@
+import type { Injector } from 'didi';
+import { isReadOnly } from '../read-only/index.js';
 import {
   append as svgAppend,
   attr as svgAttr,
@@ -22,7 +24,7 @@ interface Point {
  * recomputed bbox) as ONE undoable command.
  */
 export default class WardleyDrawingHandles {
-  static $inject = ['eventBus', 'canvas', 'wardleyModeling', 'evolutionGrid'];
+  static $inject = ['eventBus', 'canvas', 'wardleyModeling', 'evolutionGrid', 'injector'];
 
   private shape: WardleyShape | null = null;
   private group: SVGElement | null = null;
@@ -33,6 +35,7 @@ export default class WardleyDrawingHandles {
     private readonly canvas: Canvas,
     private readonly modeling: WardleyModeling,
     private readonly grid: EvolutionGrid,
+    private readonly injector: Injector,
   ) {
     eventBus.on('selection.changed', (event: { newSelection?: unknown[] }) => {
       const sel = event.newSelection ?? [];
@@ -81,7 +84,7 @@ export default class WardleyDrawingHandles {
   }
 
   private startDrag(e: MouseEvent, index: number): void {
-    if (e.button !== 0 || !this.shape) return;
+    if (e.button !== 0 || !this.shape || isReadOnly(this.injector)) return;
     e.preventDefault();
     e.stopPropagation();
     const shape = this.shape;

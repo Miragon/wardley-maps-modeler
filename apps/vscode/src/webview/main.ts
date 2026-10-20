@@ -1,85 +1,124 @@
-// Geist (Miragon typeface), self-hosted variable fonts (all weights in one file each). esbuild
-// inlines the woff2 as data-URLs; notes and axis captions are italic, hence the italic face too.
+import './zod-jitless.js';
+// Geist (Miragon typeface), self-hosted variable fonts; notes and axis captions are italic, and
+// the shortcut chips are Geist Mono.
 import '@fontsource-variable/geist/wght.css';
 import '@fontsource-variable/geist/wght-italic.css';
-// Pulls the renderer CSS (incl. diagram-js.css) into the bundle.
+import '@fontsource-variable/geist-mono/wght.css';
+// The renderer brings its stylesheet (tokens, diagram-js.css, cd-canvas.css); the shell's comes
+// last.
 import {
-  Modeler,
   blobToBase64,
+  createAxisLabelsPopover,
+  createCollaborativeModeler,
+  createMapSizePopover,
+  createShortcutsDialog,
+  isWardleyShape,
+  mapMenu,
   svgToPng,
-  ICON_ASPECT_RATIO,
-  ICON_DOWNLOAD,
-  ICON_EDIT,
-  ICON_IMAGE,
-  restoreEditorState,
-  setAsideEditorState,
+  type CollaborativeWardleyModeler,
   type LabelDeduplicatedEvent,
+  type Modeler,
+  type PanConstraint,
   type SvgToPngOptions,
+  type WardleyReadOnly,
 } from '@miragon/wardley-renderer';
 import { patchDSL } from '@miragon/wardley-dsl';
 import type { WardleyMap } from '@miragon/wardley-schema-model';
-import './style.css';
+import '@miragon/modeler-shell/shell.css';
+import type { ShellHandle } from '@miragon/modeler-shell';
+import { INVALID_STATUS_DELAY_MS } from '@miragon/modeler-shell/core';
+import {
+  connectDiagramJs,
+  shellModule,
+  type DiagramJsConnection,
+} from '@miragon/modeler-shell/diagram-js';
+import {
+  mountVsCodeShell,
+  persistView,
+  readShellState,
+} from '@miragon/modeler-shell/vscode/webview';
 import {
   isWebviewCommand,
+  type ExportFormat,
   type HostToWebview,
   type WebviewCommand,
   type WebviewToHost,
 } from '../protocol.js';
-import { Viewport } from './viewport.js';
-import { Menu } from './menu.js';
-import { MapSizeControl } from './mapSize.js';
-import { AxisDialog } from './axisDialog.js';
-import { ProblemsIndicator, ZoomControls } from './chrome.js';
+import { WEBVIEW_THEMES } from '../themes.js';
 
 interface VsCodeApi {
-  postMessage(msg: WebviewToHost): void;
+  postMessage(message: WebviewToHost): void;
   getState(): unknown;
   setState(state: unknown): void;
 }
 declare const acquireVsCodeApi: () => VsCodeApi;
+
+interface ElementRegistryLike {
+  getAll(): unknown[];
+}
+
+const MAP_NAME = 'Wardley map';
+
 const vscode = acquireVsCodeApi();
+const storedShellState = readShellState(vscode);
+
+// The diagram first: the renderer's keyboard listens on document and must run before the shell's
+// key listener, and the Modeler builds its diagram lazily on the first get(). Undo and redo keys
+// stay unbound: VS Code's document history owns them (guide §13.5). The webview runs the same
+// collaborative-modeler contract as every other host, so its imports are silent and keep an open
+// label editor.
+const collaborative = createCollaborativeModeler({
+  additionalModules: [shellModule],
+  keyboard: { undoRedo: false },
+  freeRectInsets: () => shell.fitInsets(),
+});
+const modeler = collaborative.diagram as Modeler;
+modeler.get('canvas');
+const registry = modeler.get<ElementRegistryLike>('elementRegistry');
+const panConstraint = modeler.get<PanConstraint>('panConstraint');
+// The canvas lock of an invalid file: context pad, move, resize, delete, paste, label editor.
+const canvasLock = modeler.get<WardleyReadOnly>('wardleyReadOnly');
 
 const app = document.getElementById('app');
-const container = document.getElementById('canvas');
-const toolbar = document.getElementById('toolbar');
-if (!app || !container || !toolbar)
-  throw new Error('Webview layout incomplete (#canvas/#toolbar).');
+if (!app) throw new Error('The webview HTML has no #app root.');
 
-// VS Code owns undo/redo (the document's undo stack); the canvas leaves Cmd/Ctrl+Z/Y alone.
-const modeler = new Modeler({ container, keyboard: { undoRedo: false } });
-// Debug handle (like the webapp). Harmless in the sandboxed webview, helpful for diagnostics/tests.
-(globalThis as Record<string, unknown>).__wardleyViewer = modeler;
-
-// ---------------------------------------------------------------------------
-// Chrome: menu (top left), zoom (bottom right), problems (bottom left)
-// ---------------------------------------------------------------------------
-
-const zoomControls = new ZoomControls(app, {
-  zoomIn: () => viewport.stepZoom(1),
-  zoomOut: () => viewport.stepZoom(-1),
-  fit: () => viewport.fit(),
+const shell: ShellHandle = mountVsCodeShell(app, {
+  themes: WEBVIEW_THEMES,
+  canvas: modeler.container,
+  messages: { canvas: MAP_NAME },
+  menu: mapMenu({
+    mapSize: () => mapSizePopover.open(),
+    axisLabels: () => axisLabelsPopover.open(),
+    // The web app's Export group without the map file itself: here the document is the file.
+    exports: {
+      png: { onSelect: () => void exportPng() },
+      svg: { onSelect: () => void exportSvg() },
+      transparentPng: { onSelect: () => void exportPngTransparent() },
+    },
+    showKeyboardShortcuts: () => shortcutsDialog.open(),
+  }),
+  problems: { onActivate: () => post({ type: 'showProblems' }) },
+  emptyHint: { onInsertExample: () => post({ type: 'insertExample' }) },
 });
-const viewport = new Viewport(modeler, container, (zoom) => zoomControls.show(zoom));
-const problems = new ProblemsIndicator(app, () => vscode.postMessage({ type: 'showProblems' }));
-const mapSize = new MapSizeControl(modeler, (message) =>
-  vscode.postMessage({ type: 'error', message }),
-);
-const menu = new Menu(toolbar, [
-  { icon: ICON_ASPECT_RATIO, label: 'Fit to view', run: () => viewport.fit() },
-  'separator',
-  mapSize.element,
-  { icon: ICON_EDIT, label: 'X-axis labels…', run: () => axisDialog.open() },
-  'separator',
-  { icon: ICON_DOWNLOAD, label: 'Export · SVG', run: () => void exportSvg() },
-  { icon: ICON_IMAGE, label: 'Export · PNG (2×)', run: () => void exportPng() },
-  {
-    icon: ICON_IMAGE,
-    label: 'Export · PNG (4×, transparent)',
-    run: () => void exportPng({ scale: 4, transparent: true }),
-  },
-]);
-const axisDialog = new AxisDialog(modeler, app, () => menu.button);
-menu.onOpen(() => syncMapSize());
+// The modeler's own content in the shell root; it goes with the diagram.
+const shortcutsDialog = createShortcutsDialog(shell);
+const mapSizePopover = createMapSizePopover(shell, modeler);
+const axisLabelsPopover = createAxisLabelsPopover(shell, modeler);
+modeler.on('diagram.destroy', () => {
+  shortcutsDialog.destroy();
+  mapSizePopover.destroy();
+  axisLabelsPopover.destroy();
+});
+
+// Empty means no element (guide §13.5); the plot always counts as content, so an empty map still
+// fits its plot (guide §5.9). The pan constraint measures the same bounds the shell fits to.
+const isEmpty = (): boolean => !registry.getAll().some(isWardleyShape);
+const connection: DiagramJsConnection = connectDiagramJs(shell, modeler, {
+  isEmpty,
+  contentBounds: () => panConstraint.contentBounds(),
+});
+const { viewport } = connection;
+persistView(vscode, viewport);
 
 // ---------------------------------------------------------------------------
 // Two-way sync with the document
@@ -89,16 +128,10 @@ let lastText = ''; // text last reconciled with the host
 // The modeler's map lastText was written from: the modeler keeps the ids of its last import while
 // a re-read of lastText derives them from the current names, so this pairs the two.
 let lastMap: WardleyMap | undefined;
-let importing = false; // suppresses the edit echo during import
-let importFailed = false; // the last import (e.g. externally typed text) was unparsable
-let hasMap = false; // a map was imported (no viewport, size or editor state to keep before)
+let initialized = false;
 
-// Serialize imports STRICTLY: init/update arrive as (un-awaited) messages; without chaining, two
-// quick updates (e.g. several undos) could import concurrently and finish in the wrong order.
-let importChain: Promise<void> = Promise.resolve();
-function enqueueImport(text: string, fit: boolean): Promise<void> {
-  importChain = importChain.then(() => importText(text, fit)).catch(() => {});
-  return importChain;
+function post(message: WebviewToHost): void {
+  vscode.postMessage(message);
 }
 
 /** Compares two DSL texts modulo line endings/trailing whitespace (= save transforms). */
@@ -106,46 +139,67 @@ function sameMapText(a: string, b: string): boolean {
   return a.replace(/\r\n/g, '\n').trim() === b.replace(/\r\n/g, '\n').trim();
 }
 
+function showValidMap(): void {
+  canvasLock.setReadOnly(false);
+  shell.setReadOnly(false);
+  shell.setStatus(null);
+}
+
+function showInvalidMap(): void {
+  // Locked at once; the marks and the status box follow after 800ms without a valid import, so
+  // typing in the text editor neither flickers nor re-announces the alert (guide §13.5).
+  canvasLock.setReadOnly(true);
+  shell.setReadOnly(true, { delayMs: INVALID_STATUS_DELAY_MS });
+  shell.setStatus(
+    { severity: 'danger', text: shell.messages.invalidFile(MAP_NAME) },
+    { delayMs: INVALID_STATUS_DELAY_MS },
+  );
+}
+
 /**
- * Loads `text` into the modeler. `fit=true` (first load) fits the map; `fit=false` (external
- * change) PRESERVES the current zoom/viewport, the selection and an open inline editor: they are put
- * aside before the import and restored afterwards (typed text and caret included), as far as their
- * elements still exist. Text that
- * describes the current state (only whitespace/EOL differences, e.g. `insertFinalNewline` on save)
- * is not re-imported at all.
+ * Loads `text` into the modeler. The first import takes the stored view or fits; every later one
+ * (a host undo, the text editor, Git) keeps viewbox, selection and an open label editor. An update
+ * that describes the map the canvas already shows (only whitespace/EOL differ, e.g.
+ * `insertFinalNewline` on save) is not re-imported at all.
  */
-async function importText(text: string, fit: boolean): Promise<void> {
-  if (!fit && hasMap && (sameMapText(text, lastText) || sameMapText(text, modeler.exportDSL()))) {
+async function importText(text: string): Promise<void> {
+  const first = !initialized;
+  if (!first && (sameMapText(text, lastText) || sameMapText(text, collaborative.exportText()))) {
     lastText = text;
+    showValidMap();
     return;
   }
-  importing = true;
-  const previousView = fit || !hasMap ? undefined : viewport.current();
-  // Selection and an open editor (name, link annotation, flow value, link address) survive the
-  // import: an external edit, VS Code undo/redo or typing in the side editor all arrive here.
-  const editorState = hasMap ? setAsideEditorState(modeler) : undefined;
+  const keep = first ? undefined : viewport.getViewbox();
+  const wasEmpty = isEmpty();
   try {
-    await viewport.programmatic(() => modeler.importDSL(text));
+    await collaborative.importText(text);
     lastText = text;
     lastMap = modeler.exportMap();
-    importFailed = false;
-    hasMap = true;
-    viewport.activate();
-    mapSize.sync();
-    if (fit) viewport.fit();
-    else if (previousView) viewport.restore(previousView);
-    if (editorState && !fit) restoreEditorState(modeler, editorState);
-  } catch (err) {
-    // The canvas keeps showing the last good map. Block pushEdit so a graphical action doesn't
-    // overwrite the (just externally typed) text — until a successful re-import.
-    importFailed = true;
-    vscode.postMessage({
-      type: 'error',
-      message: `Could not parse this Wardley map: ${(err as Error).message}`,
-    });
+    showValidMap();
+    if (keep) viewport.restore(keep);
+    else if (first && storedShellState.view) viewport.setState(storedShellState.view);
+    viewport.afterImport();
+    // The first elements of an empty file fit like a fresh file would ("Insert example", §13.5);
+    // the plot alone already counted as content, so the shell would keep the view.
+    if (!first && wasEmpty && !isEmpty() && viewport.isAutomatic()) {
+      viewport.fit({ animate: false });
+    }
+    shell.menu.refresh();
+  } catch {
+    showInvalidMap();
   } finally {
-    importing = false;
+    initialized = true;
   }
+}
+
+// Strictly serialized: init/update arrive as un-awaited messages, and two quick updates (several
+// undos) must not import concurrently and finish in the wrong order.
+let importChain: Promise<void> = Promise.resolve();
+function enqueueImport(text: string): Promise<void> {
+  importChain = importChain
+    .then(() => importText(text))
+    .catch((error: unknown) => console.error('Wardley map import failed', error));
+  return importChain;
 }
 
 /**
@@ -153,103 +207,110 @@ async function importText(text: string, fit: boolean): Promise<void> {
  * order and number formatting of everything the change did not touch.
  */
 function pushEdit(): void {
-  if (importing || importFailed) return;
+  // Before the first import the canvas does not show the document yet; read-only: it shows the
+  // last valid map. Either way an edit would overwrite text the canvas never saw.
+  if (!initialized || shell.isReadOnly()) return;
   const map = modeler.exportMap();
   const text = patchDSL(lastText, map, lastMap ? { previous: lastMap } : {});
   lastMap = map;
   if (text === lastText) return;
   lastText = text;
-  vscode.postMessage({ type: 'edit', text });
+  post({ type: 'edit', text });
 }
 
-function syncMapSize(): void {
-  if (hasMap) mapSize.sync();
-}
-
-modeler.on('commandStack.changed', () => {
-  pushEdit();
-  syncMapSize();
-});
-modeler.on('wardley.config.changed', (event: { transient?: boolean }) => {
-  if (!event.transient) syncMapSize();
-});
+collaborative.onContentChanged(pushEdit);
+// The menu reads the map (size, labels): refresh after every change, undo and redo included.
+modeler.on('commandStack.changed', () => shell.menu.refresh());
 modeler.on('wardley.label.deduplicated', (event: LabelDeduplicatedEvent) => {
-  vscode.postMessage({
+  post({
     type: 'info',
     message: `“${event.requested}” already exists — renamed to “${event.applied}”, because links refer to names.`,
   });
-});
-
-window.addEventListener('message', (event: MessageEvent<HostToWebview>) => {
-  const msg = event.data;
-  if (msg.type === 'init') void enqueueImport(msg.text, true);
-  else if (msg.type === 'update') void enqueueImport(msg.text, false);
-  else if (msg.type === 'command' && isWebviewCommand(msg.name)) runCommand(msg.name);
-  else if (msg.type === 'diagnostics') problems.show(msg.count);
-});
-
-function runCommand(name: WebviewCommand): void {
-  if (name === 'fitView') viewport.fit();
-  else if (name === 'exportSvg') void exportSvg();
-  else if (name === 'exportPng') void exportPng();
-  else if (name === 'exportPngTransparent') void exportPng({ scale: 4, transparent: true });
-}
-
-// ---------------------------------------------------------------------------
-// Keys VS Code would otherwise take: its webview host forwards every keydown that reaches `window`
-// to the workbench, so these listeners sit on `document` and stop propagation there.
-// ---------------------------------------------------------------------------
-
-function isTextEntry(target: EventTarget | null): boolean {
-  return (
-    target instanceof HTMLElement &&
-    (target.isContentEditable || target.closest('input, textarea') !== null)
-  );
-}
-
-document.addEventListener('keydown', (e) => {
-  if (!(e.metaKey || e.ctrlKey) || e.altKey) return;
-  const key = e.key.toLowerCase();
-  if (isTextEntry(e.target)) {
-    // Native undo inside a text field instead of undoing the last map change in the document.
-    if (key === 'z' || key === 'y') e.stopPropagation();
-    return;
-  }
-  // Canvas zoom instead of zooming the whole VS Code window.
-  if (key === '=' || key === '+') viewport.stepZoom(1);
-  else if (key === '-') viewport.stepZoom(-1);
-  else if (key === '0') viewport.fit();
-  else return;
-  e.preventDefault();
-  e.stopPropagation();
 });
 
 // ---------------------------------------------------------------------------
 // Export (the webview rasterizes/serializes; the host shows the save dialog)
 // ---------------------------------------------------------------------------
 
+function messageOf(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 // The picture never shows selection or hover state (saveSVG leaves it out): the selection stays.
 async function exportSvg(): Promise<void> {
   try {
     const { svg } = await modeler.saveSVG();
-    vscode.postMessage({ type: 'export', format: 'svg', data: svg });
-  } catch (err) {
-    vscode.postMessage({ type: 'error', message: `SVG export failed: ${(err as Error).message}` });
+    post({ type: 'export', format: 'svg', data: svg });
+  } catch (error) {
+    post({ type: 'error', message: `Could not export the map as SVG: ${messageOf(error)}` });
   }
 }
 
-async function exportPng(options: SvgToPngOptions = {}): Promise<void> {
+async function exportRaster(format: ExportFormat, options: SvgToPngOptions): Promise<void> {
   try {
     const { svg } = await modeler.saveSVG();
-    const blob = await svgToPng(svg, options);
-    vscode.postMessage({ type: 'export', format: 'png', data: await blobToBase64(blob) });
-  } catch (err) {
-    vscode.postMessage({ type: 'error', message: `PNG export failed: ${(err as Error).message}` });
+    post({ type: 'export', format, data: await blobToBase64(await svgToPng(svg, options)) });
+  } catch (error) {
+    post({ type: 'error', message: `Could not export the map as PNG: ${messageOf(error)}` });
   }
 }
 
+const exportPng = (): Promise<void> => exportRaster('png', {});
+/** Four times the size, without the paper (slides, documents), as in the web app. */
+const exportPngTransparent = (): Promise<void> =>
+  exportRaster('png-transparent', { scale: 4, transparent: true });
+
 // ---------------------------------------------------------------------------
-// Start
+// Messages from the extension host
 // ---------------------------------------------------------------------------
 
-vscode.postMessage({ type: 'ready' });
+const COMMANDS: Readonly<Record<WebviewCommand, () => void>> = {
+  fitView: () => viewport.fit(),
+  exportPng: () => void exportPng(),
+  exportSvg: () => void exportSvg(),
+  exportPngTransparent: () => void exportPngTransparent(),
+};
+
+function isHostMessage(data: unknown): data is HostToWebview {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    typeof (data as { type?: unknown }).type === 'string'
+  );
+}
+
+let firstImportSettled: () => void = () => undefined;
+const ready = new Promise<void>((resolve) => (firstImportSettled = resolve));
+
+window.addEventListener('message', (event: MessageEvent<unknown>) => {
+  if (!isHostMessage(event.data)) return;
+  const message = event.data;
+  switch (message.type) {
+    case 'init':
+      void enqueueImport(message.text).then(firstImportSettled);
+      break;
+    case 'update':
+      void enqueueImport(message.text);
+      break;
+    case 'problems':
+      shell.setProblems({ count: message.count, errors: message.errors });
+      break;
+    case 'command':
+      // Checked against COMMANDS itself, so a name such as "constructor" never reaches
+      // Object.prototype even if the protocol's list and COMMANDS drift apart.
+      if (isWebviewCommand(message.name) && Object.hasOwn(COMMANDS, message.name)) {
+        COMMANDS[message.name]();
+      }
+      break;
+  }
+});
+
+post({ type: 'ready' });
+
+/** For test pages: the mounted parts, and `ready` once the first `init` import settled. */
+export const webview: {
+  shell: ShellHandle;
+  modeler: CollaborativeWardleyModeler;
+  connection: DiagramJsConnection;
+  ready: Promise<void>;
+} = { shell, modeler: collaborative, connection, ready };

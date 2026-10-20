@@ -20,7 +20,7 @@ import { PLOT, COLORS, FONT } from '../draw/styles.js';
 const AXES_LAYER = 'wardley-axes';
 /** Value-chain end labels [bottom, top] unless the map sets `y-axis Label->Bottom->Top`. */
 export const DEFAULT_Y_AXIS_END_LABELS: readonly [string, string] = ['Invisible', 'Visible'];
-/** Axis lines/arrowheads and margin texts — hooks for the `style dark` override in wardley.css. */
+/** Axis lines/arrowheads and margin texts — styling hooks, kept in the export's markup. */
 const AXIS_CLASS = 'wardley-axis';
 const AXIS_TEXT_CLASS = 'wardley-axis-text';
 

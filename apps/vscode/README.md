@@ -45,20 +45,31 @@ Together they show _what_ you depend on and _how mature_ each piece is.
   comments, blank lines, statement order and number formatting stay as you wrote them, and the text
   editor's cursor stays where it is.
 - **Problems and highlighting.** Lines the parser cannot read (a typo, a link to a missing
-  component) are underlined in the text and listed in the **Problems** view; the diagram shows how
-  many there are in its bottom-left corner. The text has syntax highlighting, and
-  `Ctrl/Cmd+/` toggles `//` comments.
-- **Full modeler:** the floating tool palette at the top and the context pad on a selected element
-  (append, connect, evolve, settings, color, delete). Double-click an element to rename it; placing
-  a new one opens its name field right away. Drag a component left or right to evolve it, drag its
-  label to move just the label (`Alt`+double-click puts it back).
+  component) are underlined in the text and listed in the **Problems** view; a pill in the
+  diagram's bottom-left corner shows how many there are and opens the view. The text has syntax
+  highlighting, and `Ctrl/Cmd+/` toggles `//` comments.
+- **Full modeler:** the tool palette at the top and the context pad on a selected element (append,
+  connect, evolve, settings, color, delete). Double-click an element to rename it; placing a new
+  one opens its name field right away. `Enter` on a palette entry places the element in the middle
+  of the visible map. Drag a component left or right to evolve it, drag its label to move just the
+  label (`Alt`+double-click puts it back).
 - **Map size:** drag the plot's right or bottom edge or its corner to resize it (`Shift` keeps the
-  ratio, `Alt` turns off snapping, double-click the corner to reset), or pick a preset or exact
-  width × height in the menu.
-- **Collapsed menu** (top left): fit to view · map size · X-axis labels · export SVG, PNG (2×) or
-  PNG (4×, transparent). Exports are pictures; the `.wmap` / `.owm` file stays the editable source.
-- **Zoom** (bottom right): `−`, the zoom level (click to fit the map) and `+`.
-- **Self-hosted font** — no CDN, offline-capable.
+  ratio, `Alt` turns off snapping, double-click the corner to reset), or open **Map size…** in the
+  menu for a preset or an exact width × height, previewed on the map as you choose.
+- **Menu** (top left): **Map size…** and **X-axis labels…**, **Export as PNG**, **Export as SVG**
+  and **Export as PNG (4×, transparent)**, and **Keyboard shortcuts…**. Exports are pictures; the
+  `.wmap` / `.owm` file stays the editable source.
+- **Zoom** (bottom right): `−`, the zoom level (click for 100 %), `+` and **Fit**.
+- **Empty file:** a new, empty map shows a hint and **Insert example**, which adds the tea shop
+  example as one undoable edit.
+- **Invalid file:** should a text ever fail to render, the diagram keeps the last valid map
+  read-only until the text renders again.
+- **The Miragon modeler chrome** ([`@miragon/modeler-shell`](https://www.npmjs.com/package/@miragon/modeler-shell)):
+  the same menu, palette, zoom panel and keys as every Miragon modeler. The diagram stays light in
+  dark VS Code themes (high contrast themes get the high-contrast chrome) until all Miragon
+  modelers turn dark together.
+- **Self-hosted fonts** — no CDN, offline-capable. Third-party licenses:
+  [THIRD_PARTY_NOTICES.md](https://github.com/Miragon/wardley-maps-modeler/blob/main/apps/vscode/THIRD_PARTY_NOTICES.md).
 
 ## Commands
 
@@ -68,8 +79,8 @@ Run these from the Command Palette (type _"Wardley"_) or the editor title bar:
 | -------------------------------------------- | --------------------------------------------------- |
 | **Wardley: Open Source to the Side**         | Opens the map's text next to the diagram.           |
 | **Wardley: Open Diagram to the Side**        | Opens the diagram next to the map's text.           |
-| **Wardley: Fit Map to View**                 | Zooms the diagram to show the whole map.            |
-| **Wardley: Export as SVG / PNG**             | Opens a save dialog (defaults to next to the file). |
+| **Wardley: Fit to View**                     | Zooms the diagram to show the whole map.            |
+| **Wardley: Export as PNG / SVG**             | Opens a save dialog (defaults to next to the file). |
 | **Wardley: Export as PNG (4×, Transparent)** | High-resolution PNG without background, for slides. |
 
 ## Keyboard shortcuts on the canvas
@@ -83,8 +94,11 @@ Run these from the Command Palette (type _"Wardley"_) or the editor title bar:
 | `Delete` / `Backspace`              | Delete the selection                          |
 | `Ctrl/Cmd+C` · `V` · `D` · `A`      | Copy · paste · duplicate · select all         |
 | `Ctrl/Cmd+Z` · `Ctrl/Cmd+Shift+Z`   | Undo · redo (the file's undo history)         |
-| `Ctrl/Cmd+=` · `-` · `0`            | Zoom in · zoom out · fit the map              |
+| `Ctrl/Cmd+Plus` · `Minus` · `0`     | Zoom in · zoom out · 100 %                    |
+| `Shift+1`                           | Fit the map                                   |
 | `Esc`                               | Clear the selection, close the menu or dialog |
+
+**Keyboard shortcuts…** in the menu lists every key and gesture.
 
 ## Development
 

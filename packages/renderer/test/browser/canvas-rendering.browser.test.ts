@@ -413,12 +413,14 @@ settlers [0.6, 0.3, 0.4, 0.6]`);
       expect(title?.textContent).toBe('Settlers');
     });
 
-    it('hides the evolve knock-out while the component is selected (no grey band)', async () => {
+    it('keeps the evolve knock-out and the colours of a selected component (no filter)', async () => {
       await modeler.importDSL(TEA_SHOP);
       const underlay = gfx('Kettle').querySelector('.wardley-movement-underlay')!;
       expect(getComputedStyle(underlay).visibility).toBe('visible');
       modeler.get<Selection>('selection').select(findByLabel(registry, 'Kettle'));
-      expect(getComputedStyle(underlay).visibility).toBe('hidden');
+      expect(getComputedStyle(underlay).visibility).toBe('visible');
+      const circle = gfx('Kettle').querySelector('.djs-visual circle')!;
+      expect(getComputedStyle(circle).filter).toBe('none');
     });
 
     it('keeps the inertia bar clear of the default name label', async () => {
@@ -443,14 +445,15 @@ component Legacy [0.5, 0.5] inertia`);
       );
     });
 
-    it('lifts the margin axis texts on a `style dark` map without touching the export', async () => {
+    it('draws a `style dark` map like any other: the directive round-trips, nothing turns navy', async () => {
       await modeler.importDSL(`title Dark
 style dark
 component Kettle [0.43, 0.35]`);
+      expect(container.className).not.toMatch(/wardley-dark/);
+      expect(getComputedStyle(container).backgroundColor).toBe('rgb(249, 247, 247)');
       const stageLabel = container.querySelector('.layer-wardley-axes .wardley-axis-text')!;
-      expect(getComputedStyle(stageLabel).fill).toBe('rgb(143, 138, 138)');
-      const { svg } = await modeler.saveSVG();
-      expect(svg).toContain('fill: rgb(107, 102, 102)');
+      expect(getComputedStyle(stageLabel).fill).toBe('rgb(107, 102, 102)');
+      expect(modeler.exportDSL()).toContain('style dark');
     });
   });
 });

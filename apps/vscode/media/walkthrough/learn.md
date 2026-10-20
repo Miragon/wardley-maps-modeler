@@ -18,13 +18,14 @@ Together they show _what_ you depend on and _how mature_ each piece is.
   context pad, to draw a dependency.
 - **Move, rename, evolve** — drag a component to reposition it and double-click it to rename it.
   Dragging it left or right evolves it. Drag a label to move just the label.
-- **Resize the map** — drag the plot's right or bottom edge or its corner, or pick a size in the
-  menu.
+- **Resize the map** — drag the plot's right or bottom edge or its corner, or choose **Map size…**
+  in the menu.
 - **Undo and redo** — `Ctrl/Cmd+Z` and `Ctrl/Cmd+Shift+Z`, the same history as the text file.
-- **Zoom** — the controls in the bottom-right corner, or `Ctrl/Cmd+=`, `-` and `0` (fit).
-- **Export** — the menu in the top-left corner fits the view, sets the map size and the X-axis
-  labels, and exports SVG or PNG pictures (also via **Wardley: Export as …** in the Command
-  Palette). Exports are pictures: keep the `.wmap` or `.owm` file as the editable source.
+- **Zoom** — the zoom panel in the bottom-right corner, `Ctrl/Cmd+Plus` and `Ctrl/Cmd+Minus`,
+  `Ctrl/Cmd+0` for 100 % and `Shift+1` to fit the map.
+- **Export** — the menu in the top-left corner sets the map size and the X-axis labels, exports PNG
+  or SVG pictures (also via **Wardley: Export as …** in the Command Palette) and lists every
+  keyboard shortcut. Exports are pictures: keep the `.wmap` or `.owm` file as the editable source.
 
 ## Text and diagram side by side
 

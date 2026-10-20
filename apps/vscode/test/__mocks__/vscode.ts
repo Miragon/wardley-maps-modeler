@@ -157,8 +157,19 @@ export class Uri {
   }
 }
 
+export enum ColorThemeKind {
+  Light = 1,
+  Dark = 2,
+  HighContrast = 3,
+  HighContrastLight = 4,
+}
+
 // The document buses the host subscribes to; tests fire them via `vscodeMock`.
 const docChangeEmitter = new EventEmitter<{ document: unknown }>();
+const colorThemeEmitter = new EventEmitter<{ kind: ColorThemeKind }>();
+const configurationEmitter = new EventEmitter<{
+  affectsConfiguration(section: string): boolean;
+}>();
 const docOpenEmitter = new EventEmitter<unknown>();
 const docCloseEmitter = new EventEmitter<unknown>();
 
@@ -173,6 +184,14 @@ export const workspace = {
   },
   onDidCloseTextDocument(listener: (document: unknown) => void): Disposable {
     return docCloseEmitter.event(listener);
+  },
+  getConfiguration(_section?: string): { get<T>(key: string): T | undefined } {
+    return { get: () => undefined };
+  },
+  onDidChangeConfiguration(
+    listener: (event: { affectsConfiguration(section: string): boolean }) => void,
+  ): Disposable {
+    return configurationEmitter.event(listener);
   },
   applyEdit(_edit: WorkspaceEdit): Promise<boolean> {
     return Promise.resolve(true);
@@ -215,6 +234,10 @@ export const languages = {
 
 export const window = {
   activeTextEditor: undefined as { document: { uri: Uri } } | undefined,
+  activeColorTheme: { kind: ColorThemeKind.Light } as { kind: ColorThemeKind },
+  onDidChangeActiveColorTheme(listener: (theme: { kind: ColorThemeKind }) => void): Disposable {
+    return colorThemeEmitter.event(listener);
+  },
   showInformationMessage(message: string, ..._items: string[]): Promise<string | undefined> {
     informationMessages.push(message);
     return Promise.resolve(undefined);
@@ -281,6 +304,11 @@ export const vscodeMock = {
   registeredEditors(): readonly RegisteredEditor[] {
     return registeredEditors;
   },
+  /** Switch VS Code's color theme: the theme bridge posts the new appearance. */
+  setColorThemeKind(kind: ColorThemeKind): void {
+    window.activeColorTheme = { kind };
+    colorThemeEmitter.fire({ kind });
+  },
   /** Reset shared state between tests. */
   reset(): void {
     registeredEditors.length = 0;
@@ -294,5 +322,8 @@ export const vscodeMock = {
     workspace.workspaceFolders = undefined;
     workspace.textDocuments = [];
     window.activeTextEditor = undefined;
+    window.activeColorTheme = { kind: ColorThemeKind.Light };
+    colorThemeEmitter.dispose();
+    configurationEmitter.dispose();
   },
 };

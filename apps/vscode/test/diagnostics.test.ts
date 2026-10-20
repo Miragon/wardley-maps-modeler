@@ -83,7 +83,7 @@ describe('WardleyDiagnostics', () => {
     expect(collection().get(doc.uri)).toBeUndefined();
   });
 
-  it('checks the document when the diagram editor opens and tells the webview the count', async () => {
+  it('checks the document when the diagram editor opens and tells the problems pill the count', async () => {
     const diagnostics = new WardleyDiagnostics();
     const { provider } = WardleyEditorProvider.register(fakeContext, diagnostics);
     const doc = fakeDocument('/a.wmap', TYPO);
@@ -93,10 +93,12 @@ describe('WardleyDiagnostics', () => {
     expect(diagnostics.count(asTextDocument(doc).uri)).toBeGreaterThan(0);
 
     await panel.receive({ type: 'ready' });
-    const counts = panel.posted.filter((m) => m.type === 'diagnostics');
+    const counts = panel.posted.filter((m) => m.type === 'problems');
+    // The parser's findings are warnings: the map stays editable, so there are no errors.
     expect(counts[counts.length - 1]).toEqual({
-      type: 'diagnostics',
+      type: 'problems',
       count: diagnostics.count(asTextDocument(doc).uri),
+      errors: 0,
     });
   });
 

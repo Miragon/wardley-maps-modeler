@@ -12,7 +12,7 @@
       "name": "wardley-maps-modeler",
       "source": "./plugins/wardley-maps-modeler",
       "description": "Wardley Mapping for Claude: the method (value chains, evolution, doctrine, gameplay, creating maps, map reviews with colour-coded feedback notes) plus the complete OWM text DSL — grammar, coordinates and layout, diagnostics, round-trip. Lets Claude read, write, review and generate Wardley Maps as plain text.",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "author": {
         "name": "Miragon",
         "url": "https://miragon.io"

@@ -82,6 +82,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup
       - run: npm run build
+      # The production web app: e2e runs the dev server, so only this build shows what Netlify ships.
+      - run: npm run build:webapp
+      - run: npm run check:build -w apps/webapp
 
   format-check:
     runs-on: ubuntu-latest

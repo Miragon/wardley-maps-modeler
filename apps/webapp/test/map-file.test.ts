@@ -5,7 +5,6 @@ import {
   fileBaseName,
   importErrorMessage,
   isDefaultTitle,
-  lineOfSource,
   MapFileError,
   slugify,
   sniffMapFormat,
@@ -102,21 +101,5 @@ describe('describeWarning', () => {
     expect(describeWarning({ message: 'Link: "Search" not found' })).toEqual({
       message: 'Link: "Search" not found',
     });
-  });
-});
-
-describe('lineOfSource', () => {
-  // Export moves lines it could not read to the end, so the imported line number is stale.
-  const exported = 'title Bad\ncomponent A [0.5, 0.5]\ncomponent B [0.4, 0.4]\nthis is garbage';
-
-  it('finds the line holding the source in the exported text', () => {
-    expect(lineOfSource(exported, 'this is garbage')).toBe(4);
-    expect(lineOfSource(exported, '  this is garbage ')).toBe(4);
-  });
-
-  it('is undefined without a source or when the source is gone', () => {
-    expect(lineOfSource(exported, undefined)).toBeUndefined();
-    expect(lineOfSource(exported, '  ')).toBeUndefined();
-    expect(lineOfSource(exported, 'compnent C [0.1, 0.1]')).toBeUndefined();
   });
 });

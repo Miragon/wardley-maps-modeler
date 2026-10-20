@@ -1,16 +1,20 @@
 import { test, expect } from '@playwright/test';
 import {
+  canvasSlot,
   connectShapes,
   createComponentAt,
+  createComponentAtDiagramPoint,
   dragShape,
   dropAt,
   elementGfx,
   exportDSL,
   exportMap,
   exportSvg,
+  openExample,
   renameShape,
   selectShape,
   settleForSnapshot,
+  showDiagramOrigin,
   startNewMap,
   waitForViewer,
 } from './support/viewer.js';
@@ -30,12 +34,12 @@ test.describe('webapp export round-trip', () => {
   });
 
   test('loads the Tea Shop example and exports stable DSL + SVG', async ({ page }) => {
-    // Real UI: the app opens on the landing (empty canvas), which hides the working chrome and
-    // offers a start card — load the example from its "Show example" button.
-    await page.locator('#btn-example').click();
+    // Real UI: the app opens on the start screen (empty canvas), which hides the working chrome
+    // and offers a start card — load the example from its "Show example" button.
+    await openExample(page);
 
     // The renderer paints one .djs-element per node/edge once import.done fires.
-    await expect(page.locator('#canvas .djs-element').first()).toBeVisible();
+    await expect(canvasSlot(page).locator('.djs-element').first()).toBeVisible();
 
     const map = await exportMap(page);
     expect(map.elements.length).toBeGreaterThan(0);
@@ -155,8 +159,10 @@ test.describe('webapp modelling interactions', () => {
   });
 
   test('builds a map through the UI and exports an SVG matching the snapshot', async ({ page }) => {
-    const source = await createComponentAt(page, 0.35, 0.4);
-    const target = await createComponentAt(page, 0.65, 0.6);
+    // Diagram coordinates, not window fractions: the picture must not change with the chrome's fit.
+    await showDiagramOrigin(page);
+    const source = await createComponentAtDiagramPoint(page, 345, 255);
+    const target = await createComponentAtDiagramPoint(page, 845, 443);
     await connectShapes(page, source, target);
     await settleForSnapshot(page);
 

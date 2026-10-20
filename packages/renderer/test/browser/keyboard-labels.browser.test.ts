@@ -704,6 +704,55 @@ pipeline Platform [0.3, 0.8]
       expect(document.activeElement).toBe(svg());
     });
 
+    it('keeps the selection of an element created on the canvas, by its id in the document', async () => {
+      const factory = service<WardleyElementFactory>('wardleyElementFactory');
+      const created = factory.createNew('component', 'Brand New') as unknown as Shape;
+      service<Modeling>('modeling').createShape(
+        created,
+        { x: 400, y: 300 },
+        service<Canvas>('canvas').getRootElement() as Shape,
+      );
+      expect(created.id).not.toBe('cmp_brand_new');
+      service<Selection>('selection').select(created as unknown as Element);
+
+      await reimport(modeler.exportDSL());
+
+      expect(
+        service<Selection>('selection')
+          .get()
+          .map((element) => element.id),
+      ).toEqual(['cmp_brand_new']);
+    });
+
+    it('keeps the typed text of an element renamed on the canvas', async () => {
+      const platform = findByLabel(service<ElementRegistry>('elementRegistry'), 'Platform');
+      service<WardleyLabelEditing>('wardleyLabelEditing').activate(platform);
+      labelInput()!.value = 'Payments';
+      pressKey(labelInput()!, 'Enter');
+      const payments = findByLabel(service<ElementRegistry>('elementRegistry'), 'Payments');
+      service<WardleyLabelEditing>('wardleyLabelEditing').activate(payments);
+      labelInput()!.value = 'Payments v2';
+
+      await reimport(modeler.exportDSL());
+
+      expect(labelInput()?.value).toBe('Payments v2');
+    });
+
+    it('restores the canvas ids after a rejected re-import', async () => {
+      const factory = service<WardleyElementFactory>('wardleyElementFactory');
+      const created = factory.createNew('component', 'Brand New') as unknown as Shape;
+      service<Modeling>('modeling').createShape(
+        created,
+        { x: 400, y: 300 },
+        service<Canvas>('canvas').getRootElement() as Shape,
+      );
+      service<Selection>('selection').select(created as unknown as Element);
+      const state = setAsideEditorState(modeler);
+      await expect(modeler.importMap({ invalid: true } as never)).rejects.toThrow();
+      restoreEditorState(modeler, state, { importRejected: true });
+      expect(service<Selection>('selection').get()).toEqual([created]);
+    });
+
     it('keeps the selection of an unrelated element', async () => {
       select('Customer');
       await reimport(DSL.replace('[0.55, 0.62]', '[0.5, 0.6]'));

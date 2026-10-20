@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createEmptyMap, serializeMap } from '@miragon/wardley-schema-model';
 import type { Modeler } from '@miragon/wardley-renderer';
-import { openFile } from '../src/io.js';
+import { openFile, readMapFile } from '../src/io.js';
 import { MapFileError } from '../src/map-file.js';
 
 const DSL = 'title Tea\ncomponent Kettle [0.4, 0.4]';
@@ -46,5 +46,17 @@ describe('openFile', () => {
     await expect(openFile(new File(['{ broken'], 'map.json'), viewer)).rejects.toBeInstanceOf(
       SyntaxError,
     );
+  });
+});
+
+describe('readMapFile', () => {
+  it('reads OWM text and a validated JSON map before anything is imported', async () => {
+    expect(await readMapFile(new File([DSL], 'map.wmap'))).toEqual({ kind: 'dsl', text: DSL });
+    const json = await readMapFile(new File([serializeMap(createEmptyMap('Tea'))], 'map.json'));
+    expect(json.kind === 'json' ? json.map.config.title : undefined).toBe('Tea');
+  });
+
+  it('refuses a JSON file that is no map, so the open map stays', async () => {
+    await expect(readMapFile(new File(['{ "elements": 1 }'], 'map.json'))).rejects.toThrow();
   });
 });

@@ -1,4 +1,6 @@
 import type EventBus from 'diagram-js/lib/core/EventBus';
+import type { Injector } from 'didi';
+import { isReadOnly } from '../read-only/index.js';
 import type Dragging from 'diagram-js/lib/features/dragging/Dragging';
 import type Canvas from 'diagram-js/lib/core/Canvas';
 import type ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
@@ -37,6 +39,7 @@ export default class WardleyEvolveDragging {
     'wardleyModeling',
     'canvas',
     'elementRegistry',
+    'injector',
   ];
 
   constructor(
@@ -46,6 +49,7 @@ export default class WardleyEvolveDragging {
     modeling: WardleyModeling,
     canvas: Canvas,
     elementRegistry: ElementRegistry,
+    private readonly injector: Injector,
   ) {
     const preview = (shape: WardleyShape, movement: Movement | undefined) => {
       if (movement === undefined) delete shape.movement;
@@ -81,7 +85,7 @@ export default class WardleyEvolveDragging {
       'mousedown',
       (event: MouseEvent) => {
         const dom = event.target as Element | null;
-        if (!dom?.closest(`.${HANDLE_CLASS}`) || isDrawing()) return;
+        if (!dom?.closest(`.${HANDLE_CLASS}`) || isDrawing() || isReadOnly(injector)) return;
         const id = dom.closest('[data-element-id]')?.getAttribute('data-element-id');
         const shape = id ? (elementRegistry.get(id) as WardleyShape | undefined) : undefined;
         if (!shape || shape.wardleyType !== 'component') return;
@@ -142,6 +146,7 @@ export default class WardleyEvolveDragging {
    *  the axis, or move it afterwards, with live preview; commit on release.
    */
   start(event: Event, shape: WardleyShape): void {
+    if (isReadOnly(this.injector)) return;
     const context: EvolveContext = {
       shape,
       ...(shape.movement ? { originalMovement: shape.movement } : {}),

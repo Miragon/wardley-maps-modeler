@@ -49,6 +49,19 @@ The result always reads back as the same map as `serializeDSL(map)`. When an edi
 safely into the source layout, `patchDSL` falls back to the canonical `serializeDSL(map)` text (in
 the source's line break style). It never throws.
 
+### Ids in the document
+
+The OWM DSL writes no ids: the parser derives them from names (`cmp_cup_of_tea`), note texts and
+annotation numbers, with a `_2` suffix for a repeat in line order. An editor that creates or renames
+an element holds an id the text does not give it until the text is read again. `readBackIds(map)`
+tells, by the ids of `map`, which id each element carries once `serializeDSL(map)` is read back:
+
+```ts
+import { readBackIds } from '@miragon/wardley-dsl';
+
+readBackIds(editedMap).get('shape_42'); // 'cmp_hot_water'
+```
+
 Part of the [Wardley Maps](https://github.com/Miragon/wardley-maps-modeler) monorepo.
 
 ## License

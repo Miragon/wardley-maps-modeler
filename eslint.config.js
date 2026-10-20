@@ -16,13 +16,30 @@ const DOM_RESTRICTED_IMPORTS = {
     { name: 'diagram-js', message: 'DOM-free packages must not import diagram-js (P1).' },
     { name: 'tiny-svg', message: 'DOM-free packages must not import tiny-svg (P1).' },
     { name: 'min-dom', message: 'DOM-free packages must not import min-dom (P1).' },
+    { name: '@miragon/modeler-shell', message: 'Only the apps mount the shell.' },
+    {
+      name: '@miragon/modeler-api',
+      allowTypeImports: true,
+      message: 'DOM-free packages take only types from the contract.',
+    },
   ],
   patterns: [
     {
       group: ['diagram-js/*'],
       message: 'DOM-free packages must not import diagram-js (P1).',
     },
+    { group: ['@miragon/modeler-shell/*'], message: 'Only the apps mount the shell.' },
+    {
+      group: ['@miragon/modeler-api/*'],
+      allowTypeImports: true,
+      message: 'DOM-free packages take only types from the contract.',
+    },
   ],
+};
+
+const SHELL_RESTRICTED_IMPORTS = {
+  paths: [{ name: '@miragon/modeler-shell', message: 'Renderers never import the shell.' }],
+  patterns: [{ group: ['@miragon/modeler-shell/*'], message: 'Renderers never import the shell.' }],
 };
 
 export default tseslint.config(
@@ -92,6 +109,12 @@ export default tseslint.config(
     },
   },
   {
+    files: ['packages/renderer/src/**/*.ts'],
+    rules: {
+      'no-restricted-imports': ['error', SHELL_RESTRICTED_IMPORTS],
+    },
+  },
+  {
     files: ['packages/schema-model/**/*.ts', 'packages/dsl/**/*.ts', 'packages/transforms/**/*.ts'],
     languageOptions: {
       globals: { ...globals.node },
@@ -103,6 +126,13 @@ export default tseslint.config(
         { name: 'window', message: 'DOM-free package: no window (P1).' },
         { name: 'document', message: 'DOM-free package: no document (P1).' },
       ],
+    },
+  },
+  {
+    // Build scripts run in Node (the VS Code app's third-party notices).
+    files: ['apps/*/scripts/**/*.mjs'],
+    languageOptions: {
+      globals: { ...globals.node },
     },
   },
   {

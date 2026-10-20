@@ -1,4 +1,6 @@
 import type Canvas from 'diagram-js/lib/core/Canvas';
+import type { Injector } from 'didi';
+import { isReadOnly } from '../read-only/index.js';
 import type EventBus from 'diagram-js/lib/core/EventBus';
 import type { ComponentElement, MapElement, SubmapElement } from '@miragon/wardley-schema-model';
 import type { WardleyShape } from '../model/di-types.js';
@@ -41,7 +43,7 @@ export function linkOf(shape: WardleyShape): string | undefined {
  * mailto, relative) are rejected and the field stays open marked invalid.
  */
 export default class WardleyLinkEditing {
-  static $inject = ['eventBus', 'canvas', 'wardleyModeling'];
+  static $inject = ['eventBus', 'canvas', 'wardleyModeling', 'injector'];
 
   private active: ActiveLinkEdit | null = null;
 
@@ -49,11 +51,12 @@ export default class WardleyLinkEditing {
     eventBus: EventBus,
     private readonly canvas: Canvas,
     private readonly modeling: WardleyModeling,
+    private readonly injector: Injector,
   ) {
     eventBus.on(['element.mousedown', 'drag.init', 'canvas.viewbox.changing'], () =>
       this.active?.commit(),
     );
-    eventBus.on('diagram.clear', () => this.cancel());
+    eventBus.on(['diagram.clear', 'diagram.destroy'], () => this.cancel());
   }
 
   /**
@@ -89,7 +92,7 @@ export default class WardleyLinkEditing {
 
   /** @param options.value field content to restore instead of the current link (re-import). */
   activate(shape: WardleyShape, options: { value?: string } = {}): void {
-    if (!canHaveLink(shape)) return;
+    if (!canHaveLink(shape) || isReadOnly(this.injector)) return;
     this.active?.commit();
 
     const container = this.canvas.getContainer();

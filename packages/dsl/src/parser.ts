@@ -485,7 +485,7 @@ class MapReader {
 
   /** For a line that looks like a known construct but cannot be parsed. */
   private failed(line: string): void {
-    this.keep(line, 'Line could not be interpreted (kept losslessly in rawPassthrough)');
+    this.keep(line, 'Line not understood — kept as written');
   }
 
   // A reference binds to the name as written first, so `X 2` stays bound to an explicit "X 2" even

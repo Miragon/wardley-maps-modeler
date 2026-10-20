@@ -11,7 +11,9 @@ import {
   normalizeMapSize,
   sameEvolutionLabels,
   presetIdForSize,
+  validateMap,
   type MapConfig,
+  type MapSize,
   type MapSizePresetId,
   type WardleyMap,
 } from '@miragon/wardley-schema-model';
@@ -21,13 +23,16 @@ import { exportBounds } from './io/exportBounds.js';
 import type WardleyImporter from './io/WardleyImporter.js';
 import type WardleyExporter from './io/WardleyExporter.js';
 import type EvolutionGrid from './evolution-grid/EvolutionGrid.js';
-import type { ImportWarning, RootBusinessObject } from './io/types.js';
+import { ROOT_ID, type ImportWarning, type RootBusinessObject } from './io/types.js';
 import {
   configWithSize,
   wardleyRootOf,
   withoutRawSizeStatements,
+  type default as MapProjection,
+  type ProjectionSnapshot,
 } from './map-resize/MapProjection.js';
 import type WardleyModeling from './modeling/WardleyModeling.js';
+import type { FreeRectInsets } from './free-rect/index.js';
 import { applyConfigUpdate, type MapConfigUpdate } from './modeling/cmd/UpdateConfigHandler.js';
 
 export interface WardleyViewerOptions {
@@ -42,6 +47,13 @@ export interface WardleyViewerOptions {
    * which owns the document's undo stack). Default: the canvas handles undo/redo.
    */
   keyboard?: { undoRedo?: boolean };
+  /**
+   * What the host's chrome covers along the container's edges, in px, read whenever it is needed
+   * (e.g. `() => shell.fitInsets()` of the Miragon modeler shell). Keyboard creation then places
+   * elements in the centre of the free rectangle, and panning keeps the map reachable around it.
+   * Without it the whole container counts.
+   */
+  freeRectInsets?: () => FreeRectInsets;
 }
 
 export type EventCallback<T = unknown> = (event: T) => void;
@@ -66,7 +78,25 @@ export interface SetEvolutionLabelsOptions {
   transient?: boolean;
 }
 
+export interface SetMapSizeOptions {
+  /** Live preview: drawn at once, without an undo step (commit later without this flag). */
+  transient?: boolean;
+}
+
 type EvolutionLabels = readonly [string, string, string, string];
+
+/** diagram-js names its implicit roots so; an element of that id would replace the plane. */
+const IMPLICIT_ROOT_PREFIX = '__implicitroot';
+
+/** `map`, validated, or a throw when the canvas cannot hold it. */
+function importableMap(map: WardleyMap): WardleyMap {
+  const checked = validateMap(map);
+  const reserved = [...checked.elements, ...checked.edges].find(
+    ({ id }) => id === ROOT_ID || id.startsWith(IMPLICIT_ROOT_PREFIX),
+  );
+  if (reserved) throw new Error(`The id "${reserved.id}" is reserved for the canvas itself.`);
+  return checked;
+}
 
 function sizeToCss(value: number | string): string {
   return typeof value === 'number' ? `${value}px` : value;
@@ -86,6 +116,8 @@ export abstract class WardleyBaseViewer {
   private readonly _options: WardleyViewerOptions;
   /** Labels before the first transient preview, so the commit becomes one undo step from there. */
   private _labelsBeforePreview: { labels: EvolutionLabels | undefined } | undefined;
+  /** The map before the first transient size preview, put back before the size is committed. */
+  private _sizePreview: { snapshot: ProjectionSnapshot; model: WardleyMap } | undefined;
 
   constructor(options: WardleyViewerOptions = {}) {
     this._options = options;
@@ -107,6 +139,9 @@ export abstract class WardleyBaseViewer {
         canvas: { container: this._container },
         modules,
         ...(this._options.keyboard ? { wardleyKeyboard: this._options.keyboard } : {}),
+        ...(this._options.freeRectInsets
+          ? { wardleyFreeRect: { insets: this._options.freeRectInsets } }
+          : {}),
       });
     }
     return this._diagram;
@@ -124,32 +159,43 @@ export abstract class WardleyBaseViewer {
     this.get<EventBus>('eventBus').off(event, callback);
   }
 
-  /** Load a model into the canvas (replaces existing content). */
+  /**
+   * Load a model into the canvas (replaces existing content). Rejects a map the canvas cannot
+   * hold (invalid, or ids the canvas reserves for itself) before anything changes, so the current
+   * map, its rendering and its undo history stay as they were.
+   */
   async importMap(map: WardleyMap): Promise<{ warnings: ImportWarning[] }> {
+    const checked = importableMap(map);
     const diagram = this._ensureDiagram();
     const eventBus = diagram.get<EventBus>('eventBus');
     const importer = diagram.get<WardleyImporter>('wardleyImporter');
+    const commandStack = diagram.get<CommandStack>('commandStack', false);
+    // Kept to put back if rendering fails half-way: a blank canvas is no way to fail an import.
+    const previous = this._rootBusinessObject() ? this.exportMap() : undefined;
     this._labelsBeforePreview = undefined;
+    this._sizePreview = undefined;
     // A running drag (move, connect, create, resize) holds the previous map's shapes. Released after
     // the import, its command would fail half-way and leave the command stack stuck, so no later
     // edit would fire commandStack.changed again (VS Code: external edit during a drag).
     diagram.get<Dragging>('dragging', false)?.cancel(false);
     importer.clear();
-    const warnings = importer.import(map);
-    this._applyStyleClass(map.config.style);
+    let warnings: ImportWarning[];
+    try {
+      warnings = importer.import(checked);
+    } catch (error) {
+      importer.clear();
+      if (previous) importer.import(previous);
+      // The history pointed at the shapes the failed render removed.
+      commandStack?.clear();
+      eventBus.fire('import.done', { warnings: [] });
+      throw error;
+    }
     // Discard the PREVIOUS map's undo history (concept doc §5.6): undo on orphaned
     // elements would otherwise crash or insert zombie elements into the new map.
     // The read-only Viewer has no command stack.
-    diagram.get<CommandStack>('commandStack', false)?.clear();
+    commandStack?.clear();
     eventBus.fire('import.done', { warnings });
     return { warnings };
-  }
-
-  /** DSL `style` directive as a CSS class on the container (`wardley-dark` etc., concept §8.1). */
-  private _applyStyleClass(style?: string): void {
-    const cls = this._container.classList;
-    for (const s of ['wardley', 'handwritten', 'colour', 'dark']) cls.remove(`wardley-${s}`);
-    if (style && style !== 'wardley') cls.add(`wardley-${style}`);
   }
 
   /** Load OWM DSL text (internally parse -> importMap). Parser findings land in the warnings. */
@@ -181,26 +227,51 @@ export abstract class WardleyBaseViewer {
    * PLOT_MIN..PLOT_MAX); non-finite input throws a RangeError before anything changes. In the
    * Modeler this is one undoable step that re-projects the shapes in place (selection, viewport and
    * history survive); the read-only viewers re-import. An explicit size line is written even for
-   * the default size — only `resetMapSize` removes it.
+   * the default size — only `resetMapSize` removes it. In the Modeler `{ transient: true }` shows
+   * a live preview without an undo step, and the next call without it commits ONE step from the
+   * size before the preview (none when the size ends where the preview started), like
+   * `setEvolutionLabels`.
    */
-  async setMapSize(width: number, height: number): Promise<{ warnings: ImportWarning[] }> {
-    const size = normalizeMapSize(width, height);
-    const modeling = this._wardleyModeling();
-    if (modeling) {
-      modeling.resizeMap(size);
-      return { warnings: [] };
-    }
-    return this._reimportWithSize(size);
+  async setMapSize(
+    width: number,
+    height: number,
+    options: SetMapSizeOptions = {},
+  ): Promise<{ warnings: ImportWarning[] }> {
+    return this._resizeMap(normalizeMapSize(width, height), options);
   }
 
   /** Removes the `size` line: the map is drawn at the default plot size again. */
-  async resetMapSize(): Promise<{ warnings: ImportWarning[] }> {
+  async resetMapSize(options: SetMapSizeOptions = {}): Promise<{ warnings: ImportWarning[] }> {
+    return this._resizeMap(undefined, options);
+  }
+
+  private async _resizeMap(
+    size: MapSize | undefined,
+    options: SetMapSizeOptions,
+  ): Promise<{ warnings: ImportWarning[] }> {
     const modeling = this._wardleyModeling();
-    if (modeling) {
-      modeling.resizeMap(undefined);
+    if (!modeling) return this._reimportWithSize(size);
+    const projection = this.get<MapProjection>('wardleyMapProjection');
+    if (options.transient) {
+      if (!this._sizePreview) {
+        const snapshot = projection.snapshot();
+        if (!snapshot) return { warnings: [] };
+        this._sizePreview = { snapshot, model: projection.captureModel() };
+      }
+      const { snapshot, model } = this._sizePreview;
+      const config = configWithSize(snapshot.businessObject.config, size);
+      projection.redraw(
+        projection.apply({ ...snapshot.businessObject, config }, model, { transient: true }),
+      );
       return { warnings: [] };
     }
-    return this._reimportWithSize(undefined);
+    if (this._sizePreview) {
+      // The command must take the size before the preview as its old state.
+      projection.redraw(projection.restore(this._sizePreview.snapshot, { transient: true }));
+      this._sizePreview = undefined;
+    }
+    modeling.resizeMap(size);
+    return { warnings: [] };
   }
 
   getMapSize(): MapSizeInfo {

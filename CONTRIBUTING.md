@@ -51,6 +51,24 @@ libs pre-installed — so **when you bump `@playwright/test` in `e2e/package.jso
 image tag in [`.github/workflows/ci.yml`](.github/workflows/ci.yml) too** (the version pin-check does
 not catch this).
 
+The Playwright config has two projects, each with its own dev server started for the run:
+
+- `webapp` — the demo web app (`apps/webapp`, Vite on `E2E_PORT`, default `5180`). It runs the
+  shell's conformance kit on the web host, the app's handlers behind the chrome and the modelling
+  interactions.
+- `vscode-webview` — the VS Code webview (`apps/vscode/src/webview/main.ts`) inside the VS Code
+  stub of `@miragon/modeler-shell`, served by the test page in `e2e/webview/` (Vite on
+  `E2E_WEBVIEW_PORT`, default `5190`). It runs the shell's conformance kit, the webview's side of
+  the host protocol, and a smoke test of the production bundle behind the webview CSP.
+
+Run one with `npx playwright test --project=vscode-webview` from `e2e/`. When the default ports are
+taken (several worktrees at once), pick others: `E2E_PORT=6101 E2E_WEBVIEW_PORT=6111 npm run test:e2e`.
+
+The renderer's browser tests also run the `@miragon/modeler-api` conformance kit against
+`createCollaborativeModeler`/`createCollaborativeViewer`
+([`conformance.browser.test.ts`](packages/renderer/test/browser/conformance.browser.test.ts)); a
+skipped case fails the run.
+
 ## Pre-commit reality
 
 The Husky hook (`.husky/pre-commit`) runs **only** `lint-staged` + `npm run lint` — i.e. ESLint and

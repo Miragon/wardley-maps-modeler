@@ -1,3 +1,5 @@
+import type { Injector } from 'didi';
+import { isReadOnly } from '../read-only/index.js';
 import {
   append as svgAppend,
   attr as svgAttr,
@@ -36,6 +38,7 @@ export default class WardleyDrawTool {
     'selection',
     'wardleyElementFactory',
     'evolutionGrid',
+    'injector',
   ];
 
   private active = false;
@@ -50,6 +53,7 @@ export default class WardleyDrawTool {
     private readonly selection: Selection,
     private readonly factory: WardleyElementFactory,
     private readonly grid: EvolutionGrid,
+    private readonly injector: Injector,
   ) {
     eventBus.on('diagram.destroy', () => this.cancel());
   }
@@ -73,7 +77,7 @@ export default class WardleyDrawTool {
   }
 
   activate(): void {
-    if (this.active) return;
+    if (this.active || isReadOnly(this.injector)) return;
     this.active = true;
     this.points = [];
     this.cursor = null;

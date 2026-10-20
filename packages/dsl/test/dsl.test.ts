@@ -1518,7 +1518,7 @@ describe('links whose left name starts with a statement keyword', () => {
     expect(map.elements.find((e) => e.label === 'Probe')).toBeUndefined();
     expect(diagnostics.map((d) => [d.line, d.message])).toEqual([
       [6, 'Ignored "{" — a block must directly follow a pipeline line'],
-      [7, 'Line could not be interpreted (kept losslessly in rawPassthrough)'],
+      [7, 'Line not understood — kept as written'],
       [8, 'Ignored "}" — no pipeline block is open'],
     ]);
   });
