@@ -172,7 +172,11 @@ describe('inside a host chrome (the Miragon modeler shell)', () => {
   });
 
   it('leaves the fit of the plot where it is while a label makes the content wider than the free area', async () => {
-    const editor = mount({ insets: INSETS, width: 1440, height: 790 });
+    // the fit is bound by the height and leaves side margins wider than the constraint's
+    // slack, and the free area is narrow enough that the label's overhang outgrows it by
+    // far, whatever the platform's font measures (1440 left a margin of 8 units on macOS)
+    const size = { width: 1300, height: 790 };
+    const editor = mount({ insets: INSETS, ...size });
     const name =
       'A commodity whose name runs on for many words and far beyond the right edge of the plot';
     await editor.importDSL(`title Host\ncomponent ${name} [0.6, 0.97]\ncomponent B [0.3, 0.4]`);
@@ -180,7 +184,7 @@ describe('inside a host chrome (the Miragon modeler shell)', () => {
     const plot = editor.get<EvolutionGrid>('evolutionGrid').outerBounds();
     const fitted = fitViewbox(plot, canvas.getSize(), INSETS)!;
     const content = editor.get<PanConstraint>('panConstraint').contentBounds();
-    const freeWidth = (1440 - INSETS.left - INSETS.right) / canvas.viewbox().scale;
+    const freeWidth = (size.width - INSETS.left - INSETS.right) / canvas.viewbox().scale;
     expect(content.width).toBeGreaterThan(freeWidth);
 
     // The import's own fit, then the host's fit of the same bounds after the user panned.
