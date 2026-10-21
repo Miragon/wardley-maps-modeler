@@ -61,12 +61,20 @@ An open inline editor (name, note, link annotation, flow value, link address) st
 typed text across a view change, a scroll, a zoom or a host's fit, and moves with its element;
 Enter, leaving the field, or a click or drag on the canvas saves it.
 
-Options: `new Modeler({ container, keyboard: { undoRedo: false } })` leaves Cmd/Ctrl+Z/Y to the
-host (VS Code owns its document's undo stack). `freeRectInsets: () => ({ top, right, bottom, left })`
-names the canvas edges a host's chrome covers, so fitting, panning and keyboard creation keep to
-the free rectangle: the import fits the plot into it, panning keeps the map inside it, and a view
-the host fitted into it stays where the host put it. `additionalModules` adds diagram-js modules; every Wardley feature module is
-exported for custom editors.
+Options (the names of the `@miragon/modeler-api` 1.2 factory options):
+
+- `undoRedoKeys: false` leaves Cmd/Ctrl+Z, Shift+Z and Y to the host (VS Code owns its document's
+  undo stack).
+- `freeArea: { insets: () => ({ top, right, bottom, left }) }` names the canvas edges a host's chrome
+  covers: the import fits the plot into the rest, panning keeps the map inside it, a view the host
+  fitted into it stays where the host put it, and keyboard creation places elements in its centre.
+  `freeArea: { center: () => ({ x, y }) }` gives only that centre, in diagram coordinates.
+- `fitOnImport: false` leaves the view after an import to the host, whose chrome fits it.
+- `additionalModules` adds diagram-js modules; every Wardley feature module is exported for custom
+  editors.
+
+`keyboard: { undoRedo }` and `freeRectInsets` still work for this minor release, as deprecated
+aliases of `undoRedoKeys` and `freeArea: { insets }`; given both, the aligned name wins.
 
 The `wardleyReadOnly` service (`modeler.get<WardleyReadOnly>('wardleyReadOnly').setReadOnly(true)`)
 locks the canvas while its host cannot save an edit, e.g. while the document is invalid: every edit
@@ -89,14 +97,18 @@ await modeler.importText(documentText);
 modeler.onContentChanged(() => save(modeler.exportText()));
 ```
 
-An import is silent (no content change is reported back) and keeps the selection, the viewbox and
-an open label editor. `exportText()` is the committed document, never a live preview: while the
-plot corner is dragged or the size or axis-label popover previews a change, it returns the document
-as it was before, and the change event of the commit brings the new one. `elements` names components, anchors, pipelines, submaps and accelerators by
-the id the document gives them (`cmp_kettle`), also right after a canvas edit; `getViewState` and
-`setViewState` carry the viewbox. `diagram` is the wrapped `Modeler` or `NavigatedViewer` for
-host-specific wiring. The modeler takes `additionalModules`, `keyboard` and `freeRectInsets` as
-above; the viewer never edits. Both pass the contract's conformance kit without skips.
+An import is silent (no content change is reported back), keeps the selection and an open label
+editor and fits the view (unless `fitOnImport: false`); a host's view change (`setViewState`, a fit) never saves an open editor
+either. `exportText()` is the committed document, never a live preview: while the plot corner is
+dragged or the size or axis-label popover previews a change, it returns the document as it was
+before, and the change event of the commit brings the new one. `elements` names components,
+anchors, pipelines, submaps and accelerators by the id the document gives them (`cmp_kettle`), also
+right after a canvas edit, and `elements.bounds(id)` gives an element's live box in diagram
+coordinates; `getViewState` and `setViewState` carry the viewbox. `diagram` is the wrapped `Modeler`
+or `NavigatedViewer` for host-specific wiring. Both factories take the options above
+(`additionalModules`, `freeArea`, `fitOnImport`, `undoRedoKeys` and the deprecated aliases); the
+viewer never edits and ignores the undo keys. Both pass the contract's conformance kit (1.2) without
+skips.
 
 ### Menu entries and dialogs for a host's chrome
 

@@ -93,7 +93,7 @@ function constrainAxisToFreeArea(
  * After every move we pull the visible area back so it stays close to the map,
  * leaving only a small margin of empty space around it. "The map" is the plot plus any content
  * reaching beyond it (long labels at the commodity edge, notes in the margin): `contentBounds()`,
- * which hosts also fit the view to. With the insets of a host's chrome (`freeRectInsets`) the margin is
+ * which hosts also fit the view to. With the insets of a host's chrome (`freeArea: { insets }`) the margin is
  * measured inside the free rectangle, so the map never slips under the chrome and a view the host
  * fitted there is left alone.
  */

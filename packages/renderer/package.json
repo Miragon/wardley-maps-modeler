@@ -36,7 +36,7 @@
     "test:browser": "npm --prefix ../.. run test:browser"
   },
   "dependencies": {
-    "@miragon/modeler-api": "1.1.0",
+    "@miragon/modeler-api": "1.2.0",
     "@miragon/wardley-dsl": "0.7.0",
     "@miragon/wardley-schema-model": "0.6.0",
     "clsx": "2.1.1"

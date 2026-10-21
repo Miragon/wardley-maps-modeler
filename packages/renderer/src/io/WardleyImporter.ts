@@ -27,6 +27,12 @@ const TYPE_ORDER: Record<string, number> = {
   accelerator: 3,
 };
 
+/** Diagram config `wardleyImport` (viewer option `fitOnImport`). */
+export interface WardleyImportConfig {
+  /** `false`: the host fits the view itself, the import leaves it alone. */
+  fit?: boolean;
+}
+
 /**
  * Bridges the WardleyMap model into the diagram-js canvas.
  * Uses `evolutionGrid` exclusively for the pixel projection (P7). Deliberately bypasses the
@@ -41,6 +47,7 @@ export default class WardleyImporter {
     'eventBus',
     'elementRegistry',
     'injector',
+    'config.wardleyImport',
   ];
 
   private readonly freeRect: FreeRect | null;
@@ -53,6 +60,7 @@ export default class WardleyImporter {
     private readonly eventBus: EventBus,
     private readonly elementRegistry: ElementRegistry,
     injector: Injector,
+    private readonly config: WardleyImportConfig | undefined,
   ) {
     this.freeRect = injector.get<FreeRect | null>('wardleyFreeRect', false) ?? null;
   }
@@ -151,7 +159,7 @@ export default class WardleyImporter {
       }
     }
 
-    this.fitPlot();
+    if (this.config?.fit !== false) this.fitPlot();
     this.eventBus.fire('import.render.done', { warnings });
     return warnings;
   }

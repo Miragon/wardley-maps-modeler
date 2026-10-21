@@ -4,4 +4,5 @@ export {
   createCollaborativeViewer,
   type CollaborativeWardleyModeler,
   type CollaborativeWardleyOptions,
+  type WardleyElementsSurface,
 } from './CollaborativeWardley.js';
