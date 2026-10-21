@@ -99,17 +99,19 @@ modeler.onContentChanged(() => save(modeler.exportText()));
 ```
 
 An import is silent (no content change is reported back), keeps the selection and an open label
-editor and fits the view (unless `fitOnImport: false`); a host's view change (`setViewState`, a fit) never saves an open editor
-either. `exportText()` is the committed document, never a live preview: while the plot corner is
-dragged or the size or axis-label popover previews a change, it returns the document as it was
-before, and the change event of the commit brings the new one. `elements` names components,
-anchors, pipelines, submaps and accelerators by the id the document gives them (`cmp_kettle`), also
-right after a canvas edit, and `elements.bounds(id)` gives an element's live box in diagram
-coordinates; `getViewState` and `setViewState` carry the viewbox. `diagram` is the wrapped `Modeler`
-or `NavigatedViewer` for host-specific wiring. Both factories take the options above
-(`additionalModules`, `freeArea`, `fitOnImport`, `undoRedoKeys` and the deprecated aliases); the
-viewer never edits and ignores the undo keys. Both pass the contract's conformance kit (1.2) without
-skips.
+editor and fits the view (unless `fitOnImport: false`); a host's view change (`setViewState`, a fit)
+never saves an open editor either. `exportText()` is the committed document, never a live preview:
+while the plot corner is dragged or the size or axis-label popover previews a change, it returns the
+document as it was before, and the change event of the commit brings the new one. A command during a
+size preview (an undo pressed mid-drag, a title the host sets) puts the preview back first, and a
+drag then ends without resizing, so the history stays in step with the document. `elements` names
+components, anchors, pipelines, submaps and accelerators by the id the document gives them
+(`cmp_kettle`), also right after a canvas edit, and `elements.bounds(id)` gives an element's live
+box in diagram coordinates; `getViewState` and `setViewState` carry the viewbox. `diagram` is the
+wrapped `Modeler` or `NavigatedViewer` for host-specific wiring. Both factories take the options
+above (`additionalModules`, `freeArea`, `fitOnImport`, `undoRedoKeys` and the deprecated aliases);
+the viewer never edits and ignores the undo keys. Both pass the contract's conformance kit (1.2)
+without skips.
 
 ### Menu entries and dialogs for a host's chrome
 

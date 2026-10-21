@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type Canvas from 'diagram-js/lib/core/Canvas';
+import type CommandStack from 'diagram-js/lib/command/CommandStack';
 import type ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
 import type Selection from 'diagram-js/lib/features/selection/Selection';
 import type Modeling from 'diagram-js/lib/features/modeling/Modeling';
@@ -955,5 +956,61 @@ describe('the collaborative export during a live preview (a host autosaving mid-
     expect(modeler.exportDSL()).toContain('evolution A->B->C->D');
     expect(sizeLinesOf(collaborative.exportText())).toEqual(['size [1520, 960]']);
     expect(collaborative.exportText()).not.toContain('evolution');
+  });
+
+  it('keeps a title set during a size preview, as its own undo step before the resize', async () => {
+    const commandStack = modeler.get<CommandStack>('commandStack');
+    await modeler.setMapSize(1501, 951, { transient: true });
+    modeler.setTitle('Mid preview');
+    // The preview is put back before the command, so the command never lands on it.
+    expect(sizeLinesOf(modeler.exportDSL())).toEqual([]);
+
+    await modeler.setMapSize(1501, 951);
+    const exported = collaborative.exportText();
+    expect(exported).toContain('title Mid preview');
+    expect(sizeLinesOf(exported)).toEqual(['size [1501, 951]']);
+
+    commandStack.undo();
+    expect(sizeLinesOf(modeler.exportDSL())).toEqual([]);
+    expect(modeler.exportDSL()).toContain('title Mid preview');
+    commandStack.undo();
+    expect(modeler.exportDSL()).toContain('title Rich size test');
+  });
+
+  it('ends a plot drag without resizing when an undo arrives mid-drag, and keeps the undo', () => {
+    const commandStack = modeler.get<CommandStack>('commandStack');
+    const original = modeler.exportDSL();
+    modeler.setTitle('Edited title');
+    const exportedOnChange: string[] = [];
+    collaborative.onContentChanged(() => exportedOnChange.push(collaborative.exportText()));
+
+    const start = startCornerDrag();
+    mouse('mousemove', document, { x: start.x + 180, y: start.y + 110 });
+    expect(sizeLinesOf(modeler.exportDSL())).not.toEqual([]);
+    commandStack.undo();
+    expect(modeler.exportDSL()).toBe(original);
+    expect(host.querySelector('.wardley-map-resize.is-dragging')).toBeNull();
+
+    mouse('mousemove', document, { x: start.x + 220, y: start.y + 140 });
+    mouse('mouseup', document, { x: start.x + 220, y: start.y + 140 });
+    expect(modeler.exportDSL()).toBe(original);
+    expect(exportedOnChange).toEqual([original]);
+    expect(commandStack.canRedo()).toBe(true);
+    commandStack.redo();
+    expect(modeler.exportDSL()).toContain('title Edited title');
+  });
+
+  it('ends a plot drag without resizing when a redo arrives mid-drag', () => {
+    const commandStack = modeler.get<CommandStack>('commandStack');
+    modeler.setTitle('Edited title');
+    commandStack.undo();
+    const start = startCornerDrag();
+    mouse('mousemove', document, { x: start.x + 180, y: start.y + 110 });
+    commandStack.redo();
+    mouse('mouseup', document, { x: start.x + 220, y: start.y + 140 });
+    expect(sizeLinesOf(modeler.exportDSL())).toEqual([]);
+    expect(modeler.exportDSL()).toContain('title Edited title');
+    commandStack.undo();
+    expect(modeler.exportDSL()).toContain('title Rich size test');
   });
 });

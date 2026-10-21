@@ -6,6 +6,19 @@ import type WardleyExporter from '../io/WardleyExporter.js';
 export type PreviewedField = 'size' | 'evolutionLabels';
 
 /**
+ * Fired before a command changes the document: `preExecute` for a command, `execute` for a redo
+ * (which skips `preExecute`), `revert` for an undo.
+ */
+export const COMMAND_START_EVENTS = [
+  'commandStack.preExecute',
+  'commandStack.execute',
+  'commandStack.revert',
+];
+
+/** Ahead of the other listeners of these events; the command's handler runs after all of them. */
+export const PUT_BACK_PRIORITY = 10_000;
+
+/**
  * The document as it was committed while a live preview (a plot-resize drag, the size or the axis
  * labels being typed into a popover) shows something else on the canvas. A host autosaves the
  * export at any moment, also mid-drag, and must store the document, never the preview.
@@ -21,8 +34,9 @@ export default class LivePreview {
     private readonly exporter: WardleyExporter,
   ) {
     eventBus.on(['import.render.start', 'diagram.clear'], () => this.endAll());
-    // A command that lands during a preview (a title set by the host, a key pressed mid-drag)
-    // changes the document under the preview, which itself only ever changes its own fields.
+    // A command can land under an axis-label preview (a title a host sets) and changes the
+    // document there; the preview itself only ever changes its own fields. A size preview is put
+    // back before any command instead (MapResizeHandles, WardleyBaseViewer).
     eventBus.on('commandStack.changed', () => {
       if (this.committed) this.committed = this.withCommittedFields(this.exporter.export());
     });

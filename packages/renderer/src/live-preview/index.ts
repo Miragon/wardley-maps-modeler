@@ -6,4 +6,4 @@ export const livePreviewModule: ModuleDeclaration = {
   wardleyLivePreview: ['type', LivePreview],
 };
 
-export { default as LivePreview } from './LivePreview.js';
+export { default as LivePreview, COMMAND_START_EVENTS, PUT_BACK_PRIORITY } from './LivePreview.js';

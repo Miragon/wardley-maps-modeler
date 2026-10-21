@@ -34,7 +34,7 @@ import {
 import type WardleyModeling from './modeling/WardleyModeling.js';
 import type { FreeArea } from '@miragon/modeler-api';
 import type { FreeRectConfig, FreeRectInsets } from './free-rect/index.js';
-import type { LivePreview } from './live-preview/index.js';
+import { COMMAND_START_EVENTS, PUT_BACK_PRIORITY, type LivePreview } from './live-preview/index.js';
 import { applyConfigUpdate, type MapConfigUpdate } from './modeling/cmd/UpdateConfigHandler.js';
 
 export interface WardleyViewerOptions {
@@ -170,6 +170,12 @@ export abstract class WardleyBaseViewer {
         modules,
         ...diagramConfig(this._options),
       });
+      // The size preview re-projects the map it started with and puts it back before its commit,
+      // which would overwrite a command in between (a title a host sets mid-preview) and leave
+      // the history out of step with the document: the preview goes first.
+      this._diagram
+        .get<EventBus>('eventBus')
+        .on(COMMAND_START_EVENTS, PUT_BACK_PRIORITY, () => this._putBackSizePreview());
     }
     return this._diagram;
   }
@@ -257,7 +263,7 @@ export abstract class WardleyBaseViewer {
    * the default size — only `resetMapSize` removes it. In the Modeler `{ transient: true }` shows
    * a live preview without an undo step, and the next call without it commits ONE step from the
    * size before the preview (none when the size ends where the preview started), like
-   * `setEvolutionLabels`.
+   * `setEvolutionLabels`. A command before that call (e.g. `setTitle`) puts the preview back first.
    */
   async setMapSize(
     width: number,
