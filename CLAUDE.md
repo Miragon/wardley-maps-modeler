@@ -56,6 +56,19 @@ install` — see [`CONTRIBUTING.md`](CONTRIBUTING.md)). `npm run dev:webapp:plai
   `npm run lint` (ESLint + typecheck)
 - `npm run test:e2e` — Playwright, two projects: `webapp` and `vscode-webview` (ports `E2E_PORT`,
   default 5180, and `E2E_WEBVIEW_PORT`, default 5190)
+- `npm run test:vscode` — the `vscode` Vitest project
+  ([`apps/vscode/test/smoke/`](apps/vscode/test/smoke/)): packs the extension like the release
+  (`vsce package`, so `vscode:prepublish`), unpacks the VSIX outside the repo and runs
+  `runVsCodeSmoke` of `@miragon/modeler-shell/testing/vscode-electron` in a real VS Code (open, evolve
+  a component, save, undo, four themes; screenshots in `test-results/vscode-smoke/`). Opt-in, not in
+  `npm test`; no package build needed. macOS: run as is (a window opens for ~5 s; the first run
+  downloads VS Code into `~/Library/Caches/miragon-modeler-shell/vscode-test`); Linux:
+  `xvfb-run -a npm run test:vscode`; `VSCODE_SMOKE_VERSION=1.96.0` picks a version,
+  `VSCODE_SMOKE_KEEP=1` keeps VS Code's logs. CI:
+  [`vscode-smoke.yml`](.github/workflows/vscode-smoke.yml) — weekly, on demand and on PRs touching
+  `apps/vscode/**`, `packages/{dsl,schema-model}`, the lockfile or the test's setup; not a required
+  check; screenshots as the `vscode-smoke` artifact, logs of a failed run as `vscode-smoke-logs`.
+  Details in [`CONTRIBUTING.md`](CONTRIBUTING.md#vs-code-smoke-test).
 - `npm run format` — Prettier · `npm run depcruise` — check the module graph
 
 Requirements: Node ≥ 22.22.2, npm. Build packages before running tests (workspace deps resolve to

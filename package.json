@@ -27,6 +27,7 @@
     "test": "vitest run --project=unit",
     "test:coverage": "vitest run --project=unit --coverage",
     "test:browser": "vitest run --project=browser",
+    "test:vscode": "vitest run --project=vscode --reporter=verbose",
     "test:e2e": "npm run test:e2e -w e2e",
     "dev": "npm run dev:webapp",
     "dev:webapp": "npm run dev -w apps/webapp",

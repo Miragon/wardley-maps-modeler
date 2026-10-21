@@ -1,0 +1,84 @@
+name: VS Code smoke
+
+# The packaged extension in a real VS Code (apps/vscode/test/smoke, `npm run test:vscode`). A
+# workflow of its own and not a required check, so it neither delays nor blocks the CI workflow.
+# Pull requests run it when they change the extension, the sources of its host bundle (the DSL and
+# the schema model, which no other check runs in a real extension host), the lockfile, whose
+# resolved versions esbuild inlines into the VSIX, or the test's own setup. The webview bundle's
+# renderer and transforms are covered by the vscode-webview e2e project and the weekly run against
+# the newest VS Code.
+on:
+  pull_request:
+    paths:
+      - 'apps/vscode/**'
+      - 'packages/dsl/src/**'
+      - 'packages/dsl/package.json'
+      - 'packages/schema-model/src/**'
+      - 'packages/schema-model/package.json'
+      - 'package-lock.json'
+      - 'package.json'
+      - 'vitest.config.ts'
+      - '.github/actions/setup/**'
+      - '.github/workflows/vscode-smoke.yml'
+  schedule:
+    - cron: '41 4 * * 1'
+  workflow_dispatch:
+    inputs:
+      vscode-version:
+        description: 'VS Code version, e.g. 1.96.0 (the engines floor); empty for the newest stable'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vscode-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  vscode-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup
+
+      # The cache key needs the version before the test resolves it; the test then runs exactly it.
+      - id: vscode
+        name: Resolve the VS Code version and its cache folder
+        shell: bash
+        env:
+          REQUESTED: ${{ inputs.vscode-version }}
+        run: |
+          version="${REQUESTED:-$(curl -fsSL https://update.code.visualstudio.com/api/releases/stable | jq -r '.[0]')}"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "cache=${XDG_CACHE_HOME:-$HOME/.cache}/miragon-modeler-shell/vscode-test" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.vscode.outputs.cache }}
+          key: vscode-${{ runner.os }}-${{ runner.arch }}-${{ steps.vscode.outputs.version }}
+
+      # VS Code needs an X server; -a picks a free display number. The runner is thrown away anyway,
+      # so the run keeps VS Code's profile in RUNNER_TEMP, for its logs when it fails.
+      - run: xvfb-run -a npm run test:vscode
+        env:
+          VSCODE_SMOKE_VERSION: ${{ steps.vscode.outputs.version }}
+          VSCODE_SMOKE_KEEP: '1'
+          TMPDIR: ${{ runner.temp }}
+
+      - if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: vscode-smoke
+          path: test-results/vscode-smoke/
+          retention-days: 7
+
+      - if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: vscode-smoke-logs
+          path: ${{ runner.temp }}/modeler-shell-vscode-*/user-data/logs/
+          if-no-files-found: ignore
+          retention-days: 7

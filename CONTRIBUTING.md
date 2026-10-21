@@ -69,6 +69,55 @@ The renderer's browser tests also run the `@miragon/modeler-api` conformance kit
 ([`conformance.browser.test.ts`](packages/renderer/test/browser/conformance.browser.test.ts)); a
 skipped case fails the run.
 
+## VS Code smoke test
+
+`npm run test:vscode` (the `vscode` Vitest project in
+[`apps/vscode/test/smoke/`](apps/vscode/test/smoke/), not part of `npm test`) checks the extension
+in a real VS Code with `runVsCodeSmoke` of `@miragon/modeler-shell/testing/vscode-electron`. It packs
+the extension as the release does (`vsce package --no-dependencies`, which runs `vscode:prepublish`,
+the production build) and unpacks the VSIX into a temporary folder: no `node_modules` of the monorepo
+sits next to the bundle there, so a module esbuild did not inline fails the activation as it would
+for a user. VS Code starts with that folder on a throwaway profile, opens a small map
+([`tea-shop.wmap`](apps/vscode/test/smoke/tea-shop.wmap)) in the custom editor, and the test checks
+the chrome, evolves a component (click, Shift+→), saves (the file changes and
+`parseDSLWithDiagnostics` finds nothing), undoes (canvas and file are back) and switches through
+VS Code's four default themes, in which the webview stays light (`WEBVIEW_THEMES`) and high contrast
+passes. A screenshot per theme goes to `test-results/vscode-smoke/` (git-ignored, emptied at the
+start of every run): `wardley-light.png`, `wardley-dark.png`, `wardley-high-contrast-dark.png` and
+`wardley-high-contrast-light.png`, or `wardley-open-failure.png` when the editor never opened. The
+packages come from source, as in the extension's own build, so no `npm run build` is needed first.
+
+On macOS:
+
+```bash
+npm run test:vscode                              # the newest stable VS Code
+VSCODE_SMOKE_VERSION=1.96.0 npm run test:vscode  # another version, here the engines floor
+VSCODE_SMOKE_KEEP=1 npm run test:vscode          # keeps VS Code's profile and logs, prints where
+```
+
+A VS Code window opens for a few seconds; a run takes about 5 s. The first run downloads VS Code
+(about 320 to 360 MB, 0.9 GB unpacked per version) into
+`~/Library/Caches/miragon-modeler-shell/vscode-test` (`~/.cache/…` on Linux), which every Miragon
+modeler on the machine shares and `npm ci` keeps; let one download finish before starting a second
+run. Like `npm run package -w apps/vscode`, the packing writes the production build into
+`apps/vscode/dist`. On Linux, run it under an X server: `xvfb-run -a npm run test:vscode`.
+
+When a failure names no cause (for example "the custom editor never showed the shell's menu"), the
+cause is in VS Code's logs: run again with `VSCODE_SMOKE_KEEP=1` and read the `logs` folder of the
+kept profile. One failure is retried, up to twice: the save step of `@miragon/modeler-shell` 0.3.0 can
+read the file while VS Code writes it, and that empty read fails with `the map has no elements`. The
+reporter marks such a run `(retry x1)`; every other failure fails at once.
+
+In CI, [`.github/workflows/vscode-smoke.yml`](.github/workflows/vscode-smoke.yml) runs it on
+`ubuntu-latest` under `xvfb-run -a`: weekly on Monday, on demand (Actions → VS Code smoke → Run
+workflow, optionally with a VS Code version) and on pull requests that change `apps/vscode/**`, the
+sources of the extension host's bundle (`packages/dsl`, `packages/schema-model`),
+`package-lock.json`, or the test's setup (`package.json`, `vitest.config.ts`,
+`.github/actions/setup`). It is a workflow of its own and not a required check, so it never delays or
+blocks the CI workflow. The downloaded VS Code is cached per version. The screenshots are uploaded as
+the `vscode-smoke` artifact and, when the run failed, VS Code's logs as `vscode-smoke-logs` (7 days
+each).
+
 ## Pre-commit reality
 
 The Husky hook (`.husky/pre-commit`) runs **only** `lint-staged` + `npm run lint` — i.e. ESLint and
@@ -109,6 +158,7 @@ Also keep the OWM-DSL round-trip lossless and JSON serialization deterministic.
 
 - Keep PRs small and focused.
 - Make sure local gates are green: `npm run lint`, `npm test`, `npm run depcruise`, `npm run build`.
+  Changed the extension, the DSL, the schema model or a dependency? Run `npm run test:vscode` too.
 - Working on map/domain semantics? See the `wardley-mapping` and `owm-dsl` skills of the Claude Code
   plugin in [`plugins/wardley-maps-modeler/`](plugins/wardley-maps-modeler/). Changed the DSL? Keep
   the `owm-dsl` skill and its examples in step — `npm test` parses every example in the plugin.
