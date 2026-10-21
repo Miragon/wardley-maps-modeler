@@ -930,4 +930,30 @@ describe('the collaborative export during a live preview (a host autosaving mid-
     collaborative.destroy();
     expect(collaborative.exportText()).toBe(committed);
   });
+
+  it('exports the committed size while a size preview outlasts an axis-label preview', async () => {
+    const committed = collaborative.exportText();
+    await modeler.setMapSize(1501, 951, { transient: true });
+    modeler.setEvolutionLabels(['A', 'B', 'C', 'D'], { transient: true });
+    // The label preview ends where it started, the size preview is still on the canvas.
+    modeler.setEvolutionLabels(undefined);
+    expect(modeler.exportDSL()).toContain('size [1501, 951]');
+    expect(collaborative.exportText()).toBe(committed);
+
+    await modeler.setMapSize(1501, 951);
+    expect(collaborative.exportText()).toBe(modeler.exportDSL());
+    expect(sizeLinesOf(collaborative.exportText())).toEqual(['size [1501, 951]']);
+  });
+
+  it('keeps an axis-label preview on the canvas, and out of the export, across a size preview', async () => {
+    await modeler.setMapSize(1501, 951, { transient: true });
+    modeler.setEvolutionLabels(['A', 'B', 'C', 'D'], { transient: true });
+    await modeler.setMapSize(1520, 960, { transient: true });
+    expect(modeler.exportDSL()).toContain('evolution A->B->C->D');
+
+    await modeler.setMapSize(1520, 960);
+    expect(modeler.exportDSL()).toContain('evolution A->B->C->D');
+    expect(sizeLinesOf(collaborative.exportText())).toEqual(['size [1520, 960]']);
+    expect(collaborative.exportText()).not.toContain('evolution');
+  });
 });

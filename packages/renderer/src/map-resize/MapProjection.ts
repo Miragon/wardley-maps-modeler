@@ -152,12 +152,16 @@ export default class MapProjection {
     return { businessObject: root.businessObject, shapes, waypoints };
   }
 
-  /** Puts the map back exactly as it was when `snapshot` was taken. */
+  /**
+   * Puts the size and every element's geometry back exactly as they were when `snapshot` was
+   * taken. The rest of the root stays: an axis-label preview opened since then is no part of it.
+   */
   restore(snapshot: ProjectionSnapshot, options: { transient?: boolean } = {}): Element[] {
     const root = this.root();
-    if (!root) return [];
-    root.businessObject = snapshot.businessObject;
-    this.grid.configure(snapshot.businessObject.config);
+    const businessObject = this.withSize(snapshot.businessObject.config.size);
+    if (!root || !businessObject) return [];
+    root.businessObject = businessObject;
+    this.grid.configure(businessObject.config);
     this.grid.render();
     const changed: Element[] = [];
     for (const [id, geometry] of snapshot.shapes) {
@@ -172,9 +176,20 @@ export default class MapProjection {
       connection.waypoints = points.map((point) => ({ ...point }));
       changed.push(connection);
     }
-    this.livePreview.end();
-    this.fireConfigChanged(snapshot.businessObject.config, options.transient === true);
+    this.livePreview.end('size');
+    this.fireConfigChanged(businessObject.config, options.transient === true);
     return changed;
+  }
+
+  /**
+   * The live root with `size` set (removed when undefined), for a size preview; undefined before
+   * the first import.
+   */
+  withSize(size: MapSize | undefined): RootBusinessObject | undefined {
+    const businessObject = this.root()?.businessObject;
+    return (
+      businessObject && { ...businessObject, config: configWithSize(businessObject.config, size) }
+    );
   }
 
   /** `transient` marks a live preview that is not part of the document (yet). */

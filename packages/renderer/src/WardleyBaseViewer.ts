@@ -285,20 +285,26 @@ export abstract class WardleyBaseViewer {
         if (!snapshot) return { warnings: [] };
         this._sizePreview = { snapshot, model: projection.captureModel() };
       }
-      const { snapshot, model } = this._sizePreview;
-      const config = configWithSize(snapshot.businessObject.config, size);
+      const businessObject = projection.withSize(size);
+      if (!businessObject) return { warnings: [] };
       projection.redraw(
-        projection.apply({ ...snapshot.businessObject, config }, model, { transient: true }),
+        projection.apply(businessObject, this._sizePreview.model, { transient: true }),
       );
       return { warnings: [] };
     }
-    if (this._sizePreview) {
-      // The command must take the size before the preview as its old state.
-      projection.redraw(projection.restore(this._sizePreview.snapshot, { transient: true }));
-      this._sizePreview = undefined;
-    }
+    // The command must take the size before the preview as its old state.
+    this._putBackSizePreview();
     modeling.resizeMap(size);
     return { warnings: [] };
+  }
+
+  /** Shows the map without the size preview again, if one is open. */
+  private _putBackSizePreview(): void {
+    if (!this._sizePreview) return;
+    const projection = this.get<MapProjection>('wardleyMapProjection');
+    const { snapshot } = this._sizePreview;
+    this._sizePreview = undefined;
+    projection.redraw(projection.restore(snapshot, { transient: true }));
   }
 
   getMapSize(): MapSizeInfo {
@@ -375,7 +381,7 @@ export abstract class WardleyBaseViewer {
       if (this._labelsBeforePreview) {
         const before = this._labelsBeforePreview.labels;
         this._applyConfigDirectly({ evolutionLabels: before });
-        this._livePreview()?.end();
+        this._livePreview()?.end('evolutionLabels');
         this._labelsBeforePreview = undefined;
         // A preview that ends where it started (typed, then reverted) is no edit: no undo step.
         if (sameEvolutionLabels(before, labels)) return;

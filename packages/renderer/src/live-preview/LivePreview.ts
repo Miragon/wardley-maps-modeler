@@ -20,7 +20,7 @@ export default class LivePreview {
     eventBus: EventBus,
     private readonly exporter: WardleyExporter,
   ) {
-    eventBus.on(['import.render.start', 'diagram.clear'], () => this.end());
+    eventBus.on(['import.render.start', 'diagram.clear'], () => this.endAll());
     // A command that lands during a preview (a title set by the host, a key pressed mid-drag)
     // changes the document under the preview, which itself only ever changes its own fields.
     eventBus.on('commandStack.changed', () => {
@@ -34,15 +34,23 @@ export default class LivePreview {
     this.previewed.add(field);
   }
 
-  /** The canvas shows the committed document again (the preview was put back or committed). */
-  end(): void {
-    this.committed = undefined;
-    this.previewed.clear();
+  /**
+   * The canvas shows the committed `field` again (its preview was put back or is being
+   * committed). The preview of the other field may still be open and keeps its committed value.
+   */
+  end(field: PreviewedField): void {
+    this.previewed.delete(field);
+    if (!this.previewed.size) this.committed = undefined;
   }
 
   /** The committed document while a preview is open, `undefined` while none is. */
   committedMap(): WardleyMap | undefined {
     return this.committed;
+  }
+
+  private endAll(): void {
+    this.previewed.clear();
+    this.committed = undefined;
   }
 
   private withCommittedFields(live: WardleyMap): WardleyMap {

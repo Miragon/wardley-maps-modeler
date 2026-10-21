@@ -15,7 +15,7 @@ import {
 import { PLOT } from '../draw/styles.js';
 import type EvolutionGrid from '../evolution-grid/EvolutionGrid.js';
 import type MapProjection from './MapProjection.js';
-import { configWithSize, type ProjectionSnapshot } from './MapProjection.js';
+import type { ProjectionSnapshot } from './MapProjection.js';
 
 export const MAP_RESIZE_PREFIX = 'wardley.mapResize';
 
@@ -318,10 +318,8 @@ export default class MapResizeHandles {
     this.showBadge(size, event.originalEvent);
     if (context.size?.width === size.width && context.size.height === size.height) return;
     context.size = size;
-    const businessObject = {
-      ...context.snapshot.businessObject,
-      config: configWithSize(context.snapshot.businessObject.config, size),
-    };
+    const businessObject = this.projection.withSize(size);
+    if (!businessObject) return;
     this.projection.redraw(
       this.projection.apply(businessObject, context.model, { transient: true }),
     );
