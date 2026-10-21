@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.1](https://github.com/Miragon/wardley-maps-modeler/compare/webapp-v0.10.0...webapp-v0.10.1) (2026-10-21)
+
+
+### Bug Fixes
+
+* leave the pipeline out of the Tea Shop example ([#145](https://github.com/Miragon/wardley-maps-modeler/issues/145)) ([3074c12](https://github.com/Miragon/wardley-maps-modeler/commit/3074c129cdbb3afe9727a08c0545c0d7bf6a939e))
+
 ## [0.10.0](https://github.com/Miragon/wardley-maps-modeler/compare/webapp-v0.9.0...webapp-v0.10.0) (2026-10-21)
 
 
