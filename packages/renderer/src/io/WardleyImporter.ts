@@ -3,10 +3,12 @@ import type ElementFactory from 'diagram-js/lib/core/ElementFactory';
 import type ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
 import type EventBus from 'diagram-js/lib/core/EventBus';
 import type { Root } from 'diagram-js/lib/model/Types';
+import type { Injector } from 'didi';
 import type { MapEdge, MapElement, WardleyMap } from '@miragon/wardley-schema-model';
 import type EvolutionGrid from '../evolution-grid/EvolutionGrid.js';
 import type WardleyElementFactory from '../model/WardleyElementFactory.js';
 import type { WardleyShape } from '../model/di-types.js';
+import type { FreeRect } from '../free-rect/index.js';
 import { ROOT_ID, type ImportWarning, type RootBusinessObject } from './types.js';
 import { fitViewbox } from './fitViewbox.js';
 
@@ -38,7 +40,10 @@ export default class WardleyImporter {
     'evolutionGrid',
     'eventBus',
     'elementRegistry',
+    'injector',
   ];
+
+  private readonly freeRect: FreeRect | null;
 
   constructor(
     private readonly canvas: Canvas,
@@ -47,7 +52,10 @@ export default class WardleyImporter {
     private readonly grid: EvolutionGrid,
     private readonly eventBus: EventBus,
     private readonly elementRegistry: ElementRegistry,
-  ) {}
+    injector: Injector,
+  ) {
+    this.freeRect = injector.get<FreeRect | null>('wardleyFreeRect', false) ?? null;
+  }
 
   import(map: WardleyMap): ImportWarning[] {
     const warnings: ImportWarning[] = [];
@@ -148,10 +156,14 @@ export default class WardleyImporter {
     return warnings;
   }
 
-  /** The plot with its axis margins, centred, at most at 100 %. */
+  /**
+   * The plot with its axis margins, centred in the host's free rectangle, at most at 100 %: where
+   * the host's own fit puts it, and where the pan constraint leaves it.
+   */
   private fitPlot(): void {
     const plot = this.grid.outerBounds();
-    this.canvas.viewbox(fitViewbox(plot, this.canvas.getSize()) ?? plot);
+    const insets = this.freeRect?.insets();
+    this.canvas.viewbox(fitViewbox(plot, this.canvas.getSize(), insets) ?? plot);
   }
 
   private createShape(el: MapElement): WardleyShape | undefined {

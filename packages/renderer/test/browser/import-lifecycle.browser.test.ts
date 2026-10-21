@@ -41,6 +41,24 @@ describe('import lifecycle', () => {
       expect(centreOf(viewbox).y).toBeCloseTo(776 / 2, 3);
     });
 
+    it("centres the plot in the host's free rectangle and the pan constraint keeps it there", async () => {
+      host = document.createElement('div');
+      document.body.appendChild(host);
+      const insets = { top: 88, right: 324, bottom: 64, left: 24 };
+      modeler = new Modeler({
+        container: host,
+        width: 1600,
+        height: 1000,
+        freeRectInsets: () => insets,
+      });
+      await modeler.importDSL(MAP);
+      const viewbox = modeler.get<Canvas>('canvas').viewbox();
+      const scale = Math.min(1, (1600 - 348) / 1190, (1000 - 152) / 776);
+      expect(viewbox.scale).toBeCloseTo(scale, 3);
+      expect(viewbox.x + (24 + (1600 - 348) / 2) / viewbox.scale).toBeCloseTo(1190 / 2, 1);
+      expect(viewbox.y + (88 + (1000 - 152) / 2) / viewbox.scale).toBeCloseTo(776 / 2, 1);
+    });
+
     it('still shows the whole plot in a container smaller than it', async () => {
       const editor = createModeler(800, 600);
       await editor.importDSL(MAP);

@@ -64,7 +64,8 @@ Enter, leaving the field, or a click or drag on the canvas saves it.
 Options: `new Modeler({ container, keyboard: { undoRedo: false } })` leaves Cmd/Ctrl+Z/Y to the
 host (VS Code owns its document's undo stack). `freeRectInsets: () => ({ top, right, bottom, left })`
 names the canvas edges a host's chrome covers, so fitting, panning and keyboard creation keep to
-the free rectangle. `additionalModules` adds diagram-js modules; every Wardley feature module is
+the free rectangle: the import fits the plot into it, panning keeps the map inside it, and a view
+the host fitted into it stays where the host put it. `additionalModules` adds diagram-js modules; every Wardley feature module is
 exported for custom editors.
 
 The `wardleyReadOnly` service (`modeler.get<WardleyReadOnly>('wardleyReadOnly').setReadOnly(true)`)

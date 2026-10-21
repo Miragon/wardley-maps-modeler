@@ -10,9 +10,11 @@ const PAD_TOP = 180;
 const PAD_BOTTOM = 80;
 const PAD_SIDE = 120;
 /**
- * Screen px a host's chrome insets are widened by. The same on both sides of an axis, so a view
- * the host fitted into its free rectangle (centred, guide §5.9) is never pulled away: the host
- * would take the pull for a user move and stop keeping the view fitted.
+ * Screen px of empty space the view may show beyond the content inside the host's free rectangle.
+ * Room on both sides of an axis, so a view the host fitted into its free rectangle (guide §5.9)
+ * is never pulled away, also when the host fits other bounds than `contentBounds()` (the plot
+ * without a long label beyond it): the host would take the pull for a user move and stop keeping
+ * the view fitted.
  */
 const INSET_SLACK = 96;
 const EPSILON = 0.5;
@@ -22,6 +24,14 @@ interface Pads {
   right: number;
   bottom: number;
   left: number;
+}
+
+/** The free rectangle along one axis, in diagram px at the view's scale. */
+interface FreeAxis {
+  /** Covered by the host's chrome before and after the free part. */
+  before: number;
+  after: number;
+  slack: number;
 }
 
 type ViewBox = { x: number; y: number; width: number; height: number; scale?: number };
@@ -58,12 +68,34 @@ function constrainAxis(
 }
 
 /**
+ * Clamps one axis of the view so the content stays in the host's free rectangle: content smaller
+ * than the free part may sit anywhere inside it, larger content may be panned along it, each up to
+ * `slack` beyond. Never centres, so a view the host placed in its free rectangle stays put.
+ */
+function constrainAxisToFreeArea(
+  position: number,
+  viewSize: number,
+  bounds: { min: number; max: number },
+  free: FreeAxis,
+): number {
+  const freeEnd = viewSize - free.after;
+  const lowest = Math.min(bounds.min - free.before - free.slack, bounds.max - freeEnd - free.slack);
+  const highest = Math.max(
+    bounds.max - freeEnd + free.slack,
+    bounds.min - free.before + free.slack,
+  );
+  return clamp(position, lowest, highest);
+}
+
+/**
  * Keeps the map in view while scrolling and zooming.
  * Without this the user could scroll the map completely off-screen into empty space.
  * After every move we pull the visible area back so it stays close to the map,
  * leaving only a small margin of empty space around it. "The map" is the plot plus any content
  * reaching beyond it (long labels at the commodity edge, notes in the margin): `contentBounds()`,
- * which hosts also fit the view to.
+ * which hosts also fit the view to. With the insets of a host's chrome (`freeRectInsets`) the margin is
+ * measured inside the free rectangle, so the map never slips under the chrome and a view the host
+ * fitted there is left alone.
  */
 export default class PanConstraint {
   static $inject = ['eventBus', 'canvas', 'evolutionGrid', 'injector'];
@@ -116,18 +148,21 @@ export default class PanConstraint {
     return this.measured;
   }
 
-  /** The margins around the content the view may show, in diagram px at the view's scale. */
-  private pads(view: ViewBox): Pads {
+  /** The host's free rectangle along both axes at the view's scale, if the host reports one. */
+  private freeArea(view: ViewBox): { x: FreeAxis; y: FreeAxis } | undefined {
     const insets: FreeRectInsets | undefined = this.freeRect?.insets();
     const scale = insets ? (view.scale ?? this.canvas.zoom()) : 0;
-    if (!insets || !(scale > 0)) {
-      return { top: PAD_TOP, right: PAD_SIDE, bottom: PAD_BOTTOM, left: PAD_SIDE };
-    }
+    if (!insets || !(scale > 0)) return undefined;
+    const slack = INSET_SLACK / scale;
+    // An axis the chrome leaves no room on counts as free across the whole container, as the
+    // host's fit and keyboard creation treat it.
+    const axis = (size: number, before: number, after: number): FreeAxis =>
+      size * scale - before - after > 0
+        ? { before: before / scale, after: after / scale, slack }
+        : { before: 0, after: 0, slack };
     return {
-      top: (insets.top + INSET_SLACK) / scale,
-      right: (insets.right + INSET_SLACK) / scale,
-      bottom: (insets.bottom + INSET_SLACK) / scale,
-      left: (insets.left + INSET_SLACK) / scale,
+      x: axis(view.width, insets.left, insets.right),
+      y: axis(view.height, insets.top, insets.bottom),
     };
   }
 
@@ -135,7 +170,6 @@ export default class PanConstraint {
     this.constrainAfterCommand = false;
     const current = viewbox ?? (this.canvas.viewbox() as unknown as ViewBox);
     const bounds = this.contentBounds();
-    const pads = this.pads(current);
     if (
       !(bounds.width > 0) ||
       !(bounds.height > 0) ||
@@ -144,18 +178,26 @@ export default class PanConstraint {
     )
       return;
 
-    const clampedX = constrainAxis(
-      current.x,
-      current.width,
-      { min: bounds.x, max: bounds.x + bounds.width, padBefore: pads.left, padAfter: pads.right },
-      recentre,
-    );
-    const clampedY = constrainAxis(
-      current.y,
-      current.height,
-      { min: bounds.y, max: bounds.y + bounds.height, padBefore: pads.top, padAfter: pads.bottom },
-      recentre,
-    );
+    const horizontal = { min: bounds.x, max: bounds.x + bounds.width };
+    const vertical = { min: bounds.y, max: bounds.y + bounds.height };
+    const free = this.freeArea(current);
+    const pads: Pads = { top: PAD_TOP, right: PAD_SIDE, bottom: PAD_BOTTOM, left: PAD_SIDE };
+    const clampedX = free
+      ? constrainAxisToFreeArea(current.x, current.width, horizontal, free.x)
+      : constrainAxis(
+          current.x,
+          current.width,
+          { ...horizontal, padBefore: pads.left, padAfter: pads.right },
+          recentre,
+        );
+    const clampedY = free
+      ? constrainAxisToFreeArea(current.y, current.height, vertical, free.y)
+      : constrainAxis(
+          current.y,
+          current.height,
+          { ...vertical, padBefore: pads.top, padAfter: pads.bottom },
+          recentre,
+        );
 
     if (Math.abs(clampedX - current.x) < EPSILON && Math.abs(clampedY - current.y) < EPSILON)
       return;
