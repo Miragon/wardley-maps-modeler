@@ -11,6 +11,7 @@ import { Modeler, restoreEditorState, setAsideEditorState } from '../../src/inde
 import {
   isWardleyConnection,
   isWardleyShape,
+  type WardleyConnection,
   type WardleyShape,
 } from '../../src/model/di-types.js';
 import type WardleyElementFactory from '../../src/model/WardleyElementFactory.js';
@@ -660,6 +661,58 @@ pipeline Platform [0.3, 0.8]
       expect(field.getBoundingClientRect().left - at.left).toBeCloseTo(40, 0);
       expect(field.getBoundingClientRect().top - at.top).toBeCloseTo(25, 0);
       expect(modeler.exportDSL()).toBe(before);
+    });
+
+    it('moves the name editor with its label when a host resize redraws the element', async () => {
+      const platform = findByLabel(service<ElementRegistry>('elementRegistry'), 'Platform');
+      service<WardleyLabelEditing>('wardleyLabelEditing').activate(platform);
+      const field = labelInput()!;
+      field.value = 'Platform servic';
+      const labelBefore = nameText(platform);
+
+      await modeler.setMapSize(1500, 950);
+      expect(nameText(platform)).not.toBe(labelBefore);
+      service<Canvas>('canvas').zoom(1.5);
+      await afterViewChange();
+
+      expect(labelInput()).toBe(field);
+      expect(field.value).toBe('Platform servic');
+      const labelBox = nameText(platform).getBoundingClientRect();
+      const fieldBox = field.getBoundingClientRect();
+      expect(fieldBox.left).toBeLessThanOrEqual(labelBox.left);
+      expect(fieldBox.right).toBeGreaterThanOrEqual(labelBox.right);
+      expect(
+        Math.abs(fieldBox.top + fieldBox.height / 2 - (labelBox.top + labelBox.height / 2)),
+      ).toBeLessThan(2);
+    });
+
+    it('moves the link annotation and link address editors with a redraw of their element', async () => {
+      const registry = service<ElementRegistry>('elementRegistry');
+      const canvas = service<Canvas>('canvas');
+      const link = registry.find(isWardleyConnection) as WardleyConnection;
+      const platform = findByLabel(registry, 'Platform');
+      const offsetFrom = (field: HTMLElement | null, element: WardleyShape | WardleyConnection) => {
+        const fieldBox = field!.getBoundingClientRect();
+        const box = canvas.getGraphics(element).getBoundingClientRect();
+        return {
+          x: fieldBox.left - (box.left + box.width / 2),
+          y: fieldBox.top - (box.top + box.height / 2),
+        };
+      };
+
+      service<WardleyLabelEditing>('wardleyLabelEditing').activateConnection(link);
+      const annotation = offsetFrom(labelInput(), link);
+      await modeler.setMapSize(1500, 950);
+      expect(offsetFrom(labelInput(), link).x).toBeCloseTo(annotation.x, 0);
+      expect(offsetFrom(labelInput(), link).y).toBeCloseTo(annotation.y, 0);
+      service<WardleyLabelEditing>('wardleyLabelEditing').cancel();
+
+      service<WardleyLinkEditing>('wardleyLinkEditing').activate(platform);
+      const address = () => document.querySelector<HTMLElement>('.wardley-link-input');
+      const before = offsetFrom(address(), platform);
+      await modeler.setMapSize(1100, 700);
+      expect(offsetFrom(address(), platform).x).toBeCloseTo(before.x, 0);
+      expect(offsetFrom(address(), platform).y).toBeCloseTo(before.y, 0);
     });
 
     it('still commits on a click on the canvas', () => {

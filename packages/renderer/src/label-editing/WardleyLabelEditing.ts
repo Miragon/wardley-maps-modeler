@@ -86,6 +86,9 @@ const EDITING_MARKER = 'wardley-label-editing';
 /** Regions are unlabelled like in OWM (title = kind) and drawings have no text at all. */
 const NOT_EDITABLE: ReadonlySet<string> = new Set(['attitude', 'drawing']);
 
+/** Below diagram-js's own `shape.changed` listener, which redraws the element. */
+const AFTER_REDRAW_PRIORITY = 500;
+
 const FIELD_PADDING_X = 6;
 const FIELD_PADDING_Y = 2;
 const FIELD_BORDER = 1.5;
@@ -176,6 +179,15 @@ export default class WardleyLabelEditing {
     // the shared document (modeler-api L5). The field follows the element instead.
     eventBus.on('canvas.viewbox.changing', () => this.relayoutAfterViewChange());
     eventBus.on('canvas.viewbox.changed', () => this.active?.relayout());
+    // A redraw of the edited element (a host resizing the map while the field is open) moves it
+    // without a view change; the priority waits for the redraw.
+    eventBus.on(
+      ['shape.changed', 'connection.changed'],
+      AFTER_REDRAW_PRIORITY,
+      (event: { element?: { id?: string } }) => {
+        if (this.active && event.element?.id === this.active.elementId) this.active.relayout();
+      },
+    );
     // The edited element vanished (delete, re-import): nothing left to save into.
     eventBus.on(['shape.remove', 'connection.remove'], (event: { element?: { id?: string } }) => {
       if (this.active && event.element?.id === this.active.elementId) this.cancel();
@@ -192,8 +204,9 @@ export default class WardleyLabelEditing {
     const isNote = element.wardleyType === 'note';
     const openedByPointer = lastInteractionWasPointer();
     const requiresUniqueName = this.factory.isLinkable(element.wardleyType);
-    const { labelElements, classedByFallback } = this.nameLabelElements(element);
-    let geometry = this.labelGeometry(element, labelElements);
+    const labels = this.nameLabelElements(element);
+    const classedByFallback = [...labels.classedByFallback];
+    let geometry = this.labelGeometry(element, labels.labelElements);
 
     const lineHeightOf = (fontSize: number) =>
       Math.max(fontSize * FIELD_LINE_HEIGHT, isNote ? NOTE_LINE_HEIGHT * this.canvas.zoom() : 0);
@@ -311,7 +324,10 @@ export default class WardleyLabelEditing {
 
     const relayout = () => {
       if (done) return;
-      geometry = this.labelGeometry(element, labelElements);
+      // A redraw replaces the label nodes, and a detached node measures as an empty box at 0,0.
+      const current = this.nameLabelElements(element);
+      classedByFallback.push(...current.classedByFallback);
+      geometry = this.labelGeometry(element, current.labelElements);
       lineHeight = lineHeightOf(geometry.fontSize);
       Object.assign(field.style, {
         fontSize: `${geometry.fontSize}px`,
@@ -332,9 +348,7 @@ export default class WardleyLabelEditing {
     this.active?.commit('outside');
 
     const container = this.canvas.getContainer();
-    const first = conn.waypoints[0];
-    const last = conn.waypoints[conn.waypoints.length - 1];
-    if (!first || !last) return;
+    if (conn.waypoints.length < 1) return;
     const isFlow = conn.wardleyType === 'flow';
 
     const field = document.createElement('input');
@@ -344,6 +358,10 @@ export default class WardleyLabelEditing {
     field.value = options.value ?? (isFlow ? conn.flowValue : conn.linkLabel) ?? '';
     field.style.position = 'absolute';
     const place = () => {
+      // Read afresh: a redraw of the connection replaces its waypoints.
+      const first = conn.waypoints[0];
+      const last = conn.waypoints[conn.waypoints.length - 1];
+      if (!first || !last) return;
       const scale = this.canvas.zoom();
       const viewbox = this.canvas.viewbox();
       field.style.left = `${((first.x + last.x) / 2 - 60 - viewbox.x) * scale}px`;

@@ -20,6 +20,9 @@ interface ActiveLinkEdit {
 /** Screen px from the element's top edge: two 28px pad rows plus their gap and a margin. */
 const CONTEXT_PAD_CLEARANCE = 72;
 
+/** Below diagram-js's own `shape.changed` listener, which redraws the element. */
+const AFTER_REDRAW_PRIORITY = 500;
+
 /** Screen px between the field and its error caption. */
 const CAPTION_GAP = 4;
 
@@ -61,6 +64,11 @@ export default class WardleyLinkEditing {
     // the half-typed address into the shared document (modeler-api L5): the field follows instead.
     eventBus.on('canvas.viewbox.changing', () => this.relayoutAfterViewChange());
     eventBus.on('canvas.viewbox.changed', () => this.active?.relayout());
+    // A redraw of the edited element (a host resizing the map while the field is open) moves it
+    // without a view change; the priority waits for the redraw.
+    eventBus.on('shape.changed', AFTER_REDRAW_PRIORITY, (event: { element?: { id?: string } }) => {
+      if (this.active && event.element?.id === this.active.elementId) this.active.relayout();
+    });
     eventBus.on(['diagram.clear', 'diagram.destroy'], () => this.cancel());
   }
 
