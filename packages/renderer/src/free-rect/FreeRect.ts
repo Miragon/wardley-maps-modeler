@@ -8,9 +8,12 @@ export interface FreeRectInsets {
   left: number;
 }
 
-/** Diagram config `wardleyFreeRect` (viewer option `freeRectInsets`). */
+/** Diagram config `wardleyFreeRect` (viewer option `freeArea`). */
 export interface FreeRectConfig {
+  /** What the chrome covers, in px from the container's edges. */
   insets?: () => FreeRectInsets;
+  /** The centre of the free rectangle in diagram coordinates, `undefined` while there is none. */
+  center?: () => { x: number; y: number } | undefined;
 }
 
 /**
@@ -35,10 +38,13 @@ export default class FreeRect {
   }
 
   /**
-   * The centre of the free rectangle in diagram coordinates (the whole visible area without
-   * insets). An axis whose insets leave no room centres in the whole container, as fitting does.
+   * The centre of the free rectangle in diagram coordinates: the host's own when it reports one,
+   * else the whole visible area without insets. An axis whose insets leave no room centres in the
+   * whole container, as fitting does.
    */
   center(): { x: number; y: number } {
+    const reported = this.config?.center?.();
+    if (reported && Number.isFinite(reported.x) && Number.isFinite(reported.y)) return reported;
     const viewbox = this.canvas.viewbox();
     const insets = this.insets() ?? { top: 0, right: 0, bottom: 0, left: 0 };
     // The viewbox caches the container size until its next change; the canvas measures afresh.

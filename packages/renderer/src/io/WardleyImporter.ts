@@ -3,11 +3,14 @@ import type ElementFactory from 'diagram-js/lib/core/ElementFactory';
 import type ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
 import type EventBus from 'diagram-js/lib/core/EventBus';
 import type { Root } from 'diagram-js/lib/model/Types';
+import type { Injector } from 'didi';
 import type { MapEdge, MapElement, WardleyMap } from '@miragon/wardley-schema-model';
 import type EvolutionGrid from '../evolution-grid/EvolutionGrid.js';
 import type WardleyElementFactory from '../model/WardleyElementFactory.js';
 import type { WardleyShape } from '../model/di-types.js';
+import type { FreeRect } from '../free-rect/index.js';
 import { ROOT_ID, type ImportWarning, type RootBusinessObject } from './types.js';
+import { fitViewbox } from './fitViewbox.js';
 
 /** "Frame" types sit behind the connections (concept doc requirement: frames at the very back). */
 const FRAME_TYPES: ReadonlySet<string> = new Set(['attitude', 'pipeline']);
@@ -24,6 +27,12 @@ const TYPE_ORDER: Record<string, number> = {
   accelerator: 3,
 };
 
+/** Diagram config `wardleyImport` (viewer option `fitOnImport`). */
+export interface WardleyImportConfig {
+  /** `false`: the host fits the view itself, the import leaves it alone. */
+  fit?: boolean;
+}
+
 /**
  * Bridges the WardleyMap model into the diagram-js canvas.
  * Uses `evolutionGrid` exclusively for the pixel projection (P7). Deliberately bypasses the
@@ -37,7 +46,11 @@ export default class WardleyImporter {
     'evolutionGrid',
     'eventBus',
     'elementRegistry',
+    'injector',
+    'config.wardleyImport',
   ];
+
+  private readonly freeRect: FreeRect | null;
 
   constructor(
     private readonly canvas: Canvas,
@@ -46,7 +59,11 @@ export default class WardleyImporter {
     private readonly grid: EvolutionGrid,
     private readonly eventBus: EventBus,
     private readonly elementRegistry: ElementRegistry,
-  ) {}
+    injector: Injector,
+    private readonly config: WardleyImportConfig | undefined,
+  ) {
+    this.freeRect = injector.get<FreeRect | null>('wardleyFreeRect', false) ?? null;
+  }
 
   import(map: WardleyMap): ImportWarning[] {
     const warnings: ImportWarning[] = [];
@@ -142,9 +159,20 @@ export default class WardleyImporter {
       }
     }
 
-    this.canvas.viewbox(this.grid.outerBounds());
+    if (this.config?.fit !== false) this.fitPlot();
     this.eventBus.fire('import.render.done', { warnings });
     return warnings;
+  }
+
+  /**
+   * The plot with its axis margins, centred in the host's free rectangle, at most at 100 %: where
+   * the host's own fit puts it. With a free area the pan constraint leaves it there; without one
+   * it may still move a map smaller than the view to keep its own margins around it.
+   */
+  private fitPlot(): void {
+    const plot = this.grid.outerBounds();
+    const insets = this.freeRect?.insets();
+    this.canvas.viewbox(fitViewbox(plot, this.canvas.getSize(), insets) ?? plot);
   }
 
   private createShape(el: MapElement): WardleyShape | undefined {

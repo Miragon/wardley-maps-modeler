@@ -2,9 +2,11 @@ import type { ModuleDeclaration } from 'didi';
 import DraggingModule from 'diagram-js/lib/features/dragging';
 import MapProjection from './MapProjection.js';
 import MapResizeHandles from './MapResizeHandles.js';
+import { livePreviewModule } from '../live-preview/index.js';
 
 /** In-place re-projection of all shapes onto a new plot size (used by `wardley.map.resize`). */
 export const mapProjectionModule: ModuleDeclaration = {
+  __depends__: [livePreviewModule],
   wardleyMapProjection: ['type', MapProjection],
 };
 

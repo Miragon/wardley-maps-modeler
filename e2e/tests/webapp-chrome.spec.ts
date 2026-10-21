@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises';
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Locator, type Page } from '@playwright/test';
 import { EXAMPLE_MAP } from '../../apps/webapp/src/example.js';
 import { encodeMapCompressed } from '../../apps/webapp/src/share.js';
 import {
@@ -81,6 +81,21 @@ function fileInput(page: Page) {
 
 function textDialog(page: Page, mode: 'dsl' | 'json' | 'share') {
   return page.locator(`dialog.text-dialog-${mode}`);
+}
+
+/**
+ * Closes a map dialog and waits for its close event: the dialog hands the focus back to the menu
+ * trigger there, in a task of its own that can run after a focus the test moves at once.
+ */
+async function closeDialog(dialog: Locator, close: () => Promise<void>): Promise<void> {
+  type Watched = HTMLElement & { closed?: Promise<void> };
+  await dialog.evaluate((element: Watched) => {
+    element.closed = new Promise<void>((resolve) =>
+      element.addEventListener('close', () => resolve(), { once: true }),
+    );
+  });
+  await close();
+  await dialog.evaluate((element: Watched) => element.closed);
 }
 
 async function menuLayout(page: Page): Promise<Array<string | null>> {
@@ -632,7 +647,7 @@ test.describe('title, map size and axis labels', () => {
 
     await menuEntry(page, 'map-title');
     await field.fill('Discarded');
-    await field.press('Escape');
+    await closeDialog(dialog, () => field.press('Escape'));
     expect((await exportMap(page)).config.title).toBe('Payments Platform');
 
     await canvasSlot(page).locator('svg[role="application"]').focus();
@@ -740,7 +755,9 @@ test.describe('keys and dialogs', () => {
     await expect.poll(count).toBe(before - 1);
 
     await menuEntry(page, 'keyboard-shortcuts');
-    await page.locator('dialog.wardley-shortcuts').getByRole('button', { name: 'Close' }).click();
+    const dialog = page.locator('dialog.wardley-shortcuts');
+    await closeDialog(dialog, () => dialog.getByRole('button', { name: 'Close' }).click());
+    await expect(page.locator('[data-chrome="menu"]')).toBeFocused();
     await canvasSlot(page).locator('svg[role="application"]').focus();
     await page.keyboard.press('ControlOrMeta+z');
     await expect.poll(count).toBe(before);

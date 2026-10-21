@@ -17,14 +17,59 @@ describe('import lifecycle', () => {
     host = undefined;
   });
 
-  function createModeler(): Modeler {
+  function createModeler(width = 1200, height = 800): Modeler {
     host = document.createElement('div');
-    host.style.width = '1200px';
-    host.style.height = '800px';
     document.body.appendChild(host);
-    modeler = new Modeler({ container: host });
+    modeler = new Modeler({ container: host, width, height });
     return modeler;
   }
+
+  describe('the fit of an import', () => {
+    const MAP = 'title Fit\ncomponent A [0.5, 0.5]';
+
+    function centreOf(box: { x: number; y: number; width: number; height: number }) {
+      return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    }
+
+    it('never opens the map above 100 %, centred in a container larger than the plot', async () => {
+      // The default plot with its axis margins is 1190 × 776: filling 1440 × 790 would be 101.8 %.
+      const editor = createModeler(1440, 790);
+      await editor.importDSL(MAP);
+      const viewbox = editor.get<Canvas>('canvas').viewbox();
+      expect(viewbox.scale).toBeCloseTo(1, 5);
+      expect(centreOf(viewbox).x).toBeCloseTo(1190 / 2, 3);
+      expect(centreOf(viewbox).y).toBeCloseTo(776 / 2, 3);
+    });
+
+    it("centres the plot in the host's free rectangle and the pan constraint keeps it there", async () => {
+      host = document.createElement('div');
+      document.body.appendChild(host);
+      const insets = { top: 88, right: 324, bottom: 64, left: 24 };
+      modeler = new Modeler({
+        container: host,
+        width: 1600,
+        height: 1000,
+        freeRectInsets: () => insets,
+      });
+      await modeler.importDSL(MAP);
+      const viewbox = modeler.get<Canvas>('canvas').viewbox();
+      const scale = Math.min(1, (1600 - 348) / 1190, (1000 - 152) / 776);
+      expect(viewbox.scale).toBeCloseTo(scale, 3);
+      expect(viewbox.x + (24 + (1600 - 348) / 2) / viewbox.scale).toBeCloseTo(1190 / 2, 1);
+      expect(viewbox.y + (88 + (1000 - 152) / 2) / viewbox.scale).toBeCloseTo(776 / 2, 1);
+    });
+
+    it('still shows the whole plot in a container smaller than it', async () => {
+      const editor = createModeler(800, 600);
+      await editor.importDSL(MAP);
+      const viewbox = editor.get<Canvas>('canvas').viewbox();
+      expect(viewbox.scale).toBeCloseTo(Math.min(800 / 1190, 600 / 776), 3);
+      expect(viewbox.x).toBeLessThanOrEqual(0.5);
+      expect(viewbox.y).toBeLessThanOrEqual(0.5);
+      expect(viewbox.x + viewbox.width).toBeGreaterThanOrEqual(1190 - 0.5);
+      expect(viewbox.y + viewbox.height).toBeGreaterThanOrEqual(776 - 0.5);
+    });
+  });
 
   it('imports after the canvas root was read before the first import', async () => {
     const editor = createModeler();

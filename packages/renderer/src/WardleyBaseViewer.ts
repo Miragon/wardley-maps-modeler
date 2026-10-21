@@ -32,7 +32,9 @@ import {
   type ProjectionSnapshot,
 } from './map-resize/MapProjection.js';
 import type WardleyModeling from './modeling/WardleyModeling.js';
-import type { FreeRectInsets } from './free-rect/index.js';
+import type { FreeArea } from '@miragon/modeler-api';
+import type { FreeRectConfig, FreeRectInsets } from './free-rect/index.js';
+import { COMMAND_START_EVENTS, PUT_BACK_PRIORITY, type LivePreview } from './live-preview/index.js';
 import { applyConfigUpdate, type MapConfigUpdate } from './modeling/cmd/UpdateConfigHandler.js';
 
 export interface WardleyViewerOptions {
@@ -43,17 +45,45 @@ export interface WardleyViewerOptions {
   /** Concatenated to the end of the module list (extension point, §12). */
   additionalModules?: ModuleDeclaration[];
   /**
-   * Modeler keyboard behaviour. `undoRedo: false` leaves Cmd/Ctrl+Z/Y to the host (e.g. VS Code,
-   * which owns the document's undo stack). Default: the canvas handles undo/redo.
+   * The part of the canvas no host chrome covers (`@miragon/modeler-api` `freeArea`), read
+   * whenever it is needed. `{ insets }` names what the chrome covers along the container's edges,
+   * in px (e.g. `() => shell.fitInsets()` of the Miragon modeler shell): the import fits the plot
+   * into the rest, panning keeps the map inside it, and keyboard creation places elements in its
+   * centre. `{ center }` gives only that centre, in diagram coordinates. Default: the whole
+   * container.
    */
-  keyboard?: { undoRedo?: boolean };
+  freeArea?: FreeArea | undefined;
   /**
-   * What the host's chrome covers along the container's edges, in px, read whenever it is needed
-   * (e.g. `() => shell.fitInsets()` of the Miragon modeler shell). Keyboard creation then places
-   * elements in the centre of the free rectangle, and panning keeps the map reachable around it.
-   * Without it the whole container counts.
+   * Fit the plot into the view after every import. Default `true`; `false` when the host's chrome
+   * fits the view itself.
    */
-  freeRectInsets?: () => FreeRectInsets;
+  fitOnImport?: boolean | undefined;
+  /**
+   * Bind Cmd/Ctrl+Z, Cmd/Ctrl+Shift+Z and Cmd/Ctrl+Y to the canvas history. Default `true`;
+   * `false` leaves them to the host (e.g. VS Code, which owns the document's undo stack).
+   */
+  undoRedoKeys?: boolean | undefined;
+  /** @deprecated Since 0.9, for one minor release: use `undoRedoKeys`, which wins over it. */
+  keyboard?: { undoRedo?: boolean } | undefined;
+  /** @deprecated Since 0.9, for one minor release: use `freeArea: { insets }`, which wins over it. */
+  freeRectInsets?: (() => FreeRectInsets) | undefined;
+}
+
+/** The diagram config the viewer options stand for, the aligned names over their aliases. */
+function diagramConfig(options: WardleyViewerOptions): Record<string, unknown> {
+  const undoRedo = options.undoRedoKeys ?? options.keyboard?.undoRedo;
+  const freeArea: FreeRectConfig | undefined = options.freeArea
+    ? options.freeArea.insets
+      ? { insets: options.freeArea.insets }
+      : { center: options.freeArea.center }
+    : options.freeRectInsets
+      ? { insets: options.freeRectInsets }
+      : undefined;
+  return {
+    ...(undoRedo === undefined ? {} : { wardleyKeyboard: { undoRedo } }),
+    ...(freeArea ? { wardleyFreeRect: freeArea } : {}),
+    ...(options.fitOnImport === false ? { wardleyImport: { fit: false } } : {}),
+  };
 }
 
 export type EventCallback<T = unknown> = (event: T) => void;
@@ -138,11 +168,14 @@ export abstract class WardleyBaseViewer {
       this._diagram = new Diagram({
         canvas: { container: this._container },
         modules,
-        ...(this._options.keyboard ? { wardleyKeyboard: this._options.keyboard } : {}),
-        ...(this._options.freeRectInsets
-          ? { wardleyFreeRect: { insets: this._options.freeRectInsets } }
-          : {}),
+        ...diagramConfig(this._options),
       });
+      // The size preview re-projects the map it started with and puts it back before its commit,
+      // which would overwrite a command in between (a title a host sets mid-preview) and leave
+      // the history out of step with the document: the preview goes first.
+      this._diagram
+        .get<EventBus>('eventBus')
+        .on(COMMAND_START_EVENTS, PUT_BACK_PRIORITY, () => this._putBackSizePreview());
     }
     return this._diagram;
   }
@@ -230,7 +263,7 @@ export abstract class WardleyBaseViewer {
    * the default size — only `resetMapSize` removes it. In the Modeler `{ transient: true }` shows
    * a live preview without an undo step, and the next call without it commits ONE step from the
    * size before the preview (none when the size ends where the preview started), like
-   * `setEvolutionLabels`.
+   * `setEvolutionLabels`. A command before that call (e.g. `setTitle`) puts the preview back first.
    */
   async setMapSize(
     width: number,
@@ -258,20 +291,26 @@ export abstract class WardleyBaseViewer {
         if (!snapshot) return { warnings: [] };
         this._sizePreview = { snapshot, model: projection.captureModel() };
       }
-      const { snapshot, model } = this._sizePreview;
-      const config = configWithSize(snapshot.businessObject.config, size);
+      const businessObject = projection.withSize(size);
+      if (!businessObject) return { warnings: [] };
       projection.redraw(
-        projection.apply({ ...snapshot.businessObject, config }, model, { transient: true }),
+        projection.apply(businessObject, this._sizePreview.model, { transient: true }),
       );
       return { warnings: [] };
     }
-    if (this._sizePreview) {
-      // The command must take the size before the preview as its old state.
-      projection.redraw(projection.restore(this._sizePreview.snapshot, { transient: true }));
-      this._sizePreview = undefined;
-    }
+    // The command must take the size before the preview as its old state.
+    this._putBackSizePreview();
     modeling.resizeMap(size);
     return { warnings: [] };
+  }
+
+  /** Shows the map without the size preview again, if one is open. */
+  private _putBackSizePreview(): void {
+    if (!this._sizePreview) return;
+    const projection = this.get<MapProjection>('wardleyMapProjection');
+    const { snapshot } = this._sizePreview;
+    this._sizePreview = undefined;
+    projection.redraw(projection.restore(snapshot, { transient: true }));
   }
 
   getMapSize(): MapSizeInfo {
@@ -340,6 +379,7 @@ export abstract class WardleyBaseViewer {
         if (!businessObject) return;
         this._labelsBeforePreview = { labels: businessObject.config.evolutionLabels };
       }
+      this._livePreview()?.begin('evolutionLabels');
       this._applyConfigDirectly({ evolutionLabels: labels }, { transient: true });
       return;
     }
@@ -347,6 +387,7 @@ export abstract class WardleyBaseViewer {
       if (this._labelsBeforePreview) {
         const before = this._labelsBeforePreview.labels;
         this._applyConfigDirectly({ evolutionLabels: before });
+        this._livePreview()?.end('evolutionLabels');
         this._labelsBeforePreview = undefined;
         // A preview that ends where it started (typed, then reverted) is no edit: no undo step.
         if (sameEvolutionLabels(before, labels)) return;
@@ -377,6 +418,10 @@ export abstract class WardleyBaseViewer {
   /** The Modeler's command API, or null in the read-only viewers. */
   private _wardleyModeling(): WardleyModeling | null {
     return this._ensureDiagram().get<WardleyModeling>('wardleyModeling', false);
+  }
+
+  private _livePreview(): LivePreview | null {
+    return this._ensureDiagram().get<LivePreview>('wardleyLivePreview', false);
   }
 
   private _root(): (Root & { businessObject?: RootBusinessObject }) | undefined {

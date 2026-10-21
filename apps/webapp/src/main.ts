@@ -84,8 +84,9 @@ const viewer = new Modeler({
   width: '100%',
   height: '100%',
   additionalModules: [shellModule],
-  // Where Enter or Space on a creating palette entry places the element (guide §5.5).
-  freeRectInsets: () => shell.fitInsets(),
+  // Where Enter or Space on a creating palette entry places the element (guide §5.5), where the
+  // import fits the plot and where panning keeps it.
+  freeArea: { insets: () => shell.fitInsets() },
 });
 viewer.get('canvas');
 const registry = viewer.get<ElementRegistryLike>('elementRegistry');

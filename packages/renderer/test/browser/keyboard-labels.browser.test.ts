@@ -11,10 +11,12 @@ import { Modeler, restoreEditorState, setAsideEditorState } from '../../src/inde
 import {
   isWardleyConnection,
   isWardleyShape,
+  type WardleyConnection,
   type WardleyShape,
 } from '../../src/model/di-types.js';
 import type WardleyElementFactory from '../../src/model/WardleyElementFactory.js';
 import type WardleyLabelEditing from '../../src/label-editing/WardleyLabelEditing.js';
+import type WardleyLinkEditing from '../../src/link-editing/WardleyLinkEditing.js';
 import type { LabelDeduplicatedEvent } from '../../src/label-editing/WardleyLabelEditing.js';
 import type WardleyCopyPaste from '../../src/modeling/WardleyCopyPaste.js';
 import type WardleyColorPicker from '../../src/color-picker/WardleyColorPicker.js';
@@ -559,6 +561,170 @@ pipeline Platform [0.3, 0.8]
       labelEditing().cancel();
       expect(labelInput()).toBeNull();
       expect(platform.wardleyLabel).toBe('Platform');
+    });
+  });
+
+  describe('a view change while an editor is open (a host restoring or fitting the view)', () => {
+    const afterViewChange = () => new Promise((resolve) => queueMicrotask(() => resolve(null)));
+
+    function nameText(shape: WardleyShape): SVGTextElement {
+      return [...service<Canvas>('canvas').getGraphics(shape).querySelectorAll('text')].find(
+        (text) => text.textContent === shape.wardleyLabel,
+      )!;
+    }
+
+    it('keeps the name editor open with the typed text and moves it with the label', async () => {
+      const platform = findByLabel(service<ElementRegistry>('elementRegistry'), 'Platform');
+      const before = modeler.exportDSL();
+      service<WardleyLabelEditing>('wardleyLabelEditing').activate(platform);
+      const field = labelInput()!;
+      field.value = 'Plat';
+      const changes: unknown[] = [];
+      service<EventBus>('eventBus').on('commandStack.changed', (event: unknown) => {
+        changes.push(event);
+      });
+
+      const canvas = service<Canvas>('canvas');
+      const viewbox = canvas.viewbox();
+      canvas.viewbox({ x: viewbox.x + 120, y: viewbox.y + 80, width: 640, height: 480 });
+      await afterViewChange();
+
+      expect(labelInput()).toBe(field);
+      expect(field.value).toBe('Plat');
+      expect(document.activeElement).toBe(field);
+      expect(changes).toEqual([]);
+      expect(modeler.exportDSL()).toBe(before);
+      const labelBox = nameText(platform).getBoundingClientRect();
+      const fieldBox = field.getBoundingClientRect();
+      expect(fieldBox.left).toBeLessThanOrEqual(labelBox.left);
+      expect(fieldBox.right).toBeGreaterThanOrEqual(labelBox.right);
+      expect(
+        Math.abs(fieldBox.top + fieldBox.height / 2 - (labelBox.top + labelBox.height / 2)),
+      ).toBeLessThan(2);
+
+      field.value = 'Platform Services';
+      pressKey(field, 'Enter');
+      expect(modeler.exportDSL()).toContain('component Platform Services [0.55, 0.62]');
+    });
+
+    it('scales the open name editor with a zoom', async () => {
+      service<WardleyLabelEditing>('wardleyLabelEditing').activate(
+        findByLabel(service<ElementRegistry>('elementRegistry'), 'Platform'),
+      );
+      service<Canvas>('canvas').zoom(2);
+      await afterViewChange();
+      expect(getComputedStyle(labelInput()!).fontSize).toBe('26px');
+    });
+
+    // Zoomed in, so the pan constraint leaves the scrolled view where it is.
+    const zoomIn = () => {
+      const canvas = service<Canvas>('canvas');
+      const { width, height } = canvas.getSize();
+      canvas.zoom(1.5, { x: width / 2, y: height / 2 });
+    };
+
+    it('keeps an open link annotation editor and moves it by the scroll', async () => {
+      zoomIn();
+      const link = service<ElementRegistry>('elementRegistry').find(isWardleyConnection)!;
+      service<WardleyLabelEditing>('wardleyLabelEditing').activateConnection(link as never);
+      const field = labelInput()!;
+      field.value = 'needs rev';
+      const at = field.getBoundingClientRect();
+
+      service<Canvas>('canvas').scroll({ dx: 50, dy: 30 });
+      await afterViewChange();
+
+      expect(labelInput()).toBe(field);
+      expect(field.value).toBe('needs rev');
+      expect(field.getBoundingClientRect().left - at.left).toBeCloseTo(50, 0);
+      expect(field.getBoundingClientRect().top - at.top).toBeCloseTo(30, 0);
+      expect(modeler.exportDSL()).not.toContain('needs rev');
+    });
+
+    it('keeps an open link address editor and moves it by the scroll', async () => {
+      zoomIn();
+      const platform = findByLabel(service<ElementRegistry>('elementRegistry'), 'Platform');
+      const before = modeler.exportDSL();
+      service<WardleyLinkEditing>('wardleyLinkEditing').activate(platform);
+      const field = document.querySelector<HTMLInputElement>('.wardley-link-input')!;
+      field.value = 'https://exa';
+      const at = field.getBoundingClientRect();
+
+      service<Canvas>('canvas').scroll({ dx: 40, dy: 25 });
+      await afterViewChange();
+
+      expect(document.querySelector('.wardley-link-input')).toBe(field);
+      expect(service<WardleyLinkEditing>('wardleyLinkEditing').getActiveEdit()).toEqual({
+        elementId: platform.id,
+        value: 'https://exa',
+      });
+      expect(field.getBoundingClientRect().left - at.left).toBeCloseTo(40, 0);
+      expect(field.getBoundingClientRect().top - at.top).toBeCloseTo(25, 0);
+      expect(modeler.exportDSL()).toBe(before);
+    });
+
+    it('moves the name editor with its label when a host resize redraws the element', async () => {
+      const platform = findByLabel(service<ElementRegistry>('elementRegistry'), 'Platform');
+      service<WardleyLabelEditing>('wardleyLabelEditing').activate(platform);
+      const field = labelInput()!;
+      field.value = 'Platform servic';
+      const labelBefore = nameText(platform);
+
+      await modeler.setMapSize(1500, 950);
+      expect(nameText(platform)).not.toBe(labelBefore);
+      service<Canvas>('canvas').zoom(1.5);
+      await afterViewChange();
+
+      expect(labelInput()).toBe(field);
+      expect(field.value).toBe('Platform servic');
+      const labelBox = nameText(platform).getBoundingClientRect();
+      const fieldBox = field.getBoundingClientRect();
+      expect(fieldBox.left).toBeLessThanOrEqual(labelBox.left);
+      expect(fieldBox.right).toBeGreaterThanOrEqual(labelBox.right);
+      expect(
+        Math.abs(fieldBox.top + fieldBox.height / 2 - (labelBox.top + labelBox.height / 2)),
+      ).toBeLessThan(2);
+    });
+
+    it('moves the link annotation and link address editors with a redraw of their element', async () => {
+      const registry = service<ElementRegistry>('elementRegistry');
+      const canvas = service<Canvas>('canvas');
+      const link = registry.find(isWardleyConnection) as WardleyConnection;
+      const platform = findByLabel(registry, 'Platform');
+      const offsetFrom = (field: HTMLElement | null, element: WardleyShape | WardleyConnection) => {
+        const fieldBox = field!.getBoundingClientRect();
+        const box = canvas.getGraphics(element).getBoundingClientRect();
+        return {
+          x: fieldBox.left - (box.left + box.width / 2),
+          y: fieldBox.top - (box.top + box.height / 2),
+        };
+      };
+
+      service<WardleyLabelEditing>('wardleyLabelEditing').activateConnection(link);
+      const annotation = offsetFrom(labelInput(), link);
+      await modeler.setMapSize(1500, 950);
+      expect(offsetFrom(labelInput(), link).x).toBeCloseTo(annotation.x, 0);
+      expect(offsetFrom(labelInput(), link).y).toBeCloseTo(annotation.y, 0);
+      service<WardleyLabelEditing>('wardleyLabelEditing').cancel();
+
+      service<WardleyLinkEditing>('wardleyLinkEditing').activate(platform);
+      const address = () => document.querySelector<HTMLElement>('.wardley-link-input');
+      const before = offsetFrom(address(), platform);
+      await modeler.setMapSize(1100, 700);
+      expect(offsetFrom(address(), platform).x).toBeCloseTo(before.x, 0);
+      expect(offsetFrom(address(), platform).y).toBeCloseTo(before.y, 0);
+    });
+
+    it('still commits on a click on the canvas', () => {
+      const platform = findByLabel(service<ElementRegistry>('elementRegistry'), 'Platform');
+      service<WardleyLabelEditing>('wardleyLabelEditing').activate(platform);
+      labelInput()!.value = 'Payments';
+      const rect = svg().getBoundingClientRect();
+      const at = { bubbles: true, button: 0, clientX: rect.left + 8, clientY: rect.top + 8 };
+      svg().dispatchEvent(new MouseEvent('mousedown', at));
+      document.dispatchEvent(new MouseEvent('mouseup', at));
+      expect(labelInput()).toBeNull();
+      expect(modeler.exportDSL()).toContain('component Payments [0.55, 0.62]');
     });
   });
 

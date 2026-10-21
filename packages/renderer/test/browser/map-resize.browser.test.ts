@@ -1,11 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type Canvas from 'diagram-js/lib/core/Canvas';
+import type CommandStack from 'diagram-js/lib/command/CommandStack';
 import type ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
 import type Selection from 'diagram-js/lib/features/selection/Selection';
 import type Modeling from 'diagram-js/lib/features/modeling/Modeling';
 import { MAP_SIZE_PRESETS } from '@miragon/wardley-schema-model';
 import { patchDSL } from '@miragon/wardley-dsl';
-import { Modeler, PLOT, Viewer } from '../../src/index.js';
+import {
+  Modeler,
+  PLOT,
+  Viewer,
+  createCollaborativeModeler,
+  type CollaborativeWardleyModeler,
+} from '../../src/index.js';
 import type EvolutionGrid from '../../src/evolution-grid/EvolutionGrid.js';
 import {
   isWardleyConnection,
@@ -813,5 +820,197 @@ describe('Viewer (no command stack)', () => {
       title: 'Viewer title',
       evolutionLabels: ['A', 'B', 'C', 'D'],
     });
+  });
+});
+
+describe('the collaborative export during a live preview (a host autosaving mid-drag)', () => {
+  let host: HTMLElement;
+  let collaborative: CollaborativeWardleyModeler;
+  let modeler: Modeler;
+
+  beforeEach(async () => {
+    host = createContainer();
+    host.style.width = '400px';
+    host.style.height = '400px';
+    collaborative = createCollaborativeModeler();
+    collaborative.attachTo(host);
+    await collaborative.importText(RICH);
+    modeler = collaborative.diagram as Modeler;
+    const { width, height } = modeler.get<EvolutionGrid>('evolutionGrid').getPlotSize();
+    const corner = { x: PLOT.marginLeft + width, y: PLOT.marginTop + height };
+    modeler
+      .get<Canvas>('canvas')
+      .viewbox({ x: corner.x - 200, y: corner.y - 200, width: 400, height: 400 });
+  });
+
+  afterEach(() => {
+    collaborative.destroy();
+    host.remove();
+  });
+
+  function mouse(type: string, target: EventTarget, point: { x: number; y: number }) {
+    target.dispatchEvent(
+      new MouseEvent(type, {
+        bubbles: true,
+        cancelable: true,
+        clientX: point.x,
+        clientY: point.y,
+        button: 0,
+      }),
+    );
+  }
+
+  function startCornerDrag(): { x: number; y: number } {
+    const box = host
+      .querySelector('.wardley-map-resize-xy .wardley-map-resize-hit')!
+      .getBoundingClientRect();
+    const start = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    mouse('mousedown', document.elementFromPoint(start.x, start.y)!, start);
+    return start;
+  }
+
+  it('exports the committed document while the plot corner is dragged, then the dropped size', () => {
+    const committed = collaborative.exportText();
+    const exportedOnChange: string[] = [];
+    collaborative.onContentChanged(() => exportedOnChange.push(collaborative.exportText()));
+
+    const start = startCornerDrag();
+    mouse('mousemove', document, { x: start.x + 180, y: start.y + 110 });
+    mouse('mousemove', document, { x: start.x + 363, y: start.y + 223 });
+    expect(modeler.get<EvolutionGrid>('evolutionGrid').getPlotSize().width).toBe(1440);
+    expect(modeler.exportDSL()).toContain('size [1440, 900]');
+    expect(collaborative.exportText()).toBe(committed);
+
+    mouse('mouseup', document, { x: start.x + 363, y: start.y + 223 });
+    expect(exportedOnChange).toHaveLength(1);
+    expect(sizeLinesOf(exportedOnChange[0]!)).toEqual(['size [1440, 900]']);
+    expect(collaborative.exportText()).toBe(exportedOnChange[0]);
+  });
+
+  it('exports the live document again after a cancelled drag', () => {
+    const committed = collaborative.exportText();
+    const start = startCornerDrag();
+    mouse('mousemove', document, { x: start.x - 300, y: start.y - 200 });
+    expect(collaborative.exportText()).toBe(committed);
+    document.dispatchEvent(new KeyboardEvent('keyup', { key: 'Escape', bubbles: true }));
+
+    modeler.setTitle('Edited after the drag');
+    expect(collaborative.exportText()).toBe(
+      committed.replace('title Rich size test', 'title Edited after the drag'),
+    );
+  });
+
+  it('exports the committed size while the map size popover previews another', async () => {
+    const committed = collaborative.exportText();
+    await modeler.setMapSize(1500, 950, { transient: true });
+    expect(collaborative.exportText()).toBe(committed);
+    await modeler.setMapSize(1500, 950);
+    expect(sizeLinesOf(collaborative.exportText())).toEqual(['size [1500, 950]']);
+  });
+
+  it('exports the committed axis labels while new ones are typed', () => {
+    const committed = collaborative.exportText();
+    modeler.setEvolutionLabels(['N', 'E', 'G', 'B'], { transient: true });
+    expect(collaborative.exportText()).toBe(committed);
+    modeler.setEvolutionLabels(['Novel', 'Emerging', 'Good', 'Best']);
+    expect(collaborative.exportText()).toContain('evolution Novel->Emerging->Good->Best');
+  });
+
+  it('exports an edit made during a preview, without the preview', () => {
+    const committed = collaborative.exportText();
+    modeler.setEvolutionLabels(['N', 'E', 'G', 'B'], { transient: true });
+    modeler.setTitle('Renamed mid-preview');
+    expect(collaborative.exportText()).toBe(
+      committed.replace('title Rich size test', 'title Renamed mid-preview'),
+    );
+  });
+
+  it('keeps the committed document as the last export of a destroyed modeler', async () => {
+    const committed = collaborative.exportText();
+    await modeler.setMapSize(1500, 950, { transient: true });
+    collaborative.destroy();
+    expect(collaborative.exportText()).toBe(committed);
+  });
+
+  it('exports the committed size while a size preview outlasts an axis-label preview', async () => {
+    const committed = collaborative.exportText();
+    await modeler.setMapSize(1501, 951, { transient: true });
+    modeler.setEvolutionLabels(['A', 'B', 'C', 'D'], { transient: true });
+    // The label preview ends where it started, the size preview is still on the canvas.
+    modeler.setEvolutionLabels(undefined);
+    expect(modeler.exportDSL()).toContain('size [1501, 951]');
+    expect(collaborative.exportText()).toBe(committed);
+
+    await modeler.setMapSize(1501, 951);
+    expect(collaborative.exportText()).toBe(modeler.exportDSL());
+    expect(sizeLinesOf(collaborative.exportText())).toEqual(['size [1501, 951]']);
+  });
+
+  it('keeps an axis-label preview on the canvas, and out of the export, across a size preview', async () => {
+    await modeler.setMapSize(1501, 951, { transient: true });
+    modeler.setEvolutionLabels(['A', 'B', 'C', 'D'], { transient: true });
+    await modeler.setMapSize(1520, 960, { transient: true });
+    expect(modeler.exportDSL()).toContain('evolution A->B->C->D');
+
+    await modeler.setMapSize(1520, 960);
+    expect(modeler.exportDSL()).toContain('evolution A->B->C->D');
+    expect(sizeLinesOf(collaborative.exportText())).toEqual(['size [1520, 960]']);
+    expect(collaborative.exportText()).not.toContain('evolution');
+  });
+
+  it('keeps a title set during a size preview, as its own undo step before the resize', async () => {
+    const commandStack = modeler.get<CommandStack>('commandStack');
+    await modeler.setMapSize(1501, 951, { transient: true });
+    modeler.setTitle('Mid preview');
+    // The preview is put back before the command, so the command never lands on it.
+    expect(sizeLinesOf(modeler.exportDSL())).toEqual([]);
+
+    await modeler.setMapSize(1501, 951);
+    const exported = collaborative.exportText();
+    expect(exported).toContain('title Mid preview');
+    expect(sizeLinesOf(exported)).toEqual(['size [1501, 951]']);
+
+    commandStack.undo();
+    expect(sizeLinesOf(modeler.exportDSL())).toEqual([]);
+    expect(modeler.exportDSL()).toContain('title Mid preview');
+    commandStack.undo();
+    expect(modeler.exportDSL()).toContain('title Rich size test');
+  });
+
+  it('ends a plot drag without resizing when an undo arrives mid-drag, and keeps the undo', () => {
+    const commandStack = modeler.get<CommandStack>('commandStack');
+    const original = modeler.exportDSL();
+    modeler.setTitle('Edited title');
+    const exportedOnChange: string[] = [];
+    collaborative.onContentChanged(() => exportedOnChange.push(collaborative.exportText()));
+
+    const start = startCornerDrag();
+    mouse('mousemove', document, { x: start.x + 180, y: start.y + 110 });
+    expect(sizeLinesOf(modeler.exportDSL())).not.toEqual([]);
+    commandStack.undo();
+    expect(modeler.exportDSL()).toBe(original);
+    expect(host.querySelector('.wardley-map-resize.is-dragging')).toBeNull();
+
+    mouse('mousemove', document, { x: start.x + 220, y: start.y + 140 });
+    mouse('mouseup', document, { x: start.x + 220, y: start.y + 140 });
+    expect(modeler.exportDSL()).toBe(original);
+    expect(exportedOnChange).toEqual([original]);
+    expect(commandStack.canRedo()).toBe(true);
+    commandStack.redo();
+    expect(modeler.exportDSL()).toContain('title Edited title');
+  });
+
+  it('ends a plot drag without resizing when a redo arrives mid-drag', () => {
+    const commandStack = modeler.get<CommandStack>('commandStack');
+    modeler.setTitle('Edited title');
+    commandStack.undo();
+    const start = startCornerDrag();
+    mouse('mousemove', document, { x: start.x + 180, y: start.y + 110 });
+    commandStack.redo();
+    mouse('mouseup', document, { x: start.x + 220, y: start.y + 140 });
+    expect(sizeLinesOf(modeler.exportDSL())).toEqual([]);
+    expect(modeler.exportDSL()).toContain('title Edited title');
+    commandStack.undo();
+    expect(modeler.exportDSL()).toContain('title Rich size test');
   });
 });

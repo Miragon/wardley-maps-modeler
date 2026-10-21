@@ -2,7 +2,9 @@ import { afterEach, describe, expect, it } from 'vitest';
 import type { ModuleDeclaration } from 'didi';
 import type Canvas from 'diagram-js/lib/core/Canvas';
 import type Selection from 'diagram-js/lib/features/selection/Selection';
-import { Modeler, type FreeRectInsets } from '../../src/index.js';
+import { Modeler, type FreeRectInsets, type PanConstraint } from '../../src/index.js';
+import type EvolutionGrid from '../../src/evolution-grid/EvolutionGrid.js';
+import { fitViewbox } from '../../src/io/fitViewbox.js';
 import type { WardleyShape } from '../../src/model/di-types.js';
 import '../../src/assets/wardley.css';
 
@@ -24,13 +26,15 @@ let container: HTMLElement | undefined;
 let modeler: Modeler | undefined;
 const extras: HTMLElement[] = [];
 
-function mount(options: { shell?: boolean; insets?: FreeRectInsets } = {}): Modeler {
+function mount(
+  options: { shell?: boolean; insets?: FreeRectInsets; width?: number; height?: number } = {},
+): Modeler {
   container = document.createElement('div');
   document.body.appendChild(container);
   modeler = new Modeler({
     container,
-    width: 1024,
-    height: 768,
+    width: options.width ?? 1024,
+    height: options.height ?? 768,
     additionalModules: options.shell ? [shellStandIn] : [],
     ...(options.insets ? { freeRectInsets: () => options.insets! } : {}),
   });
@@ -145,6 +149,50 @@ describe('inside a host chrome (the Miragon modeler shell)', () => {
     const before = components(target);
     zoomButton.dispatchEvent(new KeyboardEvent('keydown', { key: 'c', bubbles: true }));
     expect(components(target)).toEqual(before);
+  });
+
+  it('leaves a view the host fitted to the plot where it is while a label reaches beyond it', async () => {
+    // Wide and low, as in a host's widget: the fit is limited by the height.
+    const editor = mount({ insets: INSETS, width: 1440, height: 790 });
+    await editor.importDSL(
+      'title Host\ncomponent A considerably long commodity name [0.6, 0.98]\ncomponent B [0.3, 0.4]',
+    );
+    const canvas = editor.get<Canvas>('canvas');
+    const grid = editor.get<EvolutionGrid>('evolutionGrid');
+    const plot = grid.outerBounds();
+    const content = editor.get<PanConstraint>('panConstraint').contentBounds();
+    expect(content.x + content.width).toBeGreaterThan(plot.x + plot.width + 40);
+
+    const fitted = fitViewbox(plot, canvas.getSize(), INSETS)!;
+    canvas.viewbox(fitted);
+    const after = canvas.viewbox();
+    // diagram-js rounds the scale and the translation to three decimals
+    expect(after.x).toBeCloseTo(fitted.x, 0);
+    expect(after.y).toBeCloseTo(fitted.y, 0);
+  });
+
+  it('leaves the fit of the plot where it is while a label makes the content wider than the free area', async () => {
+    // the fit is bound by the height and leaves side margins wider than the constraint's
+    // slack, and the free area is narrow enough that the label's overhang outgrows it by
+    // far, whatever the platform's font measures (1440 left a margin of 8 units on macOS)
+    const size = { width: 1300, height: 790 };
+    const editor = mount({ insets: INSETS, ...size });
+    const name =
+      'A commodity whose name runs on for many words and far beyond the right edge of the plot';
+    await editor.importDSL(`title Host\ncomponent ${name} [0.6, 0.97]\ncomponent B [0.3, 0.4]`);
+    const canvas = editor.get<Canvas>('canvas');
+    const plot = editor.get<EvolutionGrid>('evolutionGrid').outerBounds();
+    const fitted = fitViewbox(plot, canvas.getSize(), INSETS)!;
+    const content = editor.get<PanConstraint>('panConstraint').contentBounds();
+    const freeWidth = (size.width - INSETS.left - INSETS.right) / canvas.viewbox().scale;
+    expect(content.width).toBeGreaterThan(freeWidth);
+
+    // The import's own fit, then the host's fit of the same bounds after the user panned.
+    expect(canvas.viewbox().x).toBeCloseTo(fitted.x, 0);
+    canvas.viewbox({ ...fitted, x: fitted.x + 200 });
+    canvas.viewbox(fitted);
+    expect(canvas.viewbox().x).toBeCloseTo(fitted.x, 0);
+    expect(canvas.viewbox().y).toBeCloseTo(fitted.y, 0);
   });
 
   it('without a host chrome, a focused plain button still lets the single-key tools through', async () => {

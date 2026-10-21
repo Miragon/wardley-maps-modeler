@@ -15,7 +15,8 @@ import {
 import { PLOT } from '../draw/styles.js';
 import type EvolutionGrid from '../evolution-grid/EvolutionGrid.js';
 import type MapProjection from './MapProjection.js';
-import { configWithSize, type ProjectionSnapshot } from './MapProjection.js';
+import type { ProjectionSnapshot } from './MapProjection.js';
+import { COMMAND_START_EVENTS, PUT_BACK_PRIORITY } from '../live-preview/index.js';
 
 export const MAP_RESIZE_PREFIX = 'wardley.mapResize';
 
@@ -203,7 +204,21 @@ export default class MapResizeHandles {
     eventBus.on(`${MAP_RESIZE_PREFIX}.move`, (event: MapResizeEvent) => this.onMove(event));
     eventBus.on(`${MAP_RESIZE_PREFIX}.end`, (event: MapResizeEvent) => this.onEnd(event));
     eventBus.on(`${MAP_RESIZE_PREFIX}.cleanup`, (event: MapResizeEvent) => this.onCleanup(event));
+    // The preview re-projects the map the drag started with and puts it back on release, which
+    // would overwrite a command in between (an undo or a delete pressed mid-drag) and leave the
+    // history out of step with the document: the drag ends first, without resizing.
+    eventBus.on(COMMAND_START_EVENTS, PUT_BACK_PRIORITY, () => this.cancelPreviewingDrag());
     this.render();
+  }
+
+  private cancelPreviewingDrag(): void {
+    const drag = this.dragging.context() as {
+      prefix?: string;
+      data?: { context?: MapResizeContext };
+    } | null;
+    if (drag?.prefix !== MAP_RESIZE_PREFIX) return;
+    const context = drag.data?.context;
+    if (context?.snapshot && !context.committed) this.dragging.cancel(true);
   }
 
   /** Starts a resize drag on `axis` (also usable programmatically, e.g. from tests). */
@@ -318,10 +333,8 @@ export default class MapResizeHandles {
     this.showBadge(size, event.originalEvent);
     if (context.size?.width === size.width && context.size.height === size.height) return;
     context.size = size;
-    const businessObject = {
-      ...context.snapshot.businessObject,
-      config: configWithSize(context.snapshot.businessObject.config, size),
-    };
+    const businessObject = this.projection.withSize(size);
+    if (!businessObject) return;
     this.projection.redraw(
       this.projection.apply(businessObject, context.model, { transient: true }),
     );

@@ -61,6 +61,24 @@ function addComponent(modeler: CollaborativeModeler): void {
     );
 }
 
+/** Moves the imported component Kettle by its own command, as a drag does. */
+function moveKettle(modeler: CollaborativeModeler): string {
+  const id = modeler.elements?.list().find((element) => element.name === 'Kettle')?.id;
+  if (!id) throw new Error('the imported map has no component Kettle to move');
+  const diagram = diagramOf(modeler);
+  const kettle = diagram.get<ElementRegistry>('elementRegistry').get(id);
+  if (!kettle) throw new Error(`no canvas element ${id}`);
+  diagram.get<Modeling>('modeling').moveElements([kettle as Shape], { x: 60, y: 40 });
+  return id;
+}
+
+function labelField(modeler: CollaborativeModeler): HTMLInputElement | null {
+  return diagramOf(modeler)
+    .get<Canvas>('canvas')
+    .getContainer()
+    .querySelector<HTMLInputElement>('input.wardley-label-input');
+}
+
 function typedHalfway(fragment: string, typedSoFar: string): string {
   if (!teaShop.includes(fragment)) throw new Error(`the fixture lost "${fragment}"`);
   return teaShop.replace(fragment, typedSoFar);
@@ -102,6 +120,7 @@ const harness: ConformanceHarness = {
   ],
   undo: (modeler) => diagramOf(modeler).get<CommandStack>('commandStack').undo(),
   redo: (modeler) => diagramOf(modeler).get<CommandStack>('commandStack').redo(),
+  moveElement: moveKettle,
   settle: () => new Promise((resolve) => setTimeout(resolve, 30)),
   // damaged forms the DSL meets while a peer types, on top of the probes the kit derives
   probeTexts: [
@@ -116,16 +135,20 @@ const harness: ConformanceHarness = {
     const kettle = diagram.get<ElementRegistry>('elementRegistry').get('cmp_kettle');
     if (!kettle) throw new Error('the imported map has no component cmp_kettle to edit');
     diagram.get<WardleyLabelEditing>('wardleyLabelEditing').activate(kettle as WardleyShape);
-    const field = diagram
-      .get<Canvas>('canvas')
-      .getContainer()
-      .querySelector<HTMLInputElement>('input.wardley-label-input');
+    const field = labelField(modeler);
     if (!field) throw new Error('no label editor opened');
     field.value = 'typed, not committed';
   },
   interactionState(modeler) {
     const edit = diagramOf(modeler).get<WardleyLabelEditing>('wardleyLabelEditing').getActiveEdit();
     return edit ? { elementId: edit.elementId, text: edit.value } : undefined;
+  },
+  commitInteraction(modeler) {
+    const field = labelField(modeler);
+    if (!field) throw new Error('no label editor open to commit');
+    field.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }),
+    );
   },
 };
 
@@ -148,7 +171,8 @@ describe('Wardley maps implement the collaborative-modeler contract', () => {
   });
 
   // Names are unique on a map and ids derive from them, so peers never allocate the same id for
-  // different elements, and an open label editor comes back after a re-import.
+  // different elements, an open label editor comes back after a re-import, and a host's view
+  // change leaves it open.
   afterAll(() => {
     expect(advisories).toEqual([]);
   });

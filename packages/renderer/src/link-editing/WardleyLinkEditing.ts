@@ -13,10 +13,15 @@ interface ActiveLinkEdit {
   field: HTMLInputElement;
   commit: () => void;
   cleanup: () => void;
+  /** Places the field below its element again after the view changed. */
+  relayout: () => void;
 }
 
 /** Screen px from the element's top edge: two 28px pad rows plus their gap and a margin. */
 const CONTEXT_PAD_CLEARANCE = 72;
+
+/** Below diagram-js's own `shape.changed` listener, which redraws the element. */
+const AFTER_REDRAW_PRIORITY = 500;
 
 /** Screen px between the field and its error caption. */
 const CAPTION_GAP = 4;
@@ -46,6 +51,7 @@ export default class WardleyLinkEditing {
   static $inject = ['eventBus', 'canvas', 'wardleyModeling', 'injector'];
 
   private active: ActiveLinkEdit | null = null;
+  private relayoutPending = false;
 
   constructor(
     eventBus: EventBus,
@@ -53,9 +59,16 @@ export default class WardleyLinkEditing {
     private readonly modeling: WardleyModeling,
     private readonly injector: Injector,
   ) {
-    eventBus.on(['element.mousedown', 'drag.init', 'canvas.viewbox.changing'], () =>
-      this.active?.commit(),
-    );
+    eventBus.on(['element.mousedown', 'drag.init'], () => this.active?.commit());
+    // A host's view change (restoring the view after a peer's re-import, a refit) must not commit
+    // the half-typed address into the shared document (modeler-api L5): the field follows instead.
+    eventBus.on('canvas.viewbox.changing', () => this.relayoutAfterViewChange());
+    eventBus.on('canvas.viewbox.changed', () => this.active?.relayout());
+    // A redraw of the edited element (a host resizing the map while the field is open) moves it
+    // without a view change; the priority waits for the redraw.
+    eventBus.on('shape.changed', AFTER_REDRAW_PRIORITY, (event: { element?: { id?: string } }) => {
+      if (this.active && event.element?.id === this.active.elementId) this.active.relayout();
+    });
     eventBus.on(['diagram.clear', 'diagram.destroy'], () => this.cancel());
   }
 
@@ -96,8 +109,6 @@ export default class WardleyLinkEditing {
     this.active?.commit();
 
     const container = this.canvas.getContainer();
-    const scale = this.canvas.zoom();
-    const viewbox = this.canvas.viewbox();
     const field = document.createElement('input');
     // type="url" would flag relative paths such as ./other.wmap as :invalid.
     field.type = 'text';
@@ -109,9 +120,14 @@ export default class WardleyLinkEditing {
     field.setAttribute('aria-label', `Link of ${shape.wardleyLabel || shape.wardleyType}`);
     field.value = options.value ?? linkOf(shape) ?? '';
     field.style.position = 'absolute';
-    // Below the element and its two-row context pad, which sit to the right of the element's top.
-    field.style.left = `${(shape.x - viewbox.x) * scale}px`;
-    field.style.top = `${(shape.y - viewbox.y) * scale + CONTEXT_PAD_CLEARANCE}px`;
+    const placeField = () => {
+      const scale = this.canvas.zoom();
+      const viewbox = this.canvas.viewbox();
+      // Below the element and its two-row context pad, which sit to the right of the element's top.
+      field.style.left = `${(shape.x - viewbox.x) * scale}px`;
+      field.style.top = `${(shape.y - viewbox.y) * scale + CONTEXT_PAD_CLEARANCE}px`;
+    };
+    placeField();
     container.appendChild(field);
     field.focus();
     field.select();
@@ -127,14 +143,15 @@ export default class WardleyLinkEditing {
       field.remove();
       this.active = null;
     };
+    const placeCaption = (caption: HTMLElement) => {
+      caption.style.left = field.style.left;
+      caption.style.top = `${field.offsetTop + field.offsetHeight + CAPTION_GAP}px`;
+    };
     const error = createFieldError(
       container,
       field,
       `wardley-link-error-${shape.id}`,
-      (caption) => {
-        caption.style.left = field.style.left;
-        caption.style.top = `${field.offsetTop + field.offsetHeight + CAPTION_GAP}px`;
-      },
+      placeCaption,
     );
     const markInvalid = () => error.show(INVALID_HINT);
     const clearInvalid = () => error.clear();
@@ -168,11 +185,26 @@ export default class WardleyLinkEditing {
     field.addEventListener('blur', onBlur);
     field.addEventListener('input', clearInvalid);
 
-    this.active = { elementId: shape.id, field, commit, cleanup };
+    const relayout = () => {
+      if (done) return;
+      placeField();
+      if (error.caption) placeCaption(error.caption);
+    };
+    this.active = { elementId: shape.id, field, commit, cleanup, relayout };
   }
 
   cancel(): void {
     this.active?.cleanup();
+  }
+
+  /** `canvas.viewbox.changing` fires before the change, and `changed` waits 300ms under `deferUpdate`. */
+  private relayoutAfterViewChange(): void {
+    if (!this.active || this.relayoutPending) return;
+    this.relayoutPending = true;
+    queueMicrotask(() => {
+      this.relayoutPending = false;
+      this.active?.relayout();
+    });
   }
 
   /** Saves the open link edit (if any) as if focus had left the field; a rejected address is dropped. */

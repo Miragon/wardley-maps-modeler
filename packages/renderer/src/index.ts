@@ -91,6 +91,7 @@ export {
 export type {
   CollaborativeWardleyModeler,
   CollaborativeWardleyOptions,
+  WardleyElementsSurface,
 } from './collaborative/index.js';
 export {
   EXPORT_LABELS,

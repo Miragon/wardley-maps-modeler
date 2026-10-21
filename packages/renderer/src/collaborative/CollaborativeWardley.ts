@@ -1,12 +1,14 @@
 import {
   MODELER_API_VERSION,
   type CollaborativeModeler,
+  type CollaborativeModelerOptions,
+  type ElementBounds,
   type ElementInfo,
   type ElementsSurface,
   type ImportResult,
   type ModelerMeta,
 } from '@miragon/modeler-api';
-import { readBackIds } from '@miragon/wardley-dsl';
+import { readBackIds, serializeDSL } from '@miragon/wardley-dsl';
 import type { ModuleDeclaration } from 'didi';
 import type Canvas from 'diagram-js/lib/core/Canvas';
 import type ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
@@ -18,23 +20,33 @@ import { NavigatedViewer } from '../NavigatedViewer.js';
 import type { WardleyViewerOptions } from '../WardleyBaseViewer.js';
 import { restoreEditorState, setAsideEditorState, type EditorState } from '../editor-state.js';
 import type { FreeRectInsets } from '../free-rect/index.js';
+import type { LivePreview } from '../live-preview/index.js';
 import { isWardleyShape, type WardleyShape } from '../model/di-types.js';
 
 /** Stable notation id in `meta.notation` of the collaborative-modeler contract. */
 export const WARDLEY_NOTATION = 'wardley';
 
-export interface CollaborativeWardleyOptions {
+/**
+ * The contract's factory options (`freeArea`, `fitOnImport`, `undoRedoKeys`, see
+ * `WardleyViewerOptions`) plus the renderer's own. The viewer ignores `undoRedoKeys`.
+ */
+export interface CollaborativeWardleyOptions extends CollaborativeModelerOptions {
   /** Appended to the renderer's own modules (e.g. a host's chrome module). */
   additionalModules?: ModuleDeclaration[] | undefined;
-  /** See `WardleyViewerOptions.keyboard` (default: the canvas handles undo and redo). */
+  /** @deprecated Since 0.9, for one minor release: use `undoRedoKeys`, which wins over it. */
   keyboard?: { undoRedo?: boolean } | undefined;
-  /** See `WardleyViewerOptions.freeRectInsets`. */
+  /** @deprecated Since 0.9, for one minor release: use `freeArea: { insets }`, which wins over it. */
   freeRectInsets?: (() => FreeRectInsets) | undefined;
+}
+
+/** The contract's element surface, with the optional `bounds` of contract 1.2 always present. */
+export interface WardleyElementsSurface extends ElementsSurface {
+  bounds(id: string): ElementBounds | undefined;
 }
 
 /** The contract surface plus the wrapped diagram for host-specific wiring. */
 export interface CollaborativeWardleyModeler extends CollaborativeModeler {
-  readonly elements: ElementsSurface;
+  readonly elements: WardleyElementsSurface;
   readonly diagram: Modeler | NavigatedViewer;
 }
 
@@ -70,8 +82,8 @@ export function createCollaborativeModeler(
   return collaborative(
     new Modeler({
       ...diagramOptions(options),
-      ...(options.keyboard ? { keyboard: options.keyboard } : {}),
-      ...(options.freeRectInsets ? { freeRectInsets: options.freeRectInsets } : {}),
+      undoRedoKeys: options.undoRedoKeys,
+      keyboard: options.keyboard,
     }),
     true,
   );
@@ -79,15 +91,20 @@ export function createCollaborativeModeler(
 
 /** The read-only mount (`meta.editable: false`): imports, exports and reveals, never edits. */
 export function createCollaborativeViewer(
-  options: Pick<CollaborativeWardleyOptions, 'additionalModules'> = {},
+  options: CollaborativeWardleyOptions = {},
 ): CollaborativeWardleyModeler {
   return collaborative(new NavigatedViewer(diagramOptions(options)), false);
 }
 
-function diagramOptions(
-  options: Pick<CollaborativeWardleyOptions, 'additionalModules'>,
-): WardleyViewerOptions {
-  return { width: '100%', height: '100%', additionalModules: options.additionalModules ?? [] };
+function diagramOptions(options: CollaborativeWardleyOptions): WardleyViewerOptions {
+  return {
+    width: '100%',
+    height: '100%',
+    additionalModules: options.additionalModules ?? [],
+    freeArea: options.freeArea,
+    freeRectInsets: options.freeRectInsets,
+    fitOnImport: options.fitOnImport,
+  };
 }
 
 /**
@@ -127,6 +144,7 @@ function collaborative(
   const elementRegistry = diagram.get<ElementRegistry>('elementRegistry');
   const selection = diagram.get<Selection>('selection');
   const ids = documentIds(diagram, eventBus);
+  const livePreview = editable ? diagram.get<LivePreview>('wardleyLivePreview') : undefined;
   const contentListeners = new Set<() => void>();
   let importsRunning = 0;
   let imported = false;
@@ -156,7 +174,14 @@ function collaborative(
     return element.wardleyLabel ? { id, name: element.wardleyLabel } : { id };
   };
 
-  const elements: ElementsSurface = {
+  /** The element `list()` reports under `id`, read from the live canvas. */
+  const listedElement = (id: string): WardleyShape | undefined => {
+    if (destroyed) return undefined;
+    const element: unknown = elementRegistry.get(ids.canvasIdOf(id));
+    return isAddressable(element) && ids.of(element.id) === id ? element : undefined;
+  };
+
+  const elements: WardleyElementsSurface = {
     list: () =>
       destroyed
         ? []
@@ -176,6 +201,18 @@ function collaborative(
       eventBus.on('selection.changed', listener);
       return () => eventBus.off('selection.changed', listener);
     },
+    bounds(id) {
+      const element = listedElement(id);
+      if (!element) return undefined;
+      const { x, y, width, height } = element;
+      return { x, y, width, height };
+    },
+  };
+
+  // Never a live preview: a host saves the export at any moment, also during a plot-resize drag.
+  const committedText = (): string => {
+    const committed = livePreview?.committedMap();
+    return committed ? serializeDSL(committed) : diagram.exportDSL();
   };
 
   async function importText(text: string): Promise<ImportResult> {
@@ -210,7 +247,7 @@ function collaborative(
     exportText() {
       // Asking a destroyed diagram would build a new one on the detached container.
       if (destroyed) return lastExport;
-      return diagram.exportDSL();
+      return committedText();
     },
     onContentChanged(callback) {
       if (!editable) return () => undefined;
@@ -234,7 +271,7 @@ function collaborative(
     destroy() {
       if (destroyed) return;
       try {
-        lastExport = diagram.exportDSL();
+        lastExport = committedText();
       } catch {
         lastExport = '';
       }

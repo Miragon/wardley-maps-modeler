@@ -10,6 +10,7 @@ import type EvolutionGrid from '../evolution-grid/EvolutionGrid.js';
 import type WardleyExporter from '../io/WardleyExporter.js';
 import { ROOT_ID, type RootBusinessObject } from '../io/index.js';
 import type WardleyElementFactory from '../model/WardleyElementFactory.js';
+import type { LivePreview } from '../live-preview/index.js';
 import { isWardleyConnection, isWardleyShape, type WardleyShape } from '../model/di-types.js';
 
 export type WardleyRoot = Root & { businessObject?: RootBusinessObject };
@@ -69,6 +70,7 @@ export default class MapProjection {
     'wardleyExporter',
     'layouter',
     'eventBus',
+    'wardleyLivePreview',
   ];
 
   constructor(
@@ -79,6 +81,7 @@ export default class MapProjection {
     private readonly exporter: WardleyExporter,
     private readonly layouter: BaseLayouter,
     private readonly eventBus: EventBus,
+    private readonly livePreview: LivePreview,
   ) {}
 
   /** The Wardley root, or undefined before the first import. */
@@ -104,6 +107,7 @@ export default class MapProjection {
   ): Element[] {
     const root = this.root();
     if (!root) return [];
+    if (options.transient) this.livePreview.begin('size');
     root.businessObject = businessObject;
     this.grid.configure(businessObject.config);
     this.grid.render();
@@ -148,12 +152,16 @@ export default class MapProjection {
     return { businessObject: root.businessObject, shapes, waypoints };
   }
 
-  /** Puts the map back exactly as it was when `snapshot` was taken. */
+  /**
+   * Puts the size and every element's geometry back exactly as they were when `snapshot` was
+   * taken. The rest of the root stays: an axis-label preview opened since then is no part of it.
+   */
   restore(snapshot: ProjectionSnapshot, options: { transient?: boolean } = {}): Element[] {
     const root = this.root();
-    if (!root) return [];
-    root.businessObject = snapshot.businessObject;
-    this.grid.configure(snapshot.businessObject.config);
+    const businessObject = this.withSize(snapshot.businessObject.config.size);
+    if (!root || !businessObject) return [];
+    root.businessObject = businessObject;
+    this.grid.configure(businessObject.config);
     this.grid.render();
     const changed: Element[] = [];
     for (const [id, geometry] of snapshot.shapes) {
@@ -168,8 +176,20 @@ export default class MapProjection {
       connection.waypoints = points.map((point) => ({ ...point }));
       changed.push(connection);
     }
-    this.fireConfigChanged(snapshot.businessObject.config, options.transient === true);
+    this.livePreview.end('size');
+    this.fireConfigChanged(businessObject.config, options.transient === true);
     return changed;
+  }
+
+  /**
+   * The live root with `size` set (removed when undefined), for a size preview; undefined before
+   * the first import.
+   */
+  withSize(size: MapSize | undefined): RootBusinessObject | undefined {
+    const businessObject = this.root()?.businessObject;
+    return (
+      businessObject && { ...businessObject, config: configWithSize(businessObject.config, size) }
+    );
   }
 
   /** `transient` marks a live preview that is not part of the document (yet). */
