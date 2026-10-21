@@ -12,9 +12,8 @@ const PAD_SIDE = 120;
 /**
  * Screen px of empty space the view may show beyond the content inside the host's free rectangle.
  * Room on both sides of an axis, so a view the host fitted into its free rectangle (guide §5.9)
- * is never pulled away, also when the host fits other bounds than `contentBounds()` (the plot
- * without a long label beyond it): the host would take the pull for a user move and stop keeping
- * the view fitted.
+ * is never pulled away: the host would take the pull for a user move and stop keeping the view
+ * fitted.
  */
 const INSET_SLACK = 96;
 const EPSILON = 0.5;
@@ -68,23 +67,43 @@ function constrainAxis(
 }
 
 /**
- * Clamps one axis of the view so the content stays in the host's free rectangle: content smaller
- * than the free part may sit anywhere inside it, larger content may be panned along it, each up to
- * `slack` beyond. Never centres, so a view the host placed in its free rectangle stays put.
+ * The view positions along one axis that keep `bounds` in the host's free rectangle: bounds
+ * smaller than the free part may sit anywhere inside it, larger ones may be panned along it, each
+ * up to `slack` beyond.
+ */
+function freeAreaRange(
+  viewSize: number,
+  bounds: { min: number; max: number },
+  free: FreeAxis,
+): { lowest: number; highest: number } {
+  const freeEnd = viewSize - free.after;
+  return {
+    lowest: Math.min(bounds.min - free.before - free.slack, bounds.max - freeEnd - free.slack),
+    highest: Math.max(bounds.max - freeEnd + free.slack, bounds.min - free.before + free.slack),
+  };
+}
+
+/**
+ * Clamps one axis of the view so the content stays in the host's free rectangle. Never centres,
+ * so a view the host placed in its free rectangle stays put. A view that keeps the plot there is
+ * accepted as well: the import and hosts fit the plot, and a long label beyond it that makes the
+ * content wider than the free part must not pull that fit sideways. The plot lies inside the
+ * content, so the two ranges overlap and their hull is one range.
  */
 function constrainAxisToFreeArea(
   position: number,
   viewSize: number,
-  bounds: { min: number; max: number },
+  content: { min: number; max: number },
+  plot: { min: number; max: number },
   free: FreeAxis,
 ): number {
-  const freeEnd = viewSize - free.after;
-  const lowest = Math.min(bounds.min - free.before - free.slack, bounds.max - freeEnd - free.slack);
-  const highest = Math.max(
-    bounds.max - freeEnd + free.slack,
-    bounds.min - free.before + free.slack,
+  const byContent = freeAreaRange(viewSize, content, free);
+  const byPlot = freeAreaRange(viewSize, plot, free);
+  return clamp(
+    position,
+    Math.min(byContent.lowest, byPlot.lowest),
+    Math.max(byContent.highest, byPlot.highest),
   );
-  return clamp(position, lowest, highest);
 }
 
 /**
@@ -93,9 +112,9 @@ function constrainAxisToFreeArea(
  * After every move we pull the visible area back so it stays close to the map,
  * leaving only a small margin of empty space around it. "The map" is the plot plus any content
  * reaching beyond it (long labels at the commodity edge, notes in the margin): `contentBounds()`,
- * which hosts also fit the view to. With the insets of a host's chrome (`freeArea: { insets }`) the margin is
- * measured inside the free rectangle, so the map never slips under the chrome and a view the host
- * fitted there is left alone.
+ * which hosts also fit the view to. With the insets of a host's chrome (`freeArea: { insets }`)
+ * the margin is measured inside the free rectangle, so the map never slips under the chrome, and a
+ * view the host or the import fitted there, to the content or to the plot, is left alone.
  */
 export default class PanConstraint {
   static $inject = ['eventBus', 'canvas', 'evolutionGrid', 'injector'];
@@ -181,9 +200,16 @@ export default class PanConstraint {
     const horizontal = { min: bounds.x, max: bounds.x + bounds.width };
     const vertical = { min: bounds.y, max: bounds.y + bounds.height };
     const free = this.freeArea(current);
+    const plot = this.grid.outerBounds();
     const pads: Pads = { top: PAD_TOP, right: PAD_SIDE, bottom: PAD_BOTTOM, left: PAD_SIDE };
     const clampedX = free
-      ? constrainAxisToFreeArea(current.x, current.width, horizontal, free.x)
+      ? constrainAxisToFreeArea(
+          current.x,
+          current.width,
+          horizontal,
+          { min: plot.x, max: plot.x + plot.width },
+          free.x,
+        )
       : constrainAxis(
           current.x,
           current.width,
@@ -191,7 +217,13 @@ export default class PanConstraint {
           recentre,
         );
     const clampedY = free
-      ? constrainAxisToFreeArea(current.y, current.height, vertical, free.y)
+      ? constrainAxisToFreeArea(
+          current.y,
+          current.height,
+          vertical,
+          { min: plot.y, max: plot.y + plot.height },
+          free.y,
+        )
       : constrainAxis(
           current.y,
           current.height,

@@ -227,6 +227,43 @@ describe('PanConstraint', () => {
       },
     );
 
+    /** A commodity label of some twenty words: the content is far wider than the plot. */
+    const withLongLabel = (plot: ViewBox) => ({ ...plot, width: plot.width + 1000 });
+
+    // Wide and low: the fit is limited by the height and leaves room beside the plot.
+    it.each([
+      ['the shell', INSETS, 1440, 790],
+      ['the shell', INSETS, 1680, 860],
+      ['an inspector', INSPECTOR, 1800, 800],
+      ['an embedded chrome', EMBEDDED, 1440, 790],
+    ])(
+      'never pulls a view %s fitted to the plot while a label makes the content wider than the free rectangle (%#)',
+      (_host, insets, width, height) => {
+        const plot = new EvolutionGrid(undefined as unknown as Canvas).outerBounds();
+        const content = withLongLabel(plot);
+        const view = fittedInto(insets, plot, width, height);
+        expect(content.width * view.scale).toBeGreaterThan(width - insets.left - insets.right);
+        const { fire, setCalls } = setup(view, content, injectorWith(insets));
+        fire(view);
+        expect(setCalls).toHaveLength(0);
+      },
+    );
+
+    it('lets the view follow a label wider than the free rectangle to its end, and no further', () => {
+      const plot = new EvolutionGrid(undefined as unknown as Canvas).outerBounds();
+      const content = withLongLabel(plot);
+      const fitted = fittedInto(INSETS, plot, 1440, 790);
+      const freeEnd = (1440 - INSETS.right) / fitted.scale;
+      const atLabelEnd = { ...fitted, x: content.x + content.width - freeEnd };
+      const { fire, setCalls } = setup(atLabelEnd, content, injectorWith(INSETS));
+      fire(atLabelEnd);
+      expect(setCalls).toHaveLength(0);
+
+      fire({ ...atLabelEnd, x: atLabelEnd.x + 400 / fitted.scale });
+      expect(setCalls).toHaveLength(1);
+      expect((setCalls[0]!.x - atLabelEnd.x) * fitted.scale).toBeCloseTo(96, 6);
+    });
+
     it('lets a zoomed-out map rest anywhere inside the free rectangle', () => {
       // 1600 × 1000 at 25 %: the free rectangle is 5008 × 3392 diagram px, the plot 1190 × 776.
       const view = {

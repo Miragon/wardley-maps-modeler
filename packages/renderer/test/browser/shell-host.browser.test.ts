@@ -171,6 +171,26 @@ describe('inside a host chrome (the Miragon modeler shell)', () => {
     expect(after.y).toBeCloseTo(fitted.y, 0);
   });
 
+  it('leaves the fit of the plot where it is while a label makes the content wider than the free area', async () => {
+    const editor = mount({ insets: INSETS, width: 1440, height: 790 });
+    const name =
+      'A commodity whose name runs on for many words and far beyond the right edge of the plot';
+    await editor.importDSL(`title Host\ncomponent ${name} [0.6, 0.97]\ncomponent B [0.3, 0.4]`);
+    const canvas = editor.get<Canvas>('canvas');
+    const plot = editor.get<EvolutionGrid>('evolutionGrid').outerBounds();
+    const fitted = fitViewbox(plot, canvas.getSize(), INSETS)!;
+    const content = editor.get<PanConstraint>('panConstraint').contentBounds();
+    const freeWidth = (1440 - INSETS.left - INSETS.right) / canvas.viewbox().scale;
+    expect(content.width).toBeGreaterThan(freeWidth);
+
+    // The import's own fit, then the host's fit of the same bounds after the user panned.
+    expect(canvas.viewbox().x).toBeCloseTo(fitted.x, 0);
+    canvas.viewbox({ ...fitted, x: fitted.x + 200 });
+    canvas.viewbox(fitted);
+    expect(canvas.viewbox().x).toBeCloseTo(fitted.x, 0);
+    expect(canvas.viewbox().y).toBeCloseTo(fitted.y, 0);
+  });
+
   it('without a host chrome, a focused plain button still lets the single-key tools through', async () => {
     const target = mount();
     await target.importDSL(MAP);

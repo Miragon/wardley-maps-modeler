@@ -166,7 +166,8 @@ export default class WardleyImporter {
 
   /**
    * The plot with its axis margins, centred in the host's free rectangle, at most at 100 %: where
-   * the host's own fit puts it, and where the pan constraint leaves it.
+   * the host's own fit puts it. With a free area the pan constraint leaves it there; without one
+   * it may still move a map smaller than the view to keep its own margins around it.
    */
   private fitPlot(): void {
     const plot = this.grid.outerBounds();

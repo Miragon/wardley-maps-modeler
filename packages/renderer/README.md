@@ -55,7 +55,8 @@ always write a valid `evolution` line; the default set is stored as `undefined`.
 
 An import validates the whole map first: a map that is not importable rejects before the canvas
 changes, and a rendering failure puts the previous map back. It then fits the view to the plot with
-its axis margins, centred and never above 100 %.
+its axis margins, centred in the free area and never above 100 %. Without a `freeArea` the pan
+constraint may still move a map smaller than the view, to keep its margins around it.
 
 An open inline editor (name, note, link annotation, flow value, link address) stays open with its
 typed text across a view change, a scroll, a zoom or a host's fit, and moves with its element;
