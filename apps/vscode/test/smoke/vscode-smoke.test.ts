@@ -111,6 +111,7 @@ it(
       name: 'wardley',
       screenshotDir: SCREENSHOT_DIRECTORY,
       vscodeVersion: process.env.VSCODE_SMOKE_VERSION || undefined,
+      keepTemporaryFiles: process.env.VSCODE_SMOKE_KEEP === '1',
       log: (line) => console.log(line),
     });
     console.log(formatVsCodeSmoke(result));
