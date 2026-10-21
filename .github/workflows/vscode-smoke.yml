@@ -2,14 +2,23 @@ name: VS Code smoke
 
 # The packaged extension in a real VS Code (apps/vscode/test/smoke, `npm run test:vscode`). A
 # workflow of its own and not a required check, so it neither delays nor blocks the CI workflow.
-# Pull requests run it when they change the extension or what it bundles: everything under
-# apps/vscode, and the lockfile, whose resolved versions esbuild inlines into the VSIX. Renderer
-# changes are covered by the vscode-webview e2e project and the weekly run against the newest VS Code.
+# Pull requests run it when they change the extension, the sources of its host bundle (the DSL and
+# the schema model, which no other check runs in a real extension host), the lockfile, whose
+# resolved versions esbuild inlines into the VSIX, or the test's own setup. The webview bundle's
+# renderer and transforms are covered by the vscode-webview e2e project and the weekly run against
+# the newest VS Code.
 on:
   pull_request:
     paths:
       - 'apps/vscode/**'
+      - 'packages/dsl/src/**'
+      - 'packages/dsl/package.json'
+      - 'packages/schema-model/src/**'
+      - 'packages/schema-model/package.json'
       - 'package-lock.json'
+      - 'package.json'
+      - 'vitest.config.ts'
+      - '.github/actions/setup/**'
       - '.github/workflows/vscode-smoke.yml'
   schedule:
     - cron: '41 4 * * 1'
@@ -51,14 +60,25 @@ jobs:
           path: ${{ steps.vscode.outputs.cache }}
           key: vscode-${{ runner.os }}-${{ runner.arch }}-${{ steps.vscode.outputs.version }}
 
-      # VS Code needs an X server; -a picks a free display number.
+      # VS Code needs an X server; -a picks a free display number. The runner is thrown away anyway,
+      # so the run keeps VS Code's profile in RUNNER_TEMP, for its logs when it fails.
       - run: xvfb-run -a npm run test:vscode
         env:
           VSCODE_SMOKE_VERSION: ${{ steps.vscode.outputs.version }}
+          VSCODE_SMOKE_KEEP: '1'
+          TMPDIR: ${{ runner.temp }}
 
       - if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: vscode-smoke
           path: test-results/vscode-smoke/
+          retention-days: 7
+
+      - if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: vscode-smoke-logs
+          path: ${{ runner.temp }}/modeler-shell-vscode-*/user-data/logs/
+          if-no-files-found: ignore
           retention-days: 7
