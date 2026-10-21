@@ -33,6 +33,7 @@ import {
 } from './map-resize/MapProjection.js';
 import type WardleyModeling from './modeling/WardleyModeling.js';
 import type { FreeRectInsets } from './free-rect/index.js';
+import type { LivePreview } from './live-preview/index.js';
 import { applyConfigUpdate, type MapConfigUpdate } from './modeling/cmd/UpdateConfigHandler.js';
 
 export interface WardleyViewerOptions {
@@ -340,6 +341,7 @@ export abstract class WardleyBaseViewer {
         if (!businessObject) return;
         this._labelsBeforePreview = { labels: businessObject.config.evolutionLabels };
       }
+      this._livePreview()?.begin('evolutionLabels');
       this._applyConfigDirectly({ evolutionLabels: labels }, { transient: true });
       return;
     }
@@ -347,6 +349,7 @@ export abstract class WardleyBaseViewer {
       if (this._labelsBeforePreview) {
         const before = this._labelsBeforePreview.labels;
         this._applyConfigDirectly({ evolutionLabels: before });
+        this._livePreview()?.end();
         this._labelsBeforePreview = undefined;
         // A preview that ends where it started (typed, then reverted) is no edit: no undo step.
         if (sameEvolutionLabels(before, labels)) return;
@@ -377,6 +380,10 @@ export abstract class WardleyBaseViewer {
   /** The Modeler's command API, or null in the read-only viewers. */
   private _wardleyModeling(): WardleyModeling | null {
     return this._ensureDiagram().get<WardleyModeling>('wardleyModeling', false);
+  }
+
+  private _livePreview(): LivePreview | null {
+    return this._ensureDiagram().get<LivePreview>('wardleyLivePreview', false);
   }
 
   private _root(): (Root & { businessObject?: RootBusinessObject }) | undefined {

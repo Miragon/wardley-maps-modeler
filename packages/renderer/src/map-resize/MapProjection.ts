@@ -10,6 +10,7 @@ import type EvolutionGrid from '../evolution-grid/EvolutionGrid.js';
 import type WardleyExporter from '../io/WardleyExporter.js';
 import { ROOT_ID, type RootBusinessObject } from '../io/index.js';
 import type WardleyElementFactory from '../model/WardleyElementFactory.js';
+import type { LivePreview } from '../live-preview/index.js';
 import { isWardleyConnection, isWardleyShape, type WardleyShape } from '../model/di-types.js';
 
 export type WardleyRoot = Root & { businessObject?: RootBusinessObject };
@@ -69,6 +70,7 @@ export default class MapProjection {
     'wardleyExporter',
     'layouter',
     'eventBus',
+    'wardleyLivePreview',
   ];
 
   constructor(
@@ -79,6 +81,7 @@ export default class MapProjection {
     private readonly exporter: WardleyExporter,
     private readonly layouter: BaseLayouter,
     private readonly eventBus: EventBus,
+    private readonly livePreview: LivePreview,
   ) {}
 
   /** The Wardley root, or undefined before the first import. */
@@ -104,6 +107,7 @@ export default class MapProjection {
   ): Element[] {
     const root = this.root();
     if (!root) return [];
+    if (options.transient) this.livePreview.begin('size');
     root.businessObject = businessObject;
     this.grid.configure(businessObject.config);
     this.grid.render();
@@ -168,6 +172,7 @@ export default class MapProjection {
       connection.waypoints = points.map((point) => ({ ...point }));
       changed.push(connection);
     }
+    this.livePreview.end();
     this.fireConfigChanged(snapshot.businessObject.config, options.transient === true);
     return changed;
   }

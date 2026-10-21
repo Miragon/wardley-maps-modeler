@@ -5,7 +5,13 @@ import type Selection from 'diagram-js/lib/features/selection/Selection';
 import type Modeling from 'diagram-js/lib/features/modeling/Modeling';
 import { MAP_SIZE_PRESETS } from '@miragon/wardley-schema-model';
 import { patchDSL } from '@miragon/wardley-dsl';
-import { Modeler, PLOT, Viewer } from '../../src/index.js';
+import {
+  Modeler,
+  PLOT,
+  Viewer,
+  createCollaborativeModeler,
+  type CollaborativeWardleyModeler,
+} from '../../src/index.js';
 import type EvolutionGrid from '../../src/evolution-grid/EvolutionGrid.js';
 import {
   isWardleyConnection,
@@ -813,5 +819,115 @@ describe('Viewer (no command stack)', () => {
       title: 'Viewer title',
       evolutionLabels: ['A', 'B', 'C', 'D'],
     });
+  });
+});
+
+describe('the collaborative export during a live preview (a host autosaving mid-drag)', () => {
+  let host: HTMLElement;
+  let collaborative: CollaborativeWardleyModeler;
+  let modeler: Modeler;
+
+  beforeEach(async () => {
+    host = createContainer();
+    host.style.width = '400px';
+    host.style.height = '400px';
+    collaborative = createCollaborativeModeler();
+    collaborative.attachTo(host);
+    await collaborative.importText(RICH);
+    modeler = collaborative.diagram as Modeler;
+    const { width, height } = modeler.get<EvolutionGrid>('evolutionGrid').getPlotSize();
+    const corner = { x: PLOT.marginLeft + width, y: PLOT.marginTop + height };
+    modeler
+      .get<Canvas>('canvas')
+      .viewbox({ x: corner.x - 200, y: corner.y - 200, width: 400, height: 400 });
+  });
+
+  afterEach(() => {
+    collaborative.destroy();
+    host.remove();
+  });
+
+  function mouse(type: string, target: EventTarget, point: { x: number; y: number }) {
+    target.dispatchEvent(
+      new MouseEvent(type, {
+        bubbles: true,
+        cancelable: true,
+        clientX: point.x,
+        clientY: point.y,
+        button: 0,
+      }),
+    );
+  }
+
+  function startCornerDrag(): { x: number; y: number } {
+    const box = host
+      .querySelector('.wardley-map-resize-xy .wardley-map-resize-hit')!
+      .getBoundingClientRect();
+    const start = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    mouse('mousedown', document.elementFromPoint(start.x, start.y)!, start);
+    return start;
+  }
+
+  it('exports the committed document while the plot corner is dragged, then the dropped size', () => {
+    const committed = collaborative.exportText();
+    const exportedOnChange: string[] = [];
+    collaborative.onContentChanged(() => exportedOnChange.push(collaborative.exportText()));
+
+    const start = startCornerDrag();
+    mouse('mousemove', document, { x: start.x + 180, y: start.y + 110 });
+    mouse('mousemove', document, { x: start.x + 363, y: start.y + 223 });
+    expect(modeler.get<EvolutionGrid>('evolutionGrid').getPlotSize().width).toBe(1440);
+    expect(modeler.exportDSL()).toContain('size [1440, 900]');
+    expect(collaborative.exportText()).toBe(committed);
+
+    mouse('mouseup', document, { x: start.x + 363, y: start.y + 223 });
+    expect(exportedOnChange).toHaveLength(1);
+    expect(sizeLinesOf(exportedOnChange[0]!)).toEqual(['size [1440, 900]']);
+    expect(collaborative.exportText()).toBe(exportedOnChange[0]);
+  });
+
+  it('exports the live document again after a cancelled drag', () => {
+    const committed = collaborative.exportText();
+    const start = startCornerDrag();
+    mouse('mousemove', document, { x: start.x - 300, y: start.y - 200 });
+    expect(collaborative.exportText()).toBe(committed);
+    document.dispatchEvent(new KeyboardEvent('keyup', { key: 'Escape', bubbles: true }));
+
+    modeler.setTitle('Edited after the drag');
+    expect(collaborative.exportText()).toBe(
+      committed.replace('title Rich size test', 'title Edited after the drag'),
+    );
+  });
+
+  it('exports the committed size while the map size popover previews another', async () => {
+    const committed = collaborative.exportText();
+    await modeler.setMapSize(1500, 950, { transient: true });
+    expect(collaborative.exportText()).toBe(committed);
+    await modeler.setMapSize(1500, 950);
+    expect(sizeLinesOf(collaborative.exportText())).toEqual(['size [1500, 950]']);
+  });
+
+  it('exports the committed axis labels while new ones are typed', () => {
+    const committed = collaborative.exportText();
+    modeler.setEvolutionLabels(['N', 'E', 'G', 'B'], { transient: true });
+    expect(collaborative.exportText()).toBe(committed);
+    modeler.setEvolutionLabels(['Novel', 'Emerging', 'Good', 'Best']);
+    expect(collaborative.exportText()).toContain('evolution Novel->Emerging->Good->Best');
+  });
+
+  it('exports an edit made during a preview, without the preview', () => {
+    const committed = collaborative.exportText();
+    modeler.setEvolutionLabels(['N', 'E', 'G', 'B'], { transient: true });
+    modeler.setTitle('Renamed mid-preview');
+    expect(collaborative.exportText()).toBe(
+      committed.replace('title Rich size test', 'title Renamed mid-preview'),
+    );
+  });
+
+  it('keeps the committed document as the last export of a destroyed modeler', async () => {
+    const committed = collaborative.exportText();
+    await modeler.setMapSize(1500, 950, { transient: true });
+    collaborative.destroy();
+    expect(collaborative.exportText()).toBe(committed);
   });
 });

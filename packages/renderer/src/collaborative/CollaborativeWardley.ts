@@ -6,7 +6,7 @@ import {
   type ImportResult,
   type ModelerMeta,
 } from '@miragon/modeler-api';
-import { readBackIds } from '@miragon/wardley-dsl';
+import { readBackIds, serializeDSL } from '@miragon/wardley-dsl';
 import type { ModuleDeclaration } from 'didi';
 import type Canvas from 'diagram-js/lib/core/Canvas';
 import type ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
@@ -18,6 +18,7 @@ import { NavigatedViewer } from '../NavigatedViewer.js';
 import type { WardleyViewerOptions } from '../WardleyBaseViewer.js';
 import { restoreEditorState, setAsideEditorState, type EditorState } from '../editor-state.js';
 import type { FreeRectInsets } from '../free-rect/index.js';
+import type { LivePreview } from '../live-preview/index.js';
 import { isWardleyShape, type WardleyShape } from '../model/di-types.js';
 
 /** Stable notation id in `meta.notation` of the collaborative-modeler contract. */
@@ -127,6 +128,7 @@ function collaborative(
   const elementRegistry = diagram.get<ElementRegistry>('elementRegistry');
   const selection = diagram.get<Selection>('selection');
   const ids = documentIds(diagram, eventBus);
+  const livePreview = editable ? diagram.get<LivePreview>('wardleyLivePreview') : undefined;
   const contentListeners = new Set<() => void>();
   let importsRunning = 0;
   let imported = false;
@@ -178,6 +180,12 @@ function collaborative(
     },
   };
 
+  // Never a live preview: a host saves the export at any moment, also during a plot-resize drag.
+  const committedText = (): string => {
+    const committed = livePreview?.committedMap();
+    return committed ? serializeDSL(committed) : diagram.exportDSL();
+  };
+
   async function importText(text: string): Promise<ImportResult> {
     if (destroyed) throw new Error('The modeler was destroyed.');
     importsRunning += 1;
@@ -210,7 +218,7 @@ function collaborative(
     exportText() {
       // Asking a destroyed diagram would build a new one on the detached container.
       if (destroyed) return lastExport;
-      return diagram.exportDSL();
+      return committedText();
     },
     onContentChanged(callback) {
       if (!editable) return () => undefined;
@@ -234,7 +242,7 @@ function collaborative(
     destroy() {
       if (destroyed) return;
       try {
-        lastExport = diagram.exportDSL();
+        lastExport = committedText();
       } catch {
         lastExport = '';
       }

@@ -89,7 +89,9 @@ modeler.onContentChanged(() => save(modeler.exportText()));
 ```
 
 An import is silent (no content change is reported back) and keeps the selection, the viewbox and
-an open label editor. `elements` names components, anchors, pipelines, submaps and accelerators by
+an open label editor. `exportText()` is the committed document, never a live preview: while the
+plot corner is dragged or the size or axis-label popover previews a change, it returns the document
+as it was before, and the change event of the commit brings the new one. `elements` names components, anchors, pipelines, submaps and accelerators by
 the id the document gives them (`cmp_kettle`), also right after a canvas edit; `getViewState` and
 `setViewState` carry the viewbox. `diagram` is the wrapped `Modeler` or `NavigatedViewer` for
 host-specific wiring. The modeler takes `additionalModules`, `keyboard` and `freeRectInsets` as
