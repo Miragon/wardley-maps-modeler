@@ -69,8 +69,8 @@ const storedShellState = readShellState(vscode);
 // label editor.
 const collaborative = createCollaborativeModeler({
   additionalModules: [shellModule],
-  keyboard: { undoRedo: false },
-  freeRectInsets: () => shell.fitInsets(),
+  undoRedoKeys: false,
+  freeArea: { insets: () => shell.fitInsets() },
 });
 const modeler = collaborative.diagram as Modeler;
 modeler.get('canvas');
