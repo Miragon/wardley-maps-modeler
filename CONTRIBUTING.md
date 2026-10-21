@@ -104,9 +104,10 @@ run. Like `npm run package -w apps/vscode`, the packing writes the production bu
 
 When a failure names no cause (for example "the custom editor never showed the shell's menu"), the
 cause is in VS Code's logs: run again with `VSCODE_SMOKE_KEEP=1` and read the `logs` folder of the
-kept profile. One failure is retried, up to twice: the save step of `@miragon/modeler-shell` 0.3.0 can
-read the file while VS Code writes it, and that empty read fails with `the map has no elements`. The
-reporter marks such a run `(retry x1)`; every other failure fails at once.
+kept profile. A failed run is not retried: the save step of `@miragon/modeler-shell` parses the file
+only once the editor tab is clean and two reads of it agree, and reads it again while the test's
+parser rejects it (a map without elements included), so it does not catch VS Code halfway through a
+save.
 
 In CI, [`.github/workflows/vscode-smoke.yml`](.github/workflows/vscode-smoke.yml) runs it on
 `ubuntu-latest` under `xvfb-run -a`: weekly on Monday, on demand (Actions → VS Code smoke → Run
