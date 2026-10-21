@@ -740,7 +740,18 @@ test.describe('keys and dialogs', () => {
     await expect.poll(count).toBe(before - 1);
 
     await menuEntry(page, 'keyboard-shortcuts');
-    await page.locator('dialog.wardley-shortcuts').getByRole('button', { name: 'Close' }).click();
+    const dialog = page.locator('dialog.wardley-shortcuts');
+    // The dialog hands the focus back to the trigger on its close event, a task of its own that can
+    // run after a focus the test moves at once.
+    const closed = dialog.evaluate(
+      (element) =>
+        new Promise<void>((resolve) =>
+          element.addEventListener('close', () => resolve(), { once: true }),
+        ),
+    );
+    await dialog.getByRole('button', { name: 'Close' }).click();
+    await closed;
+    await expect(page.locator('[data-chrome="menu"]')).toBeFocused();
     await canvasSlot(page).locator('svg[role="application"]').focus();
     await page.keyboard.press('ControlOrMeta+z');
     await expect.poll(count).toBe(before);
