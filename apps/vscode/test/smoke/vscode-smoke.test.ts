@@ -83,6 +83,7 @@ let workDirectory: string | undefined;
 let extensionPath = '';
 
 beforeAll(async () => {
+  await rm(SCREENSHOT_DIRECTORY, { recursive: true, force: true });
   workDirectory = await mkdtemp(join(tmpdir(), 'wardley-vscode-smoke-'));
   extensionPath = await packExtension(workDirectory);
 }, 300_000);
