@@ -30,6 +30,8 @@ interface ActiveEdit {
   commit: (trigger: CommitTrigger) => void;
   /** Discards and closes (only for Escape). */
   cleanup: () => void;
+  /** Places the field over its element again after the view changed. */
+  relayout: () => void;
   connection?: boolean;
 }
 
@@ -146,6 +148,7 @@ export default class WardleyLabelEditing {
   static $inject = ['eventBus', 'canvas', 'wardleyModeling', 'wardleyElementFactory', 'injector'];
 
   private active: ActiveEdit | null = null;
+  private relayoutPending = false;
   private readonly contextPad: ContextPad | null;
   private readonly selection: Selection | null;
   private readonly locked: () => boolean;
@@ -166,10 +169,13 @@ export default class WardleyLabelEditing {
       if (isWardleyShape(event.element)) this.activate(event.element);
       else if (isWardleyConnection(event.element)) this.activateConnection(event.element);
     });
-    // Click/drag/pan outside the field = SAVE (not discard). Only Escape discards.
-    eventBus.on(['element.mousedown', 'drag.init', 'canvas.viewbox.changing'], () =>
-      this.active?.commit('outside'),
-    );
+    // Click or drag outside the field = SAVE (not discard). Only Escape discards.
+    eventBus.on(['element.mousedown', 'drag.init'], () => this.active?.commit('outside'));
+    // A view change is no gesture of the user's: a host restores the view after a peer's re-import
+    // and refits when its chrome changes, and committing then would write the half-typed name into
+    // the shared document (modeler-api L5). The field follows the element instead.
+    eventBus.on('canvas.viewbox.changing', () => this.relayoutAfterViewChange());
+    eventBus.on('canvas.viewbox.changed', () => this.active?.relayout());
     // The edited element vanished (delete, re-import): nothing left to save into.
     eventBus.on(['shape.remove', 'connection.remove'], (event: { element?: { id?: string } }) => {
       if (this.active && event.element?.id === this.active.elementId) this.cancel();
@@ -187,12 +193,11 @@ export default class WardleyLabelEditing {
     const openedByPointer = lastInteractionWasPointer();
     const requiresUniqueName = this.factory.isLinkable(element.wardleyType);
     const { labelElements, classedByFallback } = this.nameLabelElements(element);
-    const geometry = this.labelGeometry(element, labelElements);
+    let geometry = this.labelGeometry(element, labelElements);
 
-    const lineHeight = Math.max(
-      geometry.fontSize * FIELD_LINE_HEIGHT,
-      isNote ? NOTE_LINE_HEIGHT * this.canvas.zoom() : 0,
-    );
+    const lineHeightOf = (fontSize: number) =>
+      Math.max(fontSize * FIELD_LINE_HEIGHT, isNote ? NOTE_LINE_HEIGHT * this.canvas.zoom() : 0);
+    let lineHeight = lineHeightOf(geometry.fontSize);
     const field = createNameField(
       isNote,
       options.value ?? element.wardleyLabel ?? '',
@@ -304,7 +309,18 @@ export default class WardleyLabelEditing {
     field.addEventListener('blur', onBlur);
     field.addEventListener('input', onInput);
 
-    this.active = { elementId: element.id, field, commit, cleanup };
+    const relayout = () => {
+      if (done) return;
+      geometry = this.labelGeometry(element, labelElements);
+      lineHeight = lineHeightOf(geometry.fontSize);
+      Object.assign(field.style, {
+        fontSize: `${geometry.fontSize}px`,
+        lineHeight: `${lineHeight}px`,
+      });
+      layout();
+    };
+
+    this.active = { elementId: element.id, field, commit, cleanup, relayout };
   }
 
   /**
@@ -316,8 +332,6 @@ export default class WardleyLabelEditing {
     this.active?.commit('outside');
 
     const container = this.canvas.getContainer();
-    const scale = this.canvas.zoom();
-    const vb = this.canvas.viewbox();
     const first = conn.waypoints[0];
     const last = conn.waypoints[conn.waypoints.length - 1];
     if (!first || !last) return;
@@ -329,8 +343,13 @@ export default class WardleyLabelEditing {
     field.placeholder = isFlow ? 'flow value (e.g. $0.10)' : 'link annotation';
     field.value = options.value ?? (isFlow ? conn.flowValue : conn.linkLabel) ?? '';
     field.style.position = 'absolute';
-    field.style.left = `${((first.x + last.x) / 2 - 60 - vb.x) * scale}px`;
-    field.style.top = `${((first.y + last.y) / 2 - 26 - vb.y) * scale}px`;
+    const place = () => {
+      const scale = this.canvas.zoom();
+      const viewbox = this.canvas.viewbox();
+      field.style.left = `${((first.x + last.x) / 2 - 60 - viewbox.x) * scale}px`;
+      field.style.top = `${((first.y + last.y) / 2 - 26 - viewbox.y) * scale}px`;
+    };
+    place();
     container.appendChild(field);
     focusField(field, options);
 
@@ -379,12 +398,25 @@ export default class WardleyLabelEditing {
     field.addEventListener('keydown', onKey as EventListener);
     field.addEventListener('blur', onBlur);
 
-    this.active = { elementId: conn.id, field, commit, cleanup, connection: true };
+    const relayout = () => {
+      if (!done) place();
+    };
+    this.active = { elementId: conn.id, field, commit, cleanup, relayout, connection: true };
   }
 
   /** Discards the open edit (if any) without saving. */
   cancel(): void {
     this.active?.cleanup();
+  }
+
+  /** `canvas.viewbox.changing` fires before the change and `changed` only after a debounce. */
+  private relayoutAfterViewChange(): void {
+    if (!this.active || this.relayoutPending) return;
+    this.relayoutPending = true;
+    queueMicrotask(() => {
+      this.relayoutPending = false;
+      this.active?.relayout();
+    });
   }
 
   /**
