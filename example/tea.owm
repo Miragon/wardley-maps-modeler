@@ -1,5 +1,4 @@
 title Tea Shop
-pipeline Kettle [0.3, 0.65]
 component Cup of Tea [0.79, 0.61]
 component Cup [0.73, 0.78]
 component Tea [0.63, 0.81]

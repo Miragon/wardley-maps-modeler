@@ -14,7 +14,6 @@ component Hot Water [0.52, 0.8]
 component Water [0.38, 0.82]
 component Kettle [0.43, 0.35]
 component Power [0.1, 0.71] (outsource)
-pipeline Kettle [0.3, 0.65]
 evolve Kettle 0.62
 Business -> Cup of Tea
 Public -> Cup of Tea

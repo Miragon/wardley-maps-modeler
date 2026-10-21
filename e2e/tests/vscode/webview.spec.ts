@@ -482,7 +482,7 @@ test.describe('VS Code webview: canvas', () => {
     await postFromHost(page, { type: 'update', text: 'title Broken\n' });
     await expect(page.locator('[data-chrome="status"]')).toBeVisible();
 
-    // Water's own hit area: Kettle sits on its pipeline's edge, Cup of Tea under its links.
+    // Water's own hit area: Cup of Tea sits under its links.
     const water = page.locator(
       '.cd-shell-canvas .djs-shape[data-element-id="cmp_water"] > .djs-hit',
     );
