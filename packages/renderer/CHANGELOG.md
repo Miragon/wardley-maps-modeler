@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0](https://github.com/Miragon/wardley-maps-modeler/compare/renderer-v0.8.0...renderer-v0.9.0) (2026-10-21)
+
+
+### Features
+
+* **renderer:** implement modeler-api contract 1.2 and the Design IQ follow-ups ([#142](https://github.com/Miragon/wardley-maps-modeler/issues/142)) ([1839416](https://github.com/Miragon/wardley-maps-modeler/commit/1839416e80fea54098564d3a26d1d05c85a34547))
+
 ## [0.8.0](https://github.com/Miragon/wardley-maps-modeler/compare/renderer-v0.7.0...renderer-v0.8.0) (2026-10-20)
 
 

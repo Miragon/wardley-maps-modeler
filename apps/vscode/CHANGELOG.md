@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.10.0](https://github.com/Miragon/wardley-maps-modeler/compare/vscode-v0.9.0...vscode-v0.10.0) (2026-10-21)
+
+
+### Features
+
+* **renderer:** implement modeler-api contract 1.2 and the Design IQ follow-ups ([#142](https://github.com/Miragon/wardley-maps-modeler/issues/142)) ([1839416](https://github.com/Miragon/wardley-maps-modeler/commit/1839416e80fea54098564d3a26d1d05c85a34547))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @miragon/wardley-renderer bumped from 0.8.0 to 0.9.0
+
 ## [0.9.0](https://github.com/Miragon/wardley-maps-modeler/compare/vscode-v0.8.0...vscode-v0.9.0) (2026-10-20)
 
 
