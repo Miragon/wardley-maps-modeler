@@ -5,7 +5,7 @@ import type EventBus from 'diagram-js/lib/core/EventBus';
 import type { ComponentElement, MapElement, SubmapElement } from '@miragon/wardley-schema-model';
 import type { WardleyShape } from '../model/di-types.js';
 import type WardleyModeling from '../modeling/WardleyModeling.js';
-import { createFieldError } from '../label-editing/index.js';
+import { createFieldError, focusField, type FieldSelection } from '../label-editing/index.js';
 import { isAllowedLinkUrl, sanitizeLinkUrl } from './link-url.js';
 
 interface ActiveLinkEdit {
@@ -103,8 +103,14 @@ export default class WardleyLinkEditing {
     return true;
   }
 
-  /** @param options.value field content to restore instead of the current link (re-import). */
-  activate(shape: WardleyShape, options: { value?: string } = {}): void {
+  /**
+   * @param options.value field content to restore instead of the current link (re-import).
+   * @param options.selection caret or selection to restore; without it the whole text is selected.
+   */
+  activate(
+    shape: WardleyShape,
+    options: { value?: string; selection?: FieldSelection } = {},
+  ): void {
     if (!canHaveLink(shape) || isReadOnly(this.injector)) return;
     this.active?.commit();
 
@@ -129,8 +135,9 @@ export default class WardleyLinkEditing {
     };
     placeField();
     container.appendChild(field);
-    field.focus();
-    field.select();
+    // A field the user opens selects its whole text; a field reopened by an import keeps the caret
+    // and the selection the user had, like the name editor does.
+    focusField(field, options);
 
     let done = false;
     const cleanup = () => {
@@ -212,9 +219,16 @@ export default class WardleyLinkEditing {
     this.active?.commit();
   }
 
-  getActiveEdit(): { elementId: string; value: string } | null {
+  getActiveEdit(): { elementId: string; value: string; selection: FieldSelection } | null {
     return this.active
-      ? { elementId: this.active.elementId, value: this.active.field.value }
+      ? {
+          elementId: this.active.elementId,
+          value: this.active.field.value,
+          selection: {
+            start: this.active.field.selectionStart ?? 0,
+            end: this.active.field.selectionEnd ?? 0,
+          },
+        }
       : null;
   }
 }

@@ -23,7 +23,7 @@ interface ConnectionKey {
 type OpenEdit =
   | { kind: 'name'; elementId: string; value: string; selection?: FieldSelection }
   | { kind: 'connection'; key: ConnectionKey; value: string; selection?: FieldSelection }
-  | { kind: 'link'; elementId: string; value: string };
+  | { kind: 'link'; elementId: string; value: string; selection?: FieldSelection };
 
 /**
  * What the user had selected and was typing, put aside across a re-import. Element ids are the
@@ -117,7 +117,12 @@ export function setAsideEditorState(modeler: Modeler): EditorState {
       ...(nameEdit.selection ? { selection: nameEdit.selection } : {}),
     };
   } else if (linkEdit) {
-    edit = { kind: 'link', elementId: documentId(linkEdit.elementId), value: linkEdit.value };
+    edit = {
+      kind: 'link',
+      elementId: documentId(linkEdit.elementId),
+      value: linkEdit.value,
+      ...(linkEdit.selection ? { selection: linkEdit.selection } : {}),
+    };
   }
   labelEditing.cancel();
   linkEditing.cancel();
@@ -174,7 +179,10 @@ export function restoreEditorState(
     const shape = lookup(edit.elementId);
     if (!isWardleyShape(shape)) return false;
     if (edit.kind === 'link') {
-      modeler.get<WardleyLinkEditing>('wardleyLinkEditing').activate(shape, { value: edit.value });
+      modeler.get<WardleyLinkEditing>('wardleyLinkEditing').activate(shape, {
+        value: edit.value,
+        ...(edit.selection ? { selection: edit.selection } : {}),
+      });
     } else {
       labelEditing.activate(shape, {
         value: edit.value,

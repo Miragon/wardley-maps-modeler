@@ -648,6 +648,7 @@ pipeline Platform [0.3, 0.8]
       service<WardleyLinkEditing>('wardleyLinkEditing').activate(platform);
       const field = document.querySelector<HTMLInputElement>('.wardley-link-input')!;
       field.value = 'https://exa';
+      field.setSelectionRange(4, 4);
       const at = field.getBoundingClientRect();
 
       service<Canvas>('canvas').scroll({ dx: 40, dy: 25 });
@@ -657,6 +658,7 @@ pipeline Platform [0.3, 0.8]
       expect(service<WardleyLinkEditing>('wardleyLinkEditing').getActiveEdit()).toEqual({
         elementId: platform.id,
         value: 'https://exa',
+        selection: { start: 4, end: 4 },
       });
       expect(field.getBoundingClientRect().left - at.left).toBeCloseTo(40, 0);
       expect(field.getBoundingClientRect().top - at.top).toBeCloseTo(25, 0);
@@ -843,6 +845,28 @@ pipeline Platform [0.3, 0.8]
       restored.setRangeText('s', 3, 3, 'end');
       pressKey(restored, 'Enter');
       expect(modeler.exportDSL()).toContain('component Bees [0.55, 0.62]');
+    });
+
+    it('keeps an open link address editor with its caret', async () => {
+      const address = 'https://example.com/tea';
+      const platform = select('Platform');
+      service<WardleyLinkEditing>('wardleyLinkEditing').activate(platform);
+      const field = document.querySelector<HTMLInputElement>('.wardley-link-input')!;
+      field.value = address;
+      field.setSelectionRange(address.length, address.length);
+
+      await reimport(CHANGED);
+
+      const restored = document.querySelector<HTMLInputElement>('.wardley-link-input')!;
+      expect(restored.value).toBe(address);
+      expect([restored.selectionStart, restored.selectionEnd]).toEqual([
+        address.length,
+        address.length,
+      ]);
+      // The next key lands after what was typed instead of replacing it.
+      restored.setRangeText('s', restored.selectionStart ?? 0, restored.selectionEnd ?? 0, 'end');
+      pressKey(restored, 'Enter');
+      expect(modeler.exportDSL()).toContain(`url Platform URL [${address}s]`);
     });
 
     it('keeps an open link annotation editor, matched by its ends', async () => {

@@ -9,3 +9,4 @@ export const labelEditingModule: ModuleDeclaration = {
 
 export { default as WardleyLabelEditing } from './WardleyLabelEditing.js';
 export { createFieldError, type FieldError } from './fieldError.js';
+export { focusField, type ActivateOptions, type FieldSelection } from './WardleyLabelEditing.js';

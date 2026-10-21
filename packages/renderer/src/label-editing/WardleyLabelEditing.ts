@@ -58,7 +58,14 @@ export interface ActivateOptions {
   selection?: FieldSelection;
 }
 
-function focusField(field: HTMLInputElement | HTMLTextAreaElement, options: ActivateOptions): void {
+/**
+ * Focuses an editor field and puts the caret where it was. A field the user opens selects its whole
+ * text; a field that is reopened (after a re-import) keeps the caret and the selection the user had.
+ */
+export function focusField(
+  field: HTMLInputElement | HTMLTextAreaElement,
+  options: ActivateOptions,
+): void {
   field.focus();
   if (options.selection) {
     const length = field.value.length;
