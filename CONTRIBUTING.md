@@ -93,21 +93,24 @@ Locally, run it in Docker, where no VS Code window opens and nothing takes the f
 npm run test:vscode:docker                                       # the newest stable VS Code
 npm run test:vscode:docker -- --env VSCODE_SMOKE_VERSION=1.96.0  # another one, the engines floor
 npm run test:vscode:docker -- --env VSCODE_SMOKE_KEEP=1          # brings VS Code's logs back
+npm run test:vscode:docker -- --node 22.22.2                     # CI's Node and npm
 ```
 
 `test:vscode:docker` is `modeler-shell-vscode-docker`, the command of `@miragon/modeler-shell`: it
-runs `npm run test:vscode` under `xvfb-run -a` in a Linux container and needs nothing on the host
-but Docker (Docker Desktop on macOS). Once per Node version it builds a local image (about 0.9 GB:
-`node:<version>-bookworm-slim` with Xvfb and Electron's libraries). Each run copies the working
-tree, uncommitted changes included, into the container without `node_modules` and `.git`, runs
-`npm ci` there and copies `test-results/vscode-smoke/` back, with VS Code's logs in `vscode-logs/`
-when `VSCODE_SMOKE_KEEP=1` kept them; the host's `node_modules` and `apps/vscode/dist` stay as they
-are. VS Code's download and npm's cache live in the Docker volumes `modeler-shell-vscode-cache` and
-`modeler-shell-npm-cache`, which every Miragon modeler on the machine shares. With the image and
-VS Code cached a run takes about 12 s, `npm ci` included; the first run also builds the image and
-downloads VS Code, about a minute more. Paths in the test's output are the container's (`/work/…`).
-The other options (`--node`, `--platform`, `--rebuild`, …) are in the shell's README, section
-"In Docker, without a window".
+runs `npm run test:vscode` under `xvfb-run -a` in a Linux container. The host needs Docker (Docker
+Desktop on macOS) and the repository's usual `npm ci`, which installs the command. Once per Node
+version it builds a local image (about 0.9 GB: `node:<version>-bookworm-slim` with Xvfb and
+Electron's libraries). That version is the host's Node, not CI's: `--node 22.22.2`, the default of
+[`.github/actions/setup`](.github/actions/setup/action.yml), runs the container on CI's Node and
+npm. Each run copies the working tree, uncommitted changes included, into the container without
+`node_modules` and `.git`, runs `npm ci` there and copies `test-results/vscode-smoke/` back, with VS
+Code's logs in `vscode-logs/` when `VSCODE_SMOKE_KEEP=1` kept them; the host's `node_modules` and
+`apps/vscode/dist` stay as they are. VS Code's download and npm's cache live in the Docker volumes
+`modeler-shell-vscode-cache` and `modeler-shell-npm-cache`, which every Miragon modeler on the
+machine shares. With the image and VS Code cached a run takes about 12 s, `npm ci` included; the
+first run also builds the image and downloads VS Code, about a minute more. Paths in the test's
+output are the container's (`/work/…`). The other options (`--platform`, `--rebuild`,
+`--results`, …) are in the shell's README, section "In Docker, without a window".
 
 `npm run test:vscode` runs the same test on the host, as CI does; use it to watch VS Code at work:
 
@@ -130,6 +133,12 @@ kept profile (in Docker: `test-results/vscode-smoke/vscode-logs/`). A failed run
 save step of `@miragon/modeler-shell` parses the file only once the editor tab is clean and two
 reads of it agree, and reads it again while the test's parser rejects it (a map without elements
 included), so it does not catch VS Code halfway through a save.
+
+One false failure comes from `test:vscode:docker` itself, not from the test: when vitest reports the
+test as passed and the run then ends in `cp: cannot create regular file '/results/…'`, the
+screenshots did not come back and the command exits 1. `@miragon/modeler-shell` 0.3.1 removes and
+recreates `test-results/vscode-smoke/` right before it mounts the folder into the container, and on
+Docker Desktop the container then sometimes cannot write into it. Run it again.
 
 In CI, [`.github/workflows/vscode-smoke.yml`](.github/workflows/vscode-smoke.yml) runs it on
 `ubuntu-latest` under `xvfb-run -a`: weekly on Monday, on demand (Actions → VS Code smoke → Run
