@@ -409,7 +409,7 @@ export default class WardleyLabelEditing {
     this.active?.cleanup();
   }
 
-  /** `canvas.viewbox.changing` fires before the change and `changed` only after a debounce. */
+  /** `canvas.viewbox.changing` fires before the change, and `changed` waits 300ms under `deferUpdate`. */
   private relayoutAfterViewChange(): void {
     if (!this.active || this.relayoutPending) return;
     this.relayoutPending = true;
