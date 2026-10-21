@@ -54,7 +54,8 @@ Swap `NavigatedViewer` for `Modeler` to get the editable map (palette, context p
 always write a valid `evolution` line; the default set is stored as `undefined`.
 
 An import validates the whole map first: a map that is not importable rejects before the canvas
-changes, and a rendering failure puts the previous map back.
+changes, and a rendering failure puts the previous map back. It then fits the view to the plot with
+its axis margins, centred and never above 100 %.
 
 An open inline editor (name, note, link annotation, flow value, link address) stays open with its
 typed text across a view change, a scroll, a zoom or a host's fit, and moves with its element;

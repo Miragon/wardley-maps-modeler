@@ -8,6 +8,7 @@ import type EvolutionGrid from '../evolution-grid/EvolutionGrid.js';
 import type WardleyElementFactory from '../model/WardleyElementFactory.js';
 import type { WardleyShape } from '../model/di-types.js';
 import { ROOT_ID, type ImportWarning, type RootBusinessObject } from './types.js';
+import { fitViewbox } from './fitViewbox.js';
 
 /** "Frame" types sit behind the connections (concept doc requirement: frames at the very back). */
 const FRAME_TYPES: ReadonlySet<string> = new Set(['attitude', 'pipeline']);
@@ -142,9 +143,15 @@ export default class WardleyImporter {
       }
     }
 
-    this.canvas.viewbox(this.grid.outerBounds());
+    this.fitPlot();
     this.eventBus.fire('import.render.done', { warnings });
     return warnings;
+  }
+
+  /** The plot with its axis margins, centred, at most at 100 %. */
+  private fitPlot(): void {
+    const plot = this.grid.outerBounds();
+    this.canvas.viewbox(fitViewbox(plot, this.canvas.getSize()) ?? plot);
   }
 
   private createShape(el: MapElement): WardleyShape | undefined {
