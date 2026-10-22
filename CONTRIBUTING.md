@@ -134,12 +134,6 @@ save step of `@miragon/modeler-shell` parses the file only once the editor tab i
 reads of it agree, and reads it again while the test's parser rejects it (a map without elements
 included), so it does not catch VS Code halfway through a save.
 
-One false failure comes from `test:vscode:docker` itself, not from the test: when vitest reports the
-test as passed and the run then ends in `cp: cannot create regular file '/results/…'`, the
-screenshots did not come back and the command exits 1. `@miragon/modeler-shell` 0.3.1 removes and
-recreates `test-results/vscode-smoke/` right before it mounts the folder into the container, and on
-Docker Desktop the container then sometimes cannot write into it. Run it again.
-
 In CI, [`.github/workflows/vscode-smoke.yml`](.github/workflows/vscode-smoke.yml) runs it on
 `ubuntu-latest` under `xvfb-run -a`: weekly on Monday, on demand (Actions → VS Code smoke → Run
 workflow, optionally with a VS Code version) and on pull requests that change `apps/vscode/**`, the

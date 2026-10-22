@@ -72,11 +72,8 @@ install` — see [`CONTRIBUTING.md`](CONTRIBUTING.md)). `npm run dev:webapp:plai
   VS Code are cached in the Docker volumes `modeler-shell-vscode-cache`/`modeler-shell-npm-cache`).
   The container's Node is the host's; `-- --node 22.22.2` runs it on CI's. Variables go in with
   `--env` (`npm run test:vscode:docker -- --env VSCODE_SMOKE_KEEP=1` brings VS Code's logs back into
-  `test-results/vscode-smoke/vscode-logs/`). An exit 1 after a passing test, with
-  `cp: cannot create regular file '/results/…'`, is the command's copy-back failing on Docker
-  Desktop (shell 0.3.1), not the test: run it again. On a developer's Mac run this one, not
-  `test:vscode`, whose window would take the user's focus. CI stays on
-  `xvfb-run -a npm run test:vscode`:
+  `test-results/vscode-smoke/vscode-logs/`). On a developer's Mac run this one, not `test:vscode`,
+  whose window would take the user's focus. CI stays on `xvfb-run -a npm run test:vscode`:
   [`vscode-smoke.yml`](.github/workflows/vscode-smoke.yml) — weekly, on demand and on PRs touching
   `apps/vscode/**`, `packages/{dsl,schema-model}`, the lockfile or the test's setup; not a required
   check; screenshots as the `vscode-smoke` artifact, logs of a failed run as `vscode-smoke-logs`.
