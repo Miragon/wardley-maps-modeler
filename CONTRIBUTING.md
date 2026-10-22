@@ -168,10 +168,12 @@ The VS Code smoke test is the CI job `vscode-smoke`, a call of
 the smoke runs. On a pull request, a push and in the merge queue it compares the checked-out commit
 with the base (the pull request's base commit, the commit before the push, the merge group's base)
 and runs the smoke only when one of these changed: `package-lock.json`, any `package.json`,
-`apps/vscode/**`, `packages/**`, `vitest.config.ts`, `.github/actions/setup/**`, `ci.yml`,
-`vscode-smoke.yml` or `vscode-smoke-weekly.yml`. Without a base (a new branch: an all-zero commit) or
-when the base cannot be fetched, it runs; on a schedule and on demand it always runs. When it skips,
-the job `skipped` succeeds with a notice, so `ci-ok` sees a success and no skip. An npm Dependabot
+`apps/vscode/**`, `packages/**`, `tsconfig.base.json` (esbuild compiles the VSIX's bundles with its
+options), `vitest.config.ts`, `.github/actions/setup/**`, `ci.yml`, `vscode-smoke.yml` or
+`vscode-smoke-weekly.yml`. A moved file counts under its old and its new path, so moving a file out
+of `apps/vscode/**` runs the smoke too. Without a base (a new branch: an all-zero commit) or when
+the base cannot be fetched, it runs; on a schedule and on demand it always runs. When it skips, the
+job `skipped` succeeds with a notice, so `ci-ok` sees a success and no skip. An npm Dependabot
 update changes the lockfile, so its smoke always runs.
 
 [`.github/workflows/vscode-smoke-weekly.yml`](.github/workflows/vscode-smoke-weekly.yml) runs the

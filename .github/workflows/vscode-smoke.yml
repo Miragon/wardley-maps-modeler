@@ -21,8 +21,9 @@ jobs:
       run: ${{ steps.decide.outputs.run }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      # The VSIX bundles the extension, its webview and every package from source (esbuild), the
-      # lockfile's resolved versions are inlined, and the test's setup decides what it runs.
+      # The VSIX bundles the extension, its webview and every package from source (esbuild, with the
+      # compiler options of tsconfig.base.json), the lockfile's resolved versions are inlined, and the
+      # test's setup decides what it runs.
       - id: decide
         name: Decide whether a path the packaged extension depends on changed
         shell: bash
@@ -41,7 +42,7 @@ jobs:
             case "$1" in
               package-lock.json | package.json | */package.json) ;;
               apps/vscode/* | packages/*) ;;
-              vitest.config.ts | .github/actions/setup/*) ;;
+              tsconfig.base.json | vitest.config.ts | .github/actions/setup/*) ;;
               .github/workflows/ci.yml | .github/workflows/vscode-smoke.yml | .github/workflows/vscode-smoke-weekly.yml) ;;
               *) return 1 ;;
             esac
@@ -59,7 +60,10 @@ jobs:
             decide true "No base commit to compare with: the smoke runs."
             exit 0
           fi
-          if ! git fetch --no-tags --depth=1 origin "$base" || ! changed=$(git diff --name-only "$base" HEAD); then
+          # --no-renames lists a moved file under its old path too, and quotePath=false keeps a
+          # non-ASCII path unquoted, so both still match a pattern below.
+          if ! git fetch --no-tags --depth=1 origin "$base" ||
+            ! changed=$(git -c core.quotePath=false diff --no-renames --name-only "$base" HEAD); then
             decide true "Cannot compare with the base $base: the smoke runs."
             exit 0
           fi

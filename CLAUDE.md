@@ -78,7 +78,7 @@ install` — see [`CONTRIBUTING.md`](CONTRIBUTING.md)). `npm run dev:webapp:plai
   [`vscode-smoke.yml`](.github/workflows/vscode-smoke.yml), a reusable workflow with a matrix of the
   newest stable VS Code and the `engines.vscode` minimum; called by `ci.yml` as the job
   `vscode-smoke` (its job `changes` skips the smoke when no `package.json`, the lockfile,
-  `apps/vscode/**`, `packages/**` or the test's setup changed), by
+  `apps/vscode/**`, `packages/**`, `tsconfig.base.json` or the test's setup changed), by
   [`vscode-smoke-weekly.yml`](.github/workflows/vscode-smoke-weekly.yml) (Mondays; a failure opens
   or comments on the issue "VS Code smoke: the weekly run failed"); the release smokes the VSIX it
   publishes. Screenshots as the `vscode-smoke-<stable|minimum>` artifacts, logs of a failed run as
