@@ -86,8 +86,9 @@ install` — see [`CONTRIBUTING.md`](CONTRIBUTING.md)). `npm run dev:webapp:plai
   [`CONTRIBUTING.md`](CONTRIBUTING.md#vs-code-smoke-test).
 - **CI merge gate:** the job `ci-ok` of [`ci.yml`](.github/workflows/ci.yml) needs every other job
   and fails unless each succeeded (a skip passes only for `dependency-review` outside pull requests);
-  the ruleset requires `ci-ok` and the PR-title check. **Add every new CI job to the `needs` of
-  `ci-ok`.** Details in [`CONTRIBUTING.md`](CONTRIBUTING.md#ci-and-the-merge-gate).
+  `ci-ok` and the PR-title check are the checks for the `main` ruleset to require, not the single
+  jobs. **Add every new CI job to the `needs` of `ci-ok`.** Details in
+  [`CONTRIBUTING.md`](CONTRIBUTING.md#ci-and-the-merge-gate).
 - `npm run format` — Prettier · `npm run depcruise` — check the module graph
 
 Requirements: Node ≥ 22.22.2, npm. Build packages before running tests (workspace deps resolve to

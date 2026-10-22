@@ -97,7 +97,7 @@ packages come from source, as in the extension's own build, so no `npm run build
 Locally, run it in Docker, where no VS Code window opens and nothing takes the focus:
 
 ```bash
-npm run test:vscode:docker                                       # the newest stable VS Code
+npm run test:vscode:docker                                 # the newest stable VS Code
 npm run test:vscode:docker -- --env VSCODE_VERSION=1.96.0  # another one, the engines floor
 npm run test:vscode:docker -- --env VSCODE_SMOKE_KEEP=1    # brings VS Code's logs back
 npm run test:vscode:docker -- --node 22.22.2               # CI's Node and npm
@@ -122,10 +122,10 @@ output are the container's (`/work/…`). The other options (`--platform`, `--re
 `npm run test:vscode` runs the same test on the host, as CI does; use it to watch VS Code at work:
 
 ```bash
-npm run test:vscode                                    # the newest stable VS Code
-VSCODE_VERSION=1.96.0 npm run test:vscode              # another version, here the engines floor
-VSCODE_SMOKE_KEEP=1 npm run test:vscode                # keeps VS Code's profile and logs, prints where
-VSCODE_SMOKE_VSIX=path/to.vsix npm run test:vscode     # a packed VSIX instead of packing one
+npm run test:vscode                                 # the newest stable VS Code
+VSCODE_VERSION=1.96.0 npm run test:vscode           # another version, here the engines floor
+VSCODE_SMOKE_KEEP=1 npm run test:vscode             # keeps VS Code's profile and logs, prints where
+VSCODE_SMOKE_VSIX=path/to.vsix npm run test:vscode  # a packed VSIX instead of packing one
 ```
 
 On macOS a VS Code window opens for a few seconds and takes the focus; a run takes about 5 s. The
@@ -154,14 +154,15 @@ or `vscode-smoke-logs-minimum` (7 days each).
 ## CI and the merge gate
 
 [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on every pull request, on pushes to
-`main`, in the merge queue and on demand. Its last job, **`ci-ok`, is the merge gate**: the `main`
-ruleset requires it and the PR-title check (`validate-pr-title`), not the single jobs, and
-Dependabot's auto-merge waits for them. `ci-ok` needs every other job of the workflow and fails, with
-an error per job, when one of them did not succeed: failed, cancelled, or skipped because a job it
-needs failed (a required check counts a skipped job as passed, which is why the single jobs are no
-gate). It accepts a skip only from a job whose own `if:` leaves it out of the event by design, listed
-in its `SKIPPED_BY_DESIGN`: today `dependency-review`, which runs on pull requests only. **A new job
-in `ci.yml` goes into the `needs` of `ci-ok`**, or it gates nothing.
+`main`, in the merge queue and on demand. Its last job, **`ci-ok`, is the merge gate**: it and the
+PR-title check (`validate-pr-title`) are the checks for the `main` ruleset to require, in place of
+the single jobs, so that Dependabot's auto-merge waits for every job, the VS Code smoke included.
+`ci-ok` needs every other job of the workflow and fails, with an error per job, when one of them did
+not succeed: failed, cancelled, or skipped because a job it needs failed (a required check counts a
+skipped job as passed, which is why the single jobs are no gate). It accepts a skip only from a job
+whose own `if:` leaves it out of the event by design, listed in its `SKIPPED_BY_DESIGN`: today
+`dependency-review`, which runs on pull requests only. **A new job in `ci.yml` goes into the `needs`
+of `ci-ok`**, or it gates nothing.
 
 The VS Code smoke test is the CI job `vscode-smoke`, a call of
 [`vscode-smoke.yml`](.github/workflows/vscode-smoke.yml). Its first job, `changes`, decides whether

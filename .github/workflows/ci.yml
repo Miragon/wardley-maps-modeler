@@ -110,8 +110,8 @@ jobs:
     uses: ./.github/workflows/vscode-smoke.yml
 
   # The merge gate. A job skipped because a job it needs failed reports "skipped", and a required
-  # check counts a skip as passed, so the ruleset requires this job instead. Every other job of this
-  # workflow belongs in its needs.
+  # check counts a skip as passed, so this job, not the single ones, is the check for the ruleset to
+  # require. Every other job of this workflow belongs in its needs.
   ci-ok:
     name: ci-ok
     if: always()
