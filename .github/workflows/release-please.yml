@@ -95,6 +95,12 @@ jobs:
       - name: Package extension
         working-directory: apps/vscode
         run: npx vsce package --no-dependencies -o wardley-mapping-modeler.vsix
+      # The VSIX this job uploads, in a real VS Code: a package that does not activate never ships.
+      - name: Smoke-test the extension
+        run: xvfb-run -a npm run test:vscode
+        env:
+          VSCODE_VERSION: stable
+          VSCODE_SMOKE_VSIX: ${{ github.workspace }}/apps/vscode/wardley-mapping-modeler.vsix
       - name: Publish to VS Code Marketplace
         working-directory: apps/vscode
         run: npx vsce publish --packagePath wardley-mapping-modeler.vsix
@@ -118,6 +124,12 @@ jobs:
       - name: Package extension
         working-directory: apps/vscode
         run: npx vsce package --no-dependencies -o wardley-mapping-modeler.vsix
+      # The VSIX this job uploads, in a real VS Code: a package that does not activate never ships.
+      - name: Smoke-test the extension
+        run: xvfb-run -a npm run test:vscode
+        env:
+          VSCODE_VERSION: stable
+          VSCODE_SMOKE_VSIX: ${{ github.workspace }}/apps/vscode/wardley-mapping-modeler.vsix
       - name: Publish to Open VSX Marketplace
         working-directory: apps/vscode
         run: npx ovsx --pat "$OVSX_PAT" publish --packagePath wardley-mapping-modeler.vsix
@@ -140,3 +152,9 @@ jobs:
       - name: Package extension
         working-directory: apps/vscode
         run: npx vsce package --no-dependencies -o wardley-mapping-modeler.vsix
+      # The publish jobs' smoke, so a dry run shows it passes before a release depends on it.
+      - name: Smoke-test the extension
+        run: xvfb-run -a npm run test:vscode
+        env:
+          VSCODE_VERSION: stable
+          VSCODE_SMOKE_VSIX: ${{ github.workspace }}/apps/vscode/wardley-mapping-modeler.vsix
