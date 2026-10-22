@@ -19,7 +19,10 @@ exact-pinned duplicate — duplicate `zod`/diagram-js instances break `instanceo
 the diagram-js DI injector. Every ranged peer is mirrored by an **exact** `devDependency` (for local
 build/test), and the bundling apps (`webapp`, `vscode`) declare it as an exact `dependency`. The
 `miragon/pin-npm-dependencies` CI check does **not** inspect `peerDependencies` by default, so these
-ranges are allowed. Each package is released with its own version, and release-please's
+ranges are allowed. A peer range must accept its exact `devDependency` mirror and the exact version
+the apps pin (e.g. `didi: "^11.0.0 || ^12.0.0"` while diagram-js still needs didi 11 and the repo
+pins 12): `packages/renderer/test/peer-dependencies.sync.test.ts` checks both, because npm inside
+the monorepo does not. Each package is released with its own version, and release-please's
 `node-workspace` plugin bumps every internal `@miragon/wardley-*` reference (also in
 `peerDependencies`) when the package it names is released, so a new internal dependency edge needs
 no release config (see [`CLAUDE.md`](../../CLAUDE.md) → Releases). Exact pinning is enforced in CI by

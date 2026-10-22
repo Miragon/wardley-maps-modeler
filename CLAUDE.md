@@ -131,7 +131,11 @@ and is no longer written.
   they dedupe against the consumer's copy instead of installing a second — duplicate `zod`/diagram-js
   instances break `instanceof`/schema identity and the DI injector. Each such peer is mirrored by an
   exact `devDependency` for local build/test, and the bundling apps (`webapp`, `vscode`) provide them
-  as exact `dependencies`.** See
+  as exact `dependencies`.** Neither npm inside the monorepo nor `pin-check` notices a peer range
+  that rejects those exact versions, so
+  [`packages/renderer/test/peer-dependencies.sync.test.ts`](packages/renderer/test/peer-dependencies.sync.test.ts)
+  checks that every peer range accepts its devDependency mirror and the version each dependent
+  workspace installs. See
   [`.claude/rules/package-json-fixed-versions.md`](.claude/rules/package-json-fixed-versions.md).
 - The repo's Claude skills ship as the **`wardley-maps-modeler` plugin**
   ([`plugins/wardley-maps-modeler/`](plugins/wardley-maps-modeler/)) via the marketplace in
