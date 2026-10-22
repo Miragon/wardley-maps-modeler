@@ -61,10 +61,19 @@ install` — see [`CONTRIBUTING.md`](CONTRIBUTING.md)). `npm run dev:webapp:plai
   (`vsce package`, so `vscode:prepublish`), unpacks the VSIX outside the repo and runs
   `runVsCodeSmoke` of `@miragon/modeler-shell/testing/vscode-electron` in a real VS Code (open, evolve
   a component, save, undo, four themes; screenshots in `test-results/vscode-smoke/`). Opt-in, not in
-  `npm test`; no package build needed. macOS: run as is (a window opens for ~5 s; the first run
-  downloads VS Code into `~/Library/Caches/miragon-modeler-shell/vscode-test`); Linux:
-  `xvfb-run -a npm run test:vscode`; `VSCODE_SMOKE_VERSION=1.96.0` picks a version,
-  `VSCODE_SMOKE_KEEP=1` keeps VS Code's logs. CI:
+  `npm test`; no package build needed; a failed run is not retried. On macOS it opens a VS Code
+  window for ~5 s that takes the focus (the first run downloads VS Code into
+  `~/Library/Caches/miragon-modeler-shell/vscode-test`); Linux: `xvfb-run -a npm run test:vscode`;
+  `VSCODE_SMOKE_VERSION=1.96.0` picks a version, `VSCODE_SMOKE_KEEP=1` keeps VS Code's logs.
+- `npm run test:vscode:docker` — the local way to run that smoke test, without a VS Code window:
+  `modeler-shell-vscode-docker` of `@miragon/modeler-shell` runs `npm run test:vscode` under
+  `xvfb-run -a` in a Linux container (needs Docker and the repo's `npm ci`, which installs the
+  command; `npm ci` again inside, the host's `node_modules` stay untouched; ~12 s once the image and
+  VS Code are cached in the Docker volumes `modeler-shell-vscode-cache`/`modeler-shell-npm-cache`).
+  The container's Node is the host's; `-- --node 22.22.2` runs it on CI's. Variables go in with
+  `--env` (`npm run test:vscode:docker -- --env VSCODE_SMOKE_KEEP=1` brings VS Code's logs back into
+  `test-results/vscode-smoke/vscode-logs/`). On a developer's Mac run this one, not `test:vscode`,
+  whose window would take the user's focus. CI stays on `xvfb-run -a npm run test:vscode`:
   [`vscode-smoke.yml`](.github/workflows/vscode-smoke.yml) — weekly, on demand and on PRs touching
   `apps/vscode/**`, `packages/{dsl,schema-model}`, the lockfile or the test's setup; not a required
   check; screenshots as the `vscode-smoke` artifact, logs of a failed run as `vscode-smoke-logs`.

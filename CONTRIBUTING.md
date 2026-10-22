@@ -93,7 +93,32 @@ start of every run): `wardley-light.png`, `wardley-dark.png`, `wardley-high-cont
 `wardley-high-contrast-light.png`, or `wardley-open-failure.png` when the editor never opened. The
 packages come from source, as in the extension's own build, so no `npm run build` is needed first.
 
-On macOS:
+Locally, run it in Docker, where no VS Code window opens and nothing takes the focus:
+
+```bash
+npm run test:vscode:docker                                       # the newest stable VS Code
+npm run test:vscode:docker -- --env VSCODE_SMOKE_VERSION=1.96.0  # another one, the engines floor
+npm run test:vscode:docker -- --env VSCODE_SMOKE_KEEP=1          # brings VS Code's logs back
+npm run test:vscode:docker -- --node 22.22.2                     # CI's Node and npm
+```
+
+`test:vscode:docker` is `modeler-shell-vscode-docker`, the command of `@miragon/modeler-shell`: it
+runs `npm run test:vscode` under `xvfb-run -a` in a Linux container. The host needs Docker (Docker
+Desktop on macOS) and the repository's usual `npm ci`, which installs the command. Once per Node
+version it builds a local image (about 0.9 GB: `node:<version>-bookworm-slim` with Xvfb and
+Electron's libraries). That version is the host's Node, not CI's: `--node 22.22.2`, the default of
+[`.github/actions/setup`](.github/actions/setup/action.yml), runs the container on CI's Node and
+npm. Each run copies the working tree, uncommitted changes included, into the container without
+`node_modules` and `.git`, runs `npm ci` there and copies `test-results/vscode-smoke/` back, with VS
+Code's logs in `vscode-logs/` when `VSCODE_SMOKE_KEEP=1` kept them; the host's `node_modules` and
+`apps/vscode/dist` stay as they are. VS Code's download and npm's cache live in the Docker volumes
+`modeler-shell-vscode-cache` and `modeler-shell-npm-cache`, which every Miragon modeler on the
+machine shares. With the image and VS Code cached a run takes about 12 s, `npm ci` included; the
+first run also builds the image and downloads VS Code, about a minute more. Paths in the test's
+output are the container's (`/work/…`). The other options (`--platform`, `--rebuild`,
+`--results`, …) are in the shell's README, section "In Docker, without a window".
+
+`npm run test:vscode` runs the same test on the host, as CI does; use it to watch VS Code at work:
 
 ```bash
 npm run test:vscode                              # the newest stable VS Code
@@ -101,8 +126,8 @@ VSCODE_SMOKE_VERSION=1.96.0 npm run test:vscode  # another version, here the eng
 VSCODE_SMOKE_KEEP=1 npm run test:vscode          # keeps VS Code's profile and logs, prints where
 ```
 
-A VS Code window opens for a few seconds; a run takes about 5 s. The first run downloads VS Code
-(about 320 to 360 MB, 0.9 GB unpacked per version) into
+On macOS a VS Code window opens for a few seconds and takes the focus; a run takes about 5 s. The
+first run downloads VS Code (about 320 to 360 MB, 0.9 GB unpacked per version) into
 `~/Library/Caches/miragon-modeler-shell/vscode-test` (`~/.cache/…` on Linux), which every Miragon
 modeler on the machine shares and `npm ci` keeps; let one download finish before starting a second
 run. Like `npm run package -w apps/vscode`, the packing writes the production build into
@@ -110,9 +135,10 @@ run. Like `npm run package -w apps/vscode`, the packing writes the production bu
 
 When a failure names no cause (for example "the custom editor never showed the shell's menu"), the
 cause is in VS Code's logs: run again with `VSCODE_SMOKE_KEEP=1` and read the `logs` folder of the
-kept profile. One failure is retried, up to twice: the save step of `@miragon/modeler-shell` 0.3.0 can
-read the file while VS Code writes it, and that empty read fails with `the map has no elements`. The
-reporter marks such a run `(retry x1)`; every other failure fails at once.
+kept profile (in Docker: `test-results/vscode-smoke/vscode-logs/`). A failed run is not retried: the
+save step of `@miragon/modeler-shell` parses the file only once the editor tab is clean and two
+reads of it agree, and reads it again while the test's parser rejects it (a map without elements
+included), so it does not catch VS Code halfway through a save.
 
 In CI, [`.github/workflows/vscode-smoke.yml`](.github/workflows/vscode-smoke.yml) runs it on
 `ubuntu-latest` under `xvfb-run -a`: weekly on Monday, on demand (Actions → VS Code smoke → Run
@@ -164,7 +190,8 @@ Also keep the OWM-DSL round-trip lossless and JSON serialization deterministic.
 
 - Keep PRs small and focused.
 - Make sure local gates are green: `npm run lint`, `npm test`, `npm run depcruise`, `npm run build`.
-  Changed the extension, the DSL, the schema model or a dependency? Run `npm run test:vscode` too.
+  Changed the extension, the DSL, the schema model or a dependency? Run
+  `npm run test:vscode:docker` too.
 - Working on map/domain semantics? See the `wardley-mapping` and `owm-dsl` skills of the Claude Code
   plugin in [`plugins/wardley-maps-modeler/`](plugins/wardley-maps-modeler/). Changed the DSL? Keep
   the `owm-dsl` skill and its examples in step — `npm test` parses every example in the plugin.

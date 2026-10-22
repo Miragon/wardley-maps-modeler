@@ -21,7 +21,6 @@ const SCREENSHOT_DIRECTORY = fileURLToPath(
 );
 const FIXTURE_FILE_NAME = 'tea-shop.wmap';
 const EVOLVED_COMPONENT_ID = 'cmp_kettle';
-const EMPTY_MAP = 'the map has no elements';
 
 const runFile = promisify(execFile);
 
@@ -42,17 +41,15 @@ async function packExtension(into: string): Promise<string> {
 }
 
 /**
- * The fixture has elements and so has every save of it: a map without any is a read of the file in
- * the middle of VS Code's save, which truncates the file before it writes. The save step of
- * @miragon/modeler-shell 0.3.0 parses the first read that differs from the fixture, so it can get
- * that empty file.
+ * An empty text parses without a diagnostic, yet no save of the fixture is empty: rejecting it
+ * makes the driver's save step read the file again instead of passing a write it caught halfway.
  */
 function parseMap(text: string): WardleyMap {
   const { map, diagnostics } = parseDSLWithDiagnostics(text);
   if (diagnostics.length > 0) {
     throw new Error(diagnostics.map(({ line, message }) => `line ${line}: ${message}`).join('; '));
   }
-  if (map.elements.length === 0) throw new Error(EMPTY_MAP);
+  if (map.elements.length === 0) throw new Error('the map has no elements');
   return map;
 }
 
@@ -93,11 +90,9 @@ afterAll(async () => {
 });
 
 // The first run downloads VS Code (about 350 MB) into the OS cache directory; later runs reuse it.
-// Only the empty read of parseMap is retried, as it is the driver's race; any other failure fails
-// the run at once.
 it(
   'opens, edits, saves, undoes and themes a map in a real VS Code',
-  { timeout: 600_000, retry: { count: 2, condition: new RegExp(EMPTY_MAP) } },
+  { timeout: 600_000 },
   async () => {
     const fixtureText = await readFile(new URL(FIXTURE_FILE_NAME, import.meta.url), 'utf8');
     const evolutionBefore = evolutionOf(parseMap(fixtureText), EVOLVED_COMPONENT_ID);

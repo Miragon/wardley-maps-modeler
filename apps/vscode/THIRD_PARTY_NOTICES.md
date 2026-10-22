@@ -283,7 +283,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## @miragon/modeler-shell 0.3.0 (MIT)
+## @miragon/modeler-shell 0.3.2 (MIT)
 
 ```text
 MIT License

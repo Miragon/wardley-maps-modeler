@@ -165,8 +165,9 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and the inner-loop commands.
 
 The VS Code extension has a smoke test in a real VS Code: it packs the extension like the release,
 opens a map, edits, saves and undoes through VS Code, and screenshots VS Code's four default themes
-into `test-results/vscode-smoke/`. On macOS run `npm run test:vscode` (a VS Code window opens for a
-few seconds; the first run downloads VS Code); on Linux `xvfb-run -a npm run test:vscode`. CI runs it
+into `test-results/vscode-smoke/`. Locally run `npm run test:vscode:docker`: it runs the test in a
+Linux container, so no VS Code window opens (needs Docker). `npm run test:vscode` runs it directly
+(on macOS a VS Code window opens for a few seconds; on Linux run it under `xvfb-run -a`). CI runs it
 weekly, on demand and on pull requests that change the extension, the DSL or the schema model
 ([`vscode-smoke.yml`](.github/workflows/vscode-smoke.yml)). See
 [CONTRIBUTING.md](CONTRIBUTING.md#vs-code-smoke-test).

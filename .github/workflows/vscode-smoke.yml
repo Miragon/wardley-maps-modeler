@@ -60,8 +60,10 @@ jobs:
           path: ${{ steps.vscode.outputs.cache }}
           key: vscode-${{ runner.os }}-${{ runner.arch }}-${{ steps.vscode.outputs.version }}
 
-      # VS Code needs an X server; -a picks a free display number. The runner is thrown away anyway,
-      # so the run keeps VS Code's profile in RUNNER_TEMP, for its logs when it fails.
+      # VS Code needs an X server; -a picks a free display number. Not test:vscode:docker: the runner
+      # is Linux with VS Code's libraries already, and the cache above keeps VS Code on the runner,
+      # where a Docker volume would start empty on every run. The runner is thrown away anyway, so the
+      # run keeps VS Code's profile in RUNNER_TEMP, for its logs when it fails.
       - run: xvfb-run -a npm run test:vscode
         env:
           VSCODE_SMOKE_VERSION: ${{ steps.vscode.outputs.version }}
