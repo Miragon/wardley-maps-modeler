@@ -60,17 +60,19 @@ jobs:
             decide true "No base commit to compare with: the smoke runs."
             exit 0
           fi
-          # --no-renames lists a moved file under its old path too, and quotePath=false keeps a
-          # non-ASCII path unquoted, so both still match a pattern below.
+          # Comparing two trees needs the base commit only, not the history in between. --no-renames
+          # lists a moved file under its old path too, and -z prints every path as it is, never
+          # quoted (a non-ASCII name, a quote), so both still match a pattern above.
+          changed=$(mktemp)
           if ! git fetch --no-tags --depth=1 origin "$base" ||
-            ! changed=$(git -c core.quotePath=false diff --no-renames --name-only "$base" HEAD); then
+            ! git diff --no-renames --name-only -z "$base" HEAD > "$changed"; then
             decide true "Cannot compare with the base $base: the smoke runs."
             exit 0
           fi
           relevant=()
-          while IFS= read -r path; do
-            if [[ -n "$path" ]] && is_relevant "$path"; then relevant+=("$path"); fi
-          done <<< "$changed"
+          while IFS= read -r -d '' path; do
+            if is_relevant "$path"; then relevant+=("$path"); fi
+          done < "$changed"
           if [[ ${#relevant[@]} -gt 0 ]]; then
             decide true "${#relevant[@]} relevant path(s) changed since $base, the smoke runs: ${relevant[*]}"
           else
@@ -92,6 +94,8 @@ jobs:
 
       # The cache key needs the version before the test resolves it; the test then runs exactly it.
       # The minimum comes from engines.vscode at run time, so raising the floor moves the smoke along.
+      # The stable list is the one the driver checks a version against (released=true), so a build
+      # still rolling out is never picked.
       - id: vscode
         name: Resolve the VS Code version and its cache folder
         shell: bash
@@ -101,7 +105,7 @@ jobs:
           if [[ "$CHANNEL" == minimum ]]; then
             version=$(node -p "require('semver').minVersion(require('./apps/vscode/package.json').engines.vscode).version")
           else
-            version=$(curl -fsSL https://update.code.visualstudio.com/api/releases/stable | jq -r '.[0]')
+            version=$(curl -fsSL --retry 3 'https://update.code.visualstudio.com/api/releases/stable?released=true' | jq -r '.[0]')
           fi
           if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "::error::No VS Code version for $CHANNEL: '$version'"
