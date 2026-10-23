@@ -1,7 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { ICONS, type ShellIconName } from '@miragon/modeler-shell';
 import { EMPTY_MAP, withExampleInserted } from '../../../apps/vscode/src/examples.js';
-import { LONG_NAME_DRAWING, LONG_NAME_MAP, overhang } from '../support/fit.js';
+import { FIT_TOLERANCE, LONG_NAME_DRAWING, LONG_NAME_MAP, overhang } from '../support/fit.js';
 import {
   openWebview,
   postFromHost,
@@ -303,9 +303,9 @@ test.describe('VS Code webview: protocol and chrome', () => {
     const zoomIn = page.locator('[data-chrome="zoom"] [data-zoom="in"]');
     await zoomIn.click();
     await zoomIn.click();
-    await expect.poll(outside).toBeGreaterThan(1);
+    await expect.poll(outside).toBeGreaterThan(FIT_TOLERANCE);
     await postFromHost(page, { type: 'command', name: 'fitView' });
-    await expect.poll(outside).toBeLessThanOrEqual(1);
+    await expect.poll(outside).toBeLessThanOrEqual(FIT_TOLERANCE);
   });
 
   test('the export commands and menu entries post the exported image', async ({ page }) => {

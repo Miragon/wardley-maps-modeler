@@ -16,6 +16,14 @@ component ${LONG_NAME} [0.5, 0.97]
 Kettle -> ${LONG_NAME}
 `;
 
+/**
+ * Px a fitted name may still reach out of the free rectangle. Chromium on Linux lays SVG text out
+ * at the scaled font size, so the name is a few px wider at the fitted zoom than at the zoom its
+ * content box was measured at, once per change of the map (contract 1.3). Bounds of the plot
+ * alone leave it over 100 px outside.
+ */
+export const FIT_TOLERANCE = 8;
+
 /** The drawing of the commodity with the long name, its label included. */
 export const LONG_NAME_DRAWING = '.djs-shape[data-element-id^="cmp_a_commodity"] > .djs-visual';
 
