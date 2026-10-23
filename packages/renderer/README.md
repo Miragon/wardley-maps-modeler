@@ -107,11 +107,16 @@ size preview (an undo pressed mid-drag, a title the host sets) puts the preview 
 drag then ends without resizing, so the history stays in step with the document. `elements` names
 components, anchors, pipelines, submaps and accelerators by the id the document gives them
 (`cmp_kettle`), also right after a canvas edit, and `elements.bounds(id)` gives an element's live
-box in diagram coordinates; `getViewState` and `setViewState` carry the viewbox. `diagram` is the
-wrapped `Modeler` or `NavigatedViewer` for host-specific wiring. Both factories take the options
-above (`additionalModules`, `freeArea`, `fitOnImport`, `undoRedoKeys` and the deprecated aliases);
-the viewer never edits and ignores the undo keys. Both pass the contract's conformance kit (1.2)
-without skips.
+box in diagram coordinates; `getViewState` and `setViewState` carry the viewbox. `contentBounds()`
+(contract 1.3) gives the box a host fits the view to, in diagram coordinates and without padding:
+the plot with its axes and everything drawn beyond it (a long label at the commodity edge, a note in
+the margin), the box the pan constraint keeps in view. It follows every edit at once and stays the
+same across zoom and scroll. A map without elements still has its plot, so it is never `undefined`
+while the modeler lives (before the first import it is the default plot); tell an empty map by its
+elements. `diagram` is the wrapped `Modeler` or `NavigatedViewer` for host-specific wiring. Both
+factories take the options above (`additionalModules`, `freeArea`, `fitOnImport`, `undoRedoKeys`
+and the deprecated aliases); the viewer never edits and ignores the undo keys. Both pass the
+contract's conformance kit (1.3) without skips.
 
 ### Menu entries and dialogs for a host's chrome
 

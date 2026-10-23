@@ -22,6 +22,7 @@ import { restoreEditorState, setAsideEditorState, type EditorState } from '../ed
 import type { FreeRectInsets } from '../free-rect/index.js';
 import type { LivePreview } from '../live-preview/index.js';
 import { isWardleyShape, type WardleyShape } from '../model/di-types.js';
+import type { PanConstraint } from '../pan-constraint/index.js';
 
 /** Stable notation id in `meta.notation` of the collaborative-modeler contract. */
 export const WARDLEY_NOTATION = 'wardley';
@@ -44,10 +45,14 @@ export interface WardleyElementsSurface extends ElementsSurface {
   bounds(id: string): ElementBounds | undefined;
 }
 
-/** The contract surface plus the wrapped diagram for host-specific wiring. */
+/**
+ * The contract surface, with the optional `contentBounds` of contract 1.3 always present, plus the
+ * wrapped diagram for host-specific wiring.
+ */
 export interface CollaborativeWardleyModeler extends CollaborativeModeler {
   readonly elements: WardleyElementsSurface;
   readonly diagram: Modeler | NavigatedViewer;
+  contentBounds(): ElementBounds | undefined;
 }
 
 interface ViewState {
@@ -143,6 +148,7 @@ function collaborative(
   const canvas = diagram.get<Canvas>('canvas');
   const elementRegistry = diagram.get<ElementRegistry>('elementRegistry');
   const selection = diagram.get<Selection>('selection');
+  const panConstraint = diagram.get<PanConstraint>('panConstraint');
   const ids = documentIds(diagram, eventBus);
   const livePreview = editable ? diagram.get<LivePreview>('wardleyLivePreview') : undefined;
   const contentListeners = new Set<() => void>();
@@ -267,6 +273,13 @@ function collaborative(
     setViewState(state) {
       if (destroyed || !isViewState(state)) return;
       canvas.viewbox({ x: state.x, y: state.y, width: state.width, height: state.height });
+    },
+    // Every map draws its plot, also one without elements, so there is always a box to fit (before
+    // the first import the default plot's). A host fits to the box the pan constraint keeps in view.
+    contentBounds() {
+      if (destroyed) return undefined;
+      const { x, y, width, height } = panConstraint.contentBounds();
+      return { x, y, width, height };
     },
     destroy() {
       if (destroyed) return;
