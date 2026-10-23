@@ -129,7 +129,7 @@ title…" dialog (one undo step on Apply, nothing for an unchanged title),
 `createShortcutsDialog(chrome, options)` the "Keyboard shortcuts…" dialog and
 `mapShortcuts(chrome, options)` its table. A web app that binds Cmd/Ctrl+O, Cmd/Ctrl+S, Cmd/Ctrl+V
 on the canvas and `?` itself passes `{ fileKeys: true, shortcutsKey: '?' }`, so the dialog lists
-them too.
+them too, and `mapMenu({ …, shortcutsKey: '?' })` shows the key's chip on "Keyboard shortcuts…".
 `createMapDialog(chrome, parts)` is the modal dialog all of them share (guide §8: header with Close,
 scrolling body, footer), for a host's own dialogs in the same look; `dialogButton(label, variant)`
 gives its buttons. `chrome` is the shell handle or anything of the same shape; the renderer never

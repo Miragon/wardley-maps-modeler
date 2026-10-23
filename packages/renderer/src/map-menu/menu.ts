@@ -63,6 +63,8 @@ export interface MapMenuActions {
   axisLabels(): void;
   readonly exports: MapExports;
   showKeyboardShortcuts(): void;
+  /** The chip of a key the host binds to the shortcuts dialog as well, e.g. "?" in the web app. */
+  readonly shortcutsKey?: string | undefined;
 }
 
 /** The labels of the export entries, also used by the hosts' commands and notifications. */
@@ -111,7 +113,7 @@ function exportEntries(exports: MapExports): MapMenuAction[] {
  * with PNG first, Help with the shortcuts dialog.
  */
 export function mapMenu(actions: MapMenuActions): MapMenu {
-  const { mapTitle } = actions;
+  const { mapTitle, shortcutsKey } = actions;
   const titleEntries: MapMenuEntry[] = mapTitle
     ? [{ kind: 'dialog', id: 'map-title', label: 'Map title…', onSelect: () => mapTitle() }]
     : [];
@@ -133,8 +135,7 @@ export function mapMenu(actions: MapMenuActions): MapMenu {
         id: 'keyboard-shortcuts',
         label: 'Keyboard shortcuts…',
         icon: 'keyboard',
-        // No key chip, also where a web app binds "?": the menu item's name would then end in the
-        // key instead of the "…" that announces a dialog. The dialog lists the key itself.
+        ...(shortcutsKey ? { shortcut: shortcutsKey } : {}),
         onSelect: () => actions.showKeyboardShortcuts(),
       },
     ],

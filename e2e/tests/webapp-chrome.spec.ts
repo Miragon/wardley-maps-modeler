@@ -228,6 +228,11 @@ test.describe('the menu', () => {
     await expect(dropdown.locator('[data-menu-id="export-wmap"]')).toHaveText(
       /Export as \.wmap\s*(⌘|Ctrl\+)S/,
     );
+    // The chip shows the key without joining the name, which still announces a dialog.
+    const shortcuts = dropdown.locator('[data-menu-id="keyboard-shortcuts"]');
+    await expect(shortcuts).toHaveText(/Keyboard shortcuts…\s*\?$/);
+    await expect(shortcuts).toHaveAccessibleName('Keyboard shortcuts…');
+    await expect(shortcuts).toHaveAttribute('aria-keyshortcuts', '?');
     await expect(dropdown.locator('[data-menu-group="appearance"]')).toHaveCount(0);
     await expect(dropdown.getByRole('menuitem', { name: /undo|redo/i })).toHaveCount(0);
   });

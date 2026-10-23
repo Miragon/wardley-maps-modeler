@@ -55,6 +55,21 @@ describe('mapMenu', () => {
     expect(menu.help[0]).not.toHaveProperty('shortcut');
   });
 
+  it('shows the chip of a key the host binds to the keyboard shortcuts', () => {
+    const web = mapMenu({
+      mapSize: noop,
+      axisLabels: noop,
+      exports: { png: { onSelect: noop }, svg: { onSelect: noop } },
+      showKeyboardShortcuts: noop,
+      shortcutsKey: '?',
+    });
+    expect(web.help[0]).toMatchObject({
+      kind: 'dialog',
+      label: 'Keyboard shortcuts…',
+      shortcut: '?',
+    });
+  });
+
   it('puts "Map title…" first in the Model group where the host offers it', () => {
     let opened = 0;
     const withTitle = mapMenu({

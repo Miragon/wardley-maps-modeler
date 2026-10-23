@@ -114,6 +114,7 @@ function webMenu(): MapMenu {
       wmap: { onSelect: () => exportMapText('dsl'), shortcut: saveKey },
     },
     showKeyboardShortcuts: () => shortcutsDialog.open(),
+    shortcutsKey: SHORTCUTS_KEY,
   });
   return {
     ...map,
