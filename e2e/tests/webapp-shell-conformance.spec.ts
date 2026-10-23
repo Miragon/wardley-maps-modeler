@@ -3,16 +3,17 @@ import { registerShellConformance, type ShellSkip } from '@miragon/modeler-shell
 import { EXAMPLE_MAP } from '../../apps/webapp/src/example.js';
 import { encodeMapCompressed } from '../../apps/webapp/src/share.js';
 import { THEMES } from '../../apps/webapp/src/themes.js';
+import { kettleLabelEditor } from './support/label-editor.js';
 import { waitForViewer } from './support/viewer.js';
 
 /**
  * The shell's conformance kit against the real web app (the web host of guide §5.2): geometry at
  * three sizes with the primary action, the legal line and the raised zoom row, ARIA and keyboard
- * models, keyboard creation from the palette, the light-only mode under any system setting, the
- * start screen, toasts, the problems list, the drop zone and a clean teardown. The web app has
- * neither a legend nor an inspector, and no invalid-file state (the DSL reads every text, and a
- * file that is no map leaves the map as it was), so the harness declares them absent; any skip
- * fails the suite.
+ * models, keyboard creation from the palette, a label editor that the chrome's zoom, fit and refit
+ * leave open, the light-only mode under any system setting, the start screen, toasts, the problems
+ * list, the drop zone and a clean teardown. The web app has neither a legend nor an inspector, and
+ * no invalid-file state (the DSL reads every text, and a file that is no map leaves the map as it
+ * was), so the harness declares them absent; any skip fails the suite.
  */
 const describeSkips = (skips: readonly ShellSkip[]): string =>
   skips.map((skip) => `${skip.hook}: ${skip.reason}`).join('; ');
@@ -78,6 +79,10 @@ test.describe('web app: shell conformance', () => {
         accepted: { name: 'tea-shop.wmap', type: '', text: EXAMPLE_MAP },
         rejected: { name: 'map.png', type: 'image/png', text: 'x' },
       },
+      // Every edit goes into the map the link and the download carry.
+      labelEditor: kettleLabelEditor((page) =>
+        page.evaluate(() => window.__wardleyViewer.exportDSL()),
+      ),
     },
     test,
     {
