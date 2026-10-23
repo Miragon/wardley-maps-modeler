@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { test, expect, type Locator, type Page } from '@playwright/test';
 import { EXAMPLE_MAP } from '../../apps/webapp/src/example.js';
 import { encodeMapCompressed } from '../../apps/webapp/src/share.js';
+import { LONG_NAME_DRAWING, LONG_NAME_MAP, overhang } from './support/fit.js';
 import {
   canvasSlot,
   createComponentAt,
@@ -713,6 +714,28 @@ test.describe('title, map size and axis labels', () => {
     await expect
       .poll(async () => (await exportMap(page)).config)
       .not.toHaveProperty('evolutionLabels');
+  });
+});
+
+test.describe('the view', () => {
+  test('fits a name that runs past the plot into the free area, on opening and with Fit', async ({
+    page,
+  }) => {
+    await openLink(page, LONG_NAME_MAP);
+    const outside = async (): Promise<number> =>
+      overhang(
+        page,
+        LONG_NAME_DRAWING,
+        await page.evaluate(() => window.__wardleyApp!.shell.fitInsets()),
+      );
+    await expect.poll(outside).toBeLessThanOrEqual(1);
+
+    const zoom = page.locator('[data-chrome="zoom"]');
+    await zoom.locator('[data-zoom="in"]').click();
+    await zoom.locator('[data-zoom="in"]').click();
+    await expect.poll(outside).toBeGreaterThan(1);
+    await zoom.locator('[data-zoom="fit"]').click();
+    await expect.poll(outside).toBeLessThanOrEqual(1);
   });
 });
 
