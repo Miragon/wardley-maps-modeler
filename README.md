@@ -168,8 +168,10 @@ opens a map, edits, saves and undoes through VS Code, and screenshots VS Code's 
 into `test-results/vscode-smoke/`. Locally run `npm run test:vscode:docker`: it runs the test in a
 Linux container, so no VS Code window opens (needs Docker). `npm run test:vscode` runs it directly
 (on macOS a VS Code window opens for a few seconds; on Linux run it under `xvfb-run -a`). CI runs it
-weekly, on demand and on pull requests that change the extension, the DSL or the schema model
-([`vscode-smoke.yml`](.github/workflows/vscode-smoke.yml)). See
+on the newest stable VS Code and the oldest one the extension supports, in every CI run whose
+changes can reach the extension, as part of the merge gate, and weekly
+([`vscode-smoke.yml`](.github/workflows/vscode-smoke.yml)). A release runs it on the newest stable
+VS Code against the VSIX it is about to publish. See
 [CONTRIBUTING.md](CONTRIBUTING.md#vs-code-smoke-test).
 
 ## License

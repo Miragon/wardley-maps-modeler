@@ -95,6 +95,25 @@ jobs:
       - name: Package extension
         working-directory: apps/vscode
         run: npx vsce package --no-dependencies -o wardley-mapping-modeler.vsix
+      # The VSIX this job uploads, in a real VS Code: a package that does not activate never ships.
+      - name: Smoke-test the VSIX in VS Code
+        run: xvfb-run -a npm run test:vscode
+        env:
+          VSCODE_VERSION: stable
+          VSCODE_SMOKE_VSIX: ${{ github.workspace }}/apps/vscode/wardley-mapping-modeler.vsix
+          VSCODE_SMOKE_KEEP: '1'
+          TMPDIR: ${{ runner.temp }}
+      # The release is already tagged when this smoke fails, so its screenshots and VS Code's logs are
+      # all there is to tell why.
+      - if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: vscode-smoke-marketplace
+          path: |
+            test-results/vscode-smoke/
+            ${{ runner.temp }}/modeler-shell-vscode-*/user-data/logs/
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Publish to VS Code Marketplace
         working-directory: apps/vscode
         run: npx vsce publish --packagePath wardley-mapping-modeler.vsix
@@ -118,6 +137,25 @@ jobs:
       - name: Package extension
         working-directory: apps/vscode
         run: npx vsce package --no-dependencies -o wardley-mapping-modeler.vsix
+      # The VSIX this job uploads, in a real VS Code: a package that does not activate never ships.
+      - name: Smoke-test the VSIX in VS Code
+        run: xvfb-run -a npm run test:vscode
+        env:
+          VSCODE_VERSION: stable
+          VSCODE_SMOKE_VSIX: ${{ github.workspace }}/apps/vscode/wardley-mapping-modeler.vsix
+          VSCODE_SMOKE_KEEP: '1'
+          TMPDIR: ${{ runner.temp }}
+      # The release is already tagged when this smoke fails, so its screenshots and VS Code's logs are
+      # all there is to tell why.
+      - if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: vscode-smoke-open-vsx
+          path: |
+            test-results/vscode-smoke/
+            ${{ runner.temp }}/modeler-shell-vscode-*/user-data/logs/
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Publish to Open VSX Marketplace
         working-directory: apps/vscode
         run: npx ovsx --pat "$OVSX_PAT" publish --packagePath wardley-mapping-modeler.vsix
@@ -140,3 +178,20 @@ jobs:
       - name: Package extension
         working-directory: apps/vscode
         run: npx vsce package --no-dependencies -o wardley-mapping-modeler.vsix
+      # The publish jobs' smoke, so a dry run shows it passes before a release depends on it.
+      - name: Smoke-test the VSIX in VS Code
+        run: xvfb-run -a npm run test:vscode
+        env:
+          VSCODE_VERSION: stable
+          VSCODE_SMOKE_VSIX: ${{ github.workspace }}/apps/vscode/wardley-mapping-modeler.vsix
+          VSCODE_SMOKE_KEEP: '1'
+          TMPDIR: ${{ runner.temp }}
+      - if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: vscode-smoke-dry-run
+          path: |
+            test-results/vscode-smoke/
+            ${{ runner.temp }}/modeler-shell-vscode-*/user-data/logs/
+          if-no-files-found: ignore
+          retention-days: 7

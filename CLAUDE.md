@@ -64,7 +64,8 @@ install` — see [`CONTRIBUTING.md`](CONTRIBUTING.md)). `npm run dev:webapp:plai
   `npm test`; no package build needed; a failed run is not retried. On macOS it opens a VS Code
   window for ~5 s that takes the focus (the first run downloads VS Code into
   `~/Library/Caches/miragon-modeler-shell/vscode-test`); Linux: `xvfb-run -a npm run test:vscode`;
-  `VSCODE_SMOKE_VERSION=1.96.0` picks a version, `VSCODE_SMOKE_KEEP=1` keeps VS Code's logs.
+  `VSCODE_VERSION=1.96.0` picks a version, `VSCODE_SMOKE_KEEP=1` keeps VS Code's logs,
+  `VSCODE_SMOKE_VSIX=<path>` smokes a packed VSIX instead of packing one (the release does).
 - `npm run test:vscode:docker` — the local way to run that smoke test, without a VS Code window:
   `modeler-shell-vscode-docker` of `@miragon/modeler-shell` runs `npm run test:vscode` under
   `xvfb-run -a` in a Linux container (needs Docker and the repo's `npm ci`, which installs the
@@ -74,10 +75,20 @@ install` — see [`CONTRIBUTING.md`](CONTRIBUTING.md)). `npm run dev:webapp:plai
   `--env` (`npm run test:vscode:docker -- --env VSCODE_SMOKE_KEEP=1` brings VS Code's logs back into
   `test-results/vscode-smoke/vscode-logs/`). On a developer's Mac run this one, not `test:vscode`,
   whose window would take the user's focus. CI stays on `xvfb-run -a npm run test:vscode`:
-  [`vscode-smoke.yml`](.github/workflows/vscode-smoke.yml) — weekly, on demand and on PRs touching
-  `apps/vscode/**`, `packages/{dsl,schema-model}`, the lockfile or the test's setup; not a required
-  check; screenshots as the `vscode-smoke` artifact, logs of a failed run as `vscode-smoke-logs`.
-  Details in [`CONTRIBUTING.md`](CONTRIBUTING.md#vs-code-smoke-test).
+  [`vscode-smoke.yml`](.github/workflows/vscode-smoke.yml), a reusable workflow with a matrix of the
+  newest stable VS Code and the `engines.vscode` minimum; called by `ci.yml` as the job
+  `vscode-smoke` (its job `changes` skips the smoke when no `package.json`, the lockfile,
+  `apps/vscode/**`, `packages/**`, `tsconfig.base.json` or the test's setup changed), by
+  [`vscode-smoke-weekly.yml`](.github/workflows/vscode-smoke-weekly.yml) (Mondays; a failure opens
+  or comments on the issue "VS Code smoke: the weekly run failed"); the release smokes the VSIX it
+  publishes. Screenshots as the `vscode-smoke-<stable|minimum>` artifacts, logs of a failed run as
+  `vscode-smoke-logs-<stable|minimum>`. Details in
+  [`CONTRIBUTING.md`](CONTRIBUTING.md#vs-code-smoke-test).
+- **CI merge gate:** the job `ci-ok` of [`ci.yml`](.github/workflows/ci.yml) needs every other job
+  and fails unless each succeeded (a skip passes only for `dependency-review` outside pull requests);
+  `ci-ok` and the PR-title check are the checks for the `main` ruleset to require, not the single
+  jobs. **Add every new CI job to the `needs` of `ci-ok`.** Details in
+  [`CONTRIBUTING.md`](CONTRIBUTING.md#ci-and-the-merge-gate).
 - `npm run format` — Prettier · `npm run depcruise` — check the module graph
 
 Requirements: Node ≥ 22.22.2, npm. Build packages before running tests (workspace deps resolve to
@@ -110,9 +121,10 @@ All pending releases share one release PR (`separate-pull-requests: false`).
   `renderer-v0.7.0`, `vscode-v0.8.0`; `include-component-in-tag: true`), creates its GitHub release,
   writes its entry to the component's own `CHANGELOG.md` (`packages/*/CHANGELOG.md`,
   `apps/*/CHANGELOG.md`; edit them in the release PR before merging), publishes the released
-  `packages/*` libraries to npm, and the VS Code extension to the Marketplace and Open VSX. The web
-  app is not published; Netlify deploys `main` ([`netlify.toml`](netlify.toml)). A manual run with
-  `dry_run` builds, packs the libraries and packages the VSIX without releasing anything.
+  `packages/*` libraries to npm, and the VS Code extension to the Marketplace and Open VSX, each
+  only after the VS Code smoke test passed on the VSIX it uploads. The web app is not published;
+  Netlify deploys `main` ([`netlify.toml`](netlify.toml)). A manual run with `dry_run` builds, packs
+  the libraries, packages the VSIX and smoke-tests it without releasing anything.
 - **A new package** needs an entry under `packages` in `release-please-config.json`, its version in
   `.release-please-manifest.json`, and a publish job in `release-please.yml` if it ships.
 

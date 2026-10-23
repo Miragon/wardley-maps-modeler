@@ -105,3 +105,54 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+
+  vscode-smoke:
+    uses: ./.github/workflows/vscode-smoke.yml
+
+  # The merge gate. A job skipped because a job it needs failed reports "skipped", and a required
+  # check counts a skip as passed, so this job, not the single ones, is the check for the ruleset to
+  # require. Every other job of this workflow belongs in its needs.
+  ci-ok:
+    name: ci-ok
+    if: always()
+    needs:
+      - lint
+      - test
+      - playwright-version
+      - test-browser
+      - e2e
+      - depcruise
+      - build
+      - format-check
+      - pin-check
+      - dependency-review
+      - vscode-smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require every job to succeed
+        shell: bash
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+          # Jobs whose own if: leaves them out of this event: dependency-review compares the
+          # dependencies of a pull request with its base, which no other event has.
+          SKIPPED_BY_DESIGN: ${{ github.event_name != 'pull_request' && 'dependency-review' || '' }}
+        run: |
+          set -euo pipefail
+          results=$(jq -r 'to_entries[] | "\(.key) \(.value.result)"' <<< "$NEEDS")
+          if [[ -z "$results" ]]; then
+            echo "::error::ci-ok needs no job"
+            exit 1
+          fi
+          failed=0
+          while read -r job result; do
+            if [[ "$result" == success ]]; then
+              echo "$job: success"
+            elif [[ "$result" == skipped && " $SKIPPED_BY_DESIGN " == *" $job "* ]]; then
+              echo "$job: skipped by design on this event"
+            else
+              echo "::error::$job: $result"
+              failed=1
+            fi
+          done <<< "$results"
+          exit "$failed"

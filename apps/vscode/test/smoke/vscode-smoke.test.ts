@@ -2,7 +2,7 @@ import { execFile } from 'node:child_process';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { afterAll, beforeAll, expect, it } from 'vitest';
@@ -26,9 +26,7 @@ const runFile = promisify(execFile);
 
 /**
  * The extension as the Marketplace gets it: `vsce package` runs vscode:prepublish (the production
- * bundles) and leaves out what .vscodeignore lists. Unpacked outside the repository, no node_modules
- * of the monorepo sits next to the bundle, so a module esbuild did not inline fails the activation
- * here as it would for a user.
+ * bundles) and leaves out what .vscodeignore lists.
  */
 async function packExtension(into: string): Promise<string> {
   const vsix = join(into, 'wardley-mapping-modeler.vsix');
@@ -36,6 +34,14 @@ async function packExtension(into: string): Promise<string> {
   await runFile(process.execPath, [vsce, 'package', '--no-dependencies', '--out', vsix], {
     cwd: APP_DIRECTORY,
   });
+  return vsix;
+}
+
+/**
+ * Unpacked outside the repository, no node_modules of the monorepo sits next to the bundle, so a
+ * module esbuild did not inline fails the activation here as it would for a user.
+ */
+async function unpackExtension(vsix: string, into: string): Promise<string> {
   await runFile('unzip', ['-q', vsix, 'extension/*', '-d', into]);
   return join(into, 'extension');
 }
@@ -82,7 +88,10 @@ let extensionPath = '';
 beforeAll(async () => {
   await rm(SCREENSHOT_DIRECTORY, { recursive: true, force: true });
   workDirectory = await mkdtemp(join(tmpdir(), 'wardley-vscode-smoke-'));
-  extensionPath = await packExtension(workDirectory);
+  // The release passes the VSIX it is about to publish, so the smoke checks that very file.
+  const prebuiltVsix = process.env.VSCODE_SMOKE_VSIX;
+  const vsix = prebuiltVsix ? resolve(prebuiltVsix) : await packExtension(workDirectory);
+  extensionPath = await unpackExtension(vsix, workDirectory);
 }, 300_000);
 
 afterAll(async () => {
@@ -105,7 +114,7 @@ it(
       themes: WEBVIEW_THEMES,
       name: 'wardley',
       screenshotDir: SCREENSHOT_DIRECTORY,
-      vscodeVersion: process.env.VSCODE_SMOKE_VERSION || undefined,
+      vscodeVersion: process.env.VSCODE_VERSION || undefined,
       keepTemporaryFiles: process.env.VSCODE_SMOKE_KEEP === '1',
       log: (line) => console.log(line),
     });
