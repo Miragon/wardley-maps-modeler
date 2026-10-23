@@ -88,6 +88,9 @@ function drawnContentBox(canvas: Canvas): SvgBounds | undefined {
     let right = -Infinity;
     let bottom = -Infinity;
     for (const visual of layer.querySelectorAll<SVGGraphicsElement>('.djs-visual')) {
+      // diagram-js draws the previews of a move or create into the same layer; they are no part
+      // of the document, and a cancelled drag would otherwise leave its box behind.
+      if (visual.closest('.djs-drag-group')) continue;
       const local = visual.getBBox();
       const visualToScreen = visual.getCTM();
       if ((local.width === 0 && local.height === 0) || !visualToScreen) continue;
