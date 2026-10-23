@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.1](https://github.com/Miragon/wardley-maps-modeler/compare/webapp-v0.11.0...webapp-v0.11.1) (2026-10-23)
+
+
+### Bug Fixes
+
+* **deps:** adopt modeler-shell 0.4.1 ([#161](https://github.com/Miragon/wardley-maps-modeler/issues/161)) ([e514218](https://github.com/Miragon/wardley-maps-modeler/commit/e514218f7c7a7342d50dccd7ae573ed2d1a12e54))
+
 ## [0.11.0](https://github.com/Miragon/wardley-maps-modeler/compare/webapp-v0.10.2...webapp-v0.11.0) (2026-10-23)
 
 
