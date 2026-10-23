@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.0](https://github.com/Miragon/wardley-maps-modeler/compare/renderer-v0.9.1...renderer-v0.10.0) (2026-10-23)
+
+
+### Features
+
+* **renderer:** report content bounds (contract 1.3) and show the "?" chip on Keyboard shortcuts… ([#159](https://github.com/Miragon/wardley-maps-modeler/issues/159)) ([6d633cb](https://github.com/Miragon/wardley-maps-modeler/commit/6d633cb314a24a7911cd1b798f7669334aed4d48))
+
 ## [0.9.1](https://github.com/Miragon/wardley-maps-modeler/compare/renderer-v0.9.0...renderer-v0.9.1) (2026-10-22)
 
 

@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.11.0](https://github.com/Miragon/wardley-maps-modeler/compare/webapp-v0.10.2...webapp-v0.11.0) (2026-10-23)
+
+
+### Features
+
+* **renderer:** report content bounds (contract 1.3) and show the "?" chip on Keyboard shortcuts… ([#159](https://github.com/Miragon/wardley-maps-modeler/issues/159)) ([6d633cb](https://github.com/Miragon/wardley-maps-modeler/commit/6d633cb314a24a7911cd1b798f7669334aed4d48))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @miragon/wardley-renderer bumped from 0.9.1 to 0.10.0
+
 ## [0.10.2](https://github.com/Miragon/wardley-maps-modeler/compare/webapp-v0.10.1...webapp-v0.10.2) (2026-10-22)
 
 
