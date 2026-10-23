@@ -54,7 +54,7 @@ export default defineConfig({
           name: 'vscode',
           include: ['apps/vscode/test/smoke/**/*.test.ts'],
           environment: 'node',
-          // Each file starts a VS Code; side by side they would download into the same cache folder.
+          // Each file starts a whole VS Code, on macOS a window that takes the focus.
           fileParallelism: false,
           // The packed extension bundles the packages from source (esbuild.config.mjs), so the
           // parser that checks its saves does too: no package build needed, none stale.

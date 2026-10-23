@@ -131,9 +131,12 @@ VSCODE_SMOKE_VSIX=path/to.vsix npm run test:vscode  # a packed VSIX instead of p
 On macOS a VS Code window opens for a few seconds and takes the focus; a run takes about 5 s. The
 first run downloads VS Code (about 320 to 360 MB, 0.9 GB unpacked per version) into
 `~/Library/Caches/miragon-modeler-shell/vscode-test` (`~/.cache/…` on Linux), which every Miragon
-modeler on the machine shares and `npm ci` keeps; let one download finish before starting a second
-run. Like `npm run package -w apps/vscode`, the packing writes the production build into
-`apps/vscode/dist`. On Linux, run it under an X server: `xvfb-run -a npm run test:vscode`.
+modeler on the machine shares and `npm ci` keeps. Runs may use it at the same time, here or in
+another modeler, as long as every modeler using it is on `@miragon/modeler-shell` 0.3.3 or
+later; one still on 0.3.2 or older unpacks in the cache in place and, while it downloads a version,
+can break a run of another modeler and be broken by one. Like `npm run package -w apps/vscode`, the
+packing writes the production build into `apps/vscode/dist`. On Linux, run it under an X server:
+`xvfb-run -a npm run test:vscode`.
 
 When a failure names no cause (for example "the custom editor never showed the shell's menu"), the
 cause is in VS Code's logs: run again with `VSCODE_SMOKE_KEEP=1` and read the `logs` folder of the
