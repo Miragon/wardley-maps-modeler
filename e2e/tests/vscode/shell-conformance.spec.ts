@@ -5,15 +5,17 @@ import {
   type ShellSkip,
 } from '@miragon/modeler-shell/testing';
 import { WEBVIEW_THEMES } from '../../../apps/vscode/src/themes.js';
-import './support/webview.js';
+import { kettleLabelEditor } from '../support/label-editor.js';
+import { postedMessages } from './support/webview.js';
 
 /**
  * The shell's conformance kit against the real VS Code webview (main.ts inside the VS Code stub):
  * geometry at three sizes, ARIA and keyboard models, chrome keys and select all that never reach
- * VS Code while undo and redo do, keyboard creation from the palette, the read-only lock of an
- * invalid file, the appearance VS Code requests (a light-only map stays light, high contrast
- * passes) and a clean teardown. Wardley maps have neither a legend nor an inspector, so the
- * harness declares them absent and the kit asserts they never show; any skip fails the suite.
+ * VS Code while undo and redo do, keyboard creation from the palette, a label editor that the
+ * chrome's zoom, fit and refit leave open, the read-only lock of an invalid file, the appearance
+ * VS Code requests (a light-only map stays light, high contrast passes) and a clean teardown.
+ * Wardley maps have neither a legend nor an inspector, so the harness declares them absent and the
+ * kit asserts they never show; any skip fails the suite.
  */
 const describeSkips = (skips: readonly ShellSkip[]): string =>
   skips.map((skip) => `${skip.hook}: ${skip.reason}`).join('; ');
@@ -37,7 +39,9 @@ test.describe('VS Code webview: shell conformance', () => {
           window.shell?.destroy();
         });
       },
-      absent: ['legend', 'inspector'],
+      // VS Code owns the file, so the menu has no File group, and the Model group holds only the
+      // "Map size…" and "X-axis labels…" popovers: no entry acts on the canvas without a dialog.
+      absent: ['legend', 'inspector', 'canvasMenuAction'],
       show: {
         async problems(page) {
           await page.evaluate(() =>
@@ -71,6 +75,10 @@ test.describe('VS Code webview: shell conformance', () => {
           });
         },
       },
+      // Every edit reaches VS Code as an `edit` message, which writes it into the document.
+      labelEditor: kettleLabelEditor(async (page) =>
+        JSON.stringify((await postedMessages(page)).filter((message) => message.type === 'edit')),
+      ),
     },
     test,
     {

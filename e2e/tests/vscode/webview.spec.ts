@@ -1,6 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { ICONS, type ShellIconName } from '@miragon/modeler-shell';
 import { EMPTY_MAP, withExampleInserted } from '../../../apps/vscode/src/examples.js';
+import { FIT_TOLERANCE, LONG_NAME_DRAWING, LONG_NAME_MAP, overhang } from '../support/fit.js';
 import {
   openWebview,
   postFromHost,
@@ -288,6 +289,23 @@ test.describe('VS Code webview: protocol and chrome', () => {
       })
       .toBe(true);
     expect(await page.evaluate(() => window.connection!.viewport.isAutomatic())).toBe(true);
+  });
+
+  test('the fitView command frames a name that runs past the plot in the free area', async ({
+    page,
+  }) => {
+    await openWebview(page);
+    await postFromHost(page, { type: 'update', text: LONG_NAME_MAP });
+    await expect(page.locator(`.cd-shell-canvas ${LONG_NAME_DRAWING}`)).toHaveCount(1);
+    const outside = async (): Promise<number> =>
+      overhang(page, LONG_NAME_DRAWING, await page.evaluate(() => window.shell!.fitInsets()));
+
+    const zoomIn = page.locator('[data-chrome="zoom"] [data-zoom="in"]');
+    await zoomIn.click();
+    await zoomIn.click();
+    await expect.poll(outside).toBeGreaterThan(FIT_TOLERANCE);
+    await postFromHost(page, { type: 'command', name: 'fitView' });
+    await expect.poll(outside).toBeLessThanOrEqual(FIT_TOLERANCE);
   });
 
   test('the export commands and menu entries post the exported image', async ({ page }) => {

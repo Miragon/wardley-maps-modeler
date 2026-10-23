@@ -9,8 +9,8 @@ import '@miragon/wardley-renderer/assets/wardley.css';
 import './style.css';
 import '@miragon/modeler-shell/shell.css';
 import {
-  Modeler,
   createAxisLabelsPopover,
+  createCollaborativeModeler,
   createMapSizePopover,
   createShortcutsDialog,
   createTitleDialog,
@@ -20,7 +20,7 @@ import {
   type ImportWarning,
   type LabelDeduplicatedEvent,
   type MapMenu,
-  type PanConstraint,
+  type Modeler,
 } from '@miragon/wardley-renderer';
 import { createEmptyMap, serializeMap } from '@miragon/wardley-schema-model';
 import { parseDSLWithDiagnostics } from '@miragon/wardley-dsl';
@@ -79,18 +79,17 @@ if (!app) throw new Error('index.html has no #app root.');
 
 // 1. The diagram first: the map's keyboard listens on document and must run before the chrome's key
 //    listener, and the Modeler builds its diagram lazily on the first get(). The web app keeps the
-//    canvas's own undo and redo keys.
-const viewer = new Modeler({
-  width: '100%',
-  height: '100%',
+//    canvas's own undo and redo keys. The contract's instance reports the content bounds the
+//    chrome fits to.
+const collaborative = createCollaborativeModeler({
   additionalModules: [shellModule],
   // Where Enter or Space on a creating palette entry places the element (guide §5.5), where the
   // import fits the plot and where panning keeps it.
   freeArea: { insets: () => shell.fitInsets() },
 });
+const viewer = collaborative.diagram as Modeler;
 viewer.get('canvas');
 const registry = viewer.get<ElementRegistryLike>('elementRegistry');
-const panConstraint = viewer.get<PanConstraint>('panConstraint');
 const currentDSL = trackSourceText(viewer);
 Object.assign(globalThis as Record<string, unknown>, { __wardleyViewer: viewer });
 
@@ -115,6 +114,7 @@ function webMenu(): MapMenu {
       wmap: { onSelect: () => exportMapText('dsl'), shortcut: saveKey },
     },
     showKeyboardShortcuts: () => shortcutsDialog.open(),
+    shortcutsKey: SHORTCUTS_KEY,
   });
   return {
     ...map,
@@ -197,13 +197,11 @@ viewer.on('diagram.destroy', () => {
   textDialogs.destroy();
 });
 
-// 3. Viewport, palette skin, keys. Empty means no element; the plot always counts as content, so
-//    a new map fits its plot (guide §5.9). The pan constraint measures the bounds the shell fits.
+// 3. Viewport, palette skin, keys. The shell fits to the renderer's content bounds, which always
+//    hold the plot, so a new map fits its plot (guide §5.9) and they tell no empty map: empty means
+//    no element.
 const isEmpty = (): boolean => !registry.getAll().some(isWardleyShape);
-const connection = connectDiagramJs(shell, viewer, {
-  isEmpty,
-  contentBounds: () => panConstraint.contentBounds(),
-});
+const connection = connectDiagramJs(shell, viewer, { modeler: collaborative, isEmpty });
 const { viewport } = connection;
 
 // ---------------------------------------------------------------------------

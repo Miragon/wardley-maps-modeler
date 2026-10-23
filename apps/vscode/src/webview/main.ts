@@ -18,7 +18,6 @@ import {
   type CollaborativeWardleyModeler,
   type LabelDeduplicatedEvent,
   type Modeler,
-  type PanConstraint,
   type SvgToPngOptions,
   type WardleyReadOnly,
 } from '@miragon/wardley-renderer';
@@ -75,7 +74,6 @@ const collaborative = createCollaborativeModeler({
 const modeler = collaborative.diagram as Modeler;
 modeler.get('canvas');
 const registry = modeler.get<ElementRegistryLike>('elementRegistry');
-const panConstraint = modeler.get<PanConstraint>('panConstraint');
 // The canvas lock of an invalid file: context pad, move, resize, delete, paste, label editor.
 const canvasLock = modeler.get<WardleyReadOnly>('wardleyReadOnly');
 
@@ -110,12 +108,12 @@ modeler.on('diagram.destroy', () => {
   axisLabelsPopover.destroy();
 });
 
-// Empty means no element (guide §13.5); the plot always counts as content, so an empty map still
-// fits its plot (guide §5.9). The pan constraint measures the same bounds the shell fits to.
+// The shell fits to the renderer's content bounds, which always hold the plot, so an empty map
+// still fits its plot (guide §5.9) and they tell no empty map: empty means no element (§13.5).
 const isEmpty = (): boolean => !registry.getAll().some(isWardleyShape);
 const connection: DiagramJsConnection = connectDiagramJs(shell, modeler, {
+  modeler: collaborative,
   isEmpty,
-  contentBounds: () => panConstraint.contentBounds(),
 });
 const { viewport } = connection;
 persistView(vscode, viewport);
