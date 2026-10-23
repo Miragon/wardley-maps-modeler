@@ -20,14 +20,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     # Here and not in vscode-smoke.yml: GitHub rejects a called workflow whose jobs ask for more
-    # permissions than the caller grants, and CI grants only contents: read.
+    # permissions than the caller grants, even for a job that would be skipped, and CI grants only
+    # contents: read.
     permissions:
       issues: write
     steps:
       - name: Open the tracking issue or comment on it
         shell: bash
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
           TITLE: 'VS Code smoke: the weekly run failed'
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
