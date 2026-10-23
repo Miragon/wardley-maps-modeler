@@ -187,6 +187,8 @@ Before a release uploads the extension, each publishing job in
 [`.github/workflows/release-please.yml`](.github/workflows/release-please.yml) (VS Code Marketplace,
 Open VSX) runs the smoke test on the VSIX it is about to upload (`VSCODE_SMOKE_VSIX`, the newest
 stable VS Code), and publishes only when it passes. A manual run with `dry_run` runs the same smoke.
+When it fails, its screenshots and VS Code's logs are uploaded as the artifact
+`vscode-smoke-marketplace`, `vscode-smoke-open-vsx` or `vscode-smoke-dry-run`.
 
 ## Pre-commit reality
 
